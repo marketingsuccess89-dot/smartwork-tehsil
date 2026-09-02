@@ -12,6 +12,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf.js for High-Quality Native PDF Generation and Direct File Sharing -->
+    <script src="/static/html2pdf.bundle.min.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -406,16 +408,24 @@
                         </label>
                     </div>
 
-                    <form id="download-form" action="/api/download-docx" method="POST" class="w-full sm:w-auto">
-                        <input type="hidden" name="text" id="download-text-input">
-                        <input type="hidden" name="stamp_paper" id="download-stamp-input" value="false">
-                        <button type="submit" id="download-docx-btn" class="pop-btn w-full sm:w-auto bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3.5 px-7 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer">
-                            <div class="bg-white/20 p-1 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-file-word text-base"></i>
-                            </div>
-                            <span class="tracking-wide">MS Word (.DOCX) डाउनलोड करें</span>
+                    <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                        <!-- Direct WhatsApp Share Button -->
+                        <button type="button" id="share-whatsapp-direct-btn" class="pop-btn w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer">
+                            <i class="fa-brands fa-whatsapp text-lg"></i>
+                            <span>WhatsApp पर भेजें</span>
                         </button>
-                    </form>
+
+                        <form id="download-form" action="/api/download-docx" method="POST" class="w-full sm:w-auto">
+                            <input type="hidden" name="text" id="download-text-input">
+                            <input type="hidden" name="stamp_paper" id="download-stamp-input" value="false">
+                            <button type="submit" id="download-docx-btn" class="pop-btn w-full sm:w-auto bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer text-xs sm:text-sm">
+                                <div class="bg-white/20 p-1 rounded-lg flex items-center justify-center">
+                                    <i class="fa-solid fa-file-word text-sm"></i>
+                                </div>
+                                <span class="tracking-wide">Word (.DOCX) डाउनलोड</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
             </div>
@@ -452,7 +462,7 @@
     <!-- Backdrop for history sidebar -->
     <div id="sidebar-backdrop" class="fixed inset-0 bg-emerald-950/40 backdrop-blur-sm z-40 hidden transition-opacity"></div>
 
-    <!-- WhatsApp Share Modal (Opens immediately upon download) -->
+    <!-- WhatsApp Share Modal (Opens immediately upon download or click) -->
     <div id="modal-share" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="fixed inset-0 bg-emerald-950/60 backdrop-blur-sm" onclick="closeModal('modal-share')"></div>
         <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-emerald-100 animate-pop-in">
@@ -463,8 +473,8 @@
                         <i class="fa-solid fa-circle-check text-base text-emerald-600"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-emerald-950">फ़ाइल डाउनलोड हो गई!</h3>
-                        <p class="text-[10px] text-emerald-700 font-medium">MS Word (.DOCX) सेव हो चुका है</p>
+                        <h3 class="font-bold text-sm text-emerald-950">दस्तावेज़ तैयार है!</h3>
+                        <p class="text-[10px] text-emerald-700 font-medium">WhatsApp शेयर एवं डाउनलोड विकल्प</p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-share')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
@@ -472,35 +482,39 @@
                 </button>
             </div>
             <!-- Modal Body -->
-            <div class="p-5 space-y-3.5 text-center">
-                <p class="text-xs text-slate-600 leading-relaxed">
-                    यह दस्तावेज़ अपने क्लाइंट या किसी भी व्यक्ति को तुरंत WhatsApp पर भेजें:
+            <div class="p-5 space-y-3 text-center">
+                <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                    दस्तावेज़ को WhatsApp पर भेजने या डाउनलोड करने के विकल्प:
                 </p>
 
-                <!-- Primary WhatsApp Share Button -->
-                <button id="whatsapp-share-btn" class="pop-btn w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-sm transition active:scale-95">
-                    <i class="fa-brands fa-whatsapp text-xl"></i>
-                    <span id="whatsapp-share-btn-text" class="tracking-wide">Word (.DOCX) फ़ाइल WhatsApp पर भेजें</span>
+                <!-- Primary WhatsApp PDF File Share Button (Native Attachment!) -->
+                <button id="whatsapp-pdf-btn" class="pop-btn w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-sm transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-file-pdf text-xl text-rose-200"></i>
+                    <span id="whatsapp-pdf-btn-text" class="tracking-wide">WhatsApp पर PDF फ़ाइल भेजें</span>
+                </button>
+
+                <!-- Direct PDF Download Button -->
+                <button id="download-pdf-btn" class="pop-btn w-full bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold py-2.5 px-4 rounded-xl text-xs border border-rose-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
+                    <i class="fa-solid fa-download text-xs text-rose-600"></i>
+                    <span id="download-pdf-btn-text">PDF फ़ाइल डाउनलोड करें</span>
+                </button>
+
+                <!-- Direct Word DOCX Download Button -->
+                <button id="download-docx-modal-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
+                    <i class="fa-solid fa-file-word text-xs text-emerald-600"></i>
+                    <span>Word (.DOCX) फ़ाइल डाउनलोड करें</span>
                 </button>
 
                 <!-- Secondary Copy Text for WhatsApp Button -->
-                <button id="whatsapp-copy-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold py-2.5 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs">
+                <button id="whatsapp-copy-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold py-2 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
                     <i class="fa-regular fa-copy text-xs text-emerald-600"></i>
-                    <span>WhatsApp के लिए पूरा टेक्स्ट कॉपी करें</span>
+                    <span>पूरा टेक्स्ट कॉपी करें</span>
                 </button>
-
-                <!-- Re-download fallback link -->
-                <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-400">
-                    <span>फ़ाइल नहीं मिली?</span>
-                    <button id="redownload-btn" class="text-emerald-700 hover:text-emerald-900 font-bold underline">
-                        दोबारा डाउनलोड करें
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260902_v15"></script>
+    <script src="/static/app.js?v=20260902_v16"></script>
 </body>
 </html>
