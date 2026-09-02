@@ -104,21 +104,29 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
     Ensure your response strictly matches the required JSON schema.
     """
     
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=[
-            types.Part.from_bytes(data=processed_image_bytes, mime_type=target_mime_type),
-            prompt
-        ],
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-            response_mime_type="application/json",
-            response_schema=TranscriptionResult
-        )
-    )
-    
-    data = json.loads(response.text)
-    return TranscriptionResult(**data)
+    models = ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"]
+    last_err = None
+    for model_name in models:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    types.Part.from_bytes(data=processed_image_bytes, mime_type=target_mime_type),
+                    prompt
+                ],
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    response_mime_type="application/json",
+                    response_schema=TranscriptionResult
+                )
+            )
+            data = json.loads(response.text)
+            return TranscriptionResult(**data)
+        except Exception as e:
+            last_err = e
+            print(f"Model {model_name} failed: {e}. Trying fallback...")
+            continue
+    raise last_err
 
 def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav") -> TranscriptionResult:
     """
@@ -144,18 +152,26 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     Ensure your response strictly matches the required JSON schema.
     """
     
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=[
-            types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
-            prompt
-        ],
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-            response_mime_type="application/json",
-            response_schema=TranscriptionResult
-        )
-    )
-    
-    data = json.loads(response.text)
-    return TranscriptionResult(**data)
+    models = ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"]
+    last_err = None
+    for model_name in models:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                    prompt
+                ],
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    response_mime_type="application/json",
+                    response_schema=TranscriptionResult
+                )
+            )
+            data = json.loads(response.text)
+            return TranscriptionResult(**data)
+        except Exception as e:
+            last_err = e
+            print(f"Model {model_name} failed: {e}. Trying fallback...")
+            continue
+    raise last_err
