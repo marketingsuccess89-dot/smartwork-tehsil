@@ -767,64 +767,89 @@ async function shareOnWhatsApp() {
 async function generatePdfBlob() {
     const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
     
-    // Create an off-screen A4 container for crisp PDF rendering
+    // Ensure documentPages is populated
+    if (!documentPages || documentPages.length === 0) {
+        paginateAndRenderDocument();
+    }
+
+    if (!documentPages || documentPages.length === 0) {
+        throw new Error('दस्तावेज़ में कोई सामग्री नहीं है।');
+    }
+
+    // Create an off-screen A4 print container with exact styling
     const printContainer = document.createElement('div');
-    printContainer.style.width = '750px';
-    printContainer.style.background = '#ffffff';
-    printContainer.style.padding = '35px 45px';
-    printContainer.style.fontFamily = "'Nirmala UI', system-ui, -apple-system, sans-serif";
-    printContainer.style.fontSize = '12px';
-    printContainer.style.color = '#0f172a';
-    printContainer.style.lineHeight = '1.45';
-
-    if (isStamp) {
-        const stampDiv = document.createElement('div');
-        stampDiv.style.height = '180px';
-        stampDiv.style.border = '2px dashed #cbd5e1';
-        stampDiv.style.borderRadius = '8px';
-        stampDiv.style.marginBottom = '20px';
-        stampDiv.style.display = 'flex';
-        stampDiv.style.alignItems = 'center';
-        stampDiv.style.justifyContent = 'center';
-        stampDiv.style.color = '#64748b';
-        stampDiv.style.fontWeight = 'bold';
-        stampDiv.style.fontSize = '12px';
-        stampDiv.innerText = '📜 स्टाम्प पेपर हेतु आरक्षित स्थान (3.0 इंच स्पेस)';
-        printContainer.appendChild(stampDiv);
-    }
-
-    const text = documentEditor ? documentEditor.value : '';
-    const cleanText = unwrapParagraphs(text);
-    const blocks = parseDocumentIntoBlocks(cleanText);
-    for (const b of blocks) {
-        const div = document.createElement('div');
-        div.innerHTML = renderBlockHtml(b);
-        printContainer.appendChild(div);
-    }
-
+    printContainer.id = 'pdf-render-export-container';
     printContainer.style.position = 'fixed';
     printContainer.style.left = '-9999px';
     printContainer.style.top = '0';
+    printContainer.style.width = '794px';
+    printContainer.style.background = '#ffffff';
+    printContainer.style.zIndex = '-9999';
+
+    documentPages.forEach((pageHtml, index) => {
+        const pageDiv = document.createElement('div');
+        pageDiv.style.width = '794px';
+        pageDiv.style.minHeight = '1120px';
+        pageDiv.style.padding = '40px 50px';
+        pageDiv.style.boxSizing = 'border-box';
+        pageDiv.style.background = '#ffffff';
+        pageDiv.style.fontFamily = "'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif";
+        pageDiv.style.fontSize = '12.5px';
+        pageDiv.style.lineHeight = '1.5';
+        pageDiv.style.color = '#0f172a';
+        pageDiv.style.wordBreak = 'break-word';
+
+        if (index > 0) {
+            pageDiv.style.pageBreakBefore = 'always';
+        }
+
+        if (isStamp && index === 0) {
+            const stampDiv = document.createElement('div');
+            stampDiv.style.height = '180px';
+            stampDiv.style.border = '2px dashed #94a3b8';
+            stampDiv.style.borderRadius = '8px';
+            stampDiv.style.marginBottom = '20px';
+            stampDiv.style.display = 'flex';
+            stampDiv.style.alignItems = 'center';
+            stampDiv.style.justifyContent = 'center';
+            stampDiv.style.color = '#64748b';
+            stampDiv.style.fontWeight = 'bold';
+            stampDiv.style.fontSize = '12px';
+            stampDiv.innerText = '📜 स्टाम्प पेपर हेतु आरक्षित स्थान (3.0 इंच स्पेस)';
+            pageDiv.appendChild(stampDiv);
+        }
+
+        const bodyDiv = document.createElement('div');
+        bodyDiv.innerHTML = pageHtml;
+        pageDiv.appendChild(bodyDiv);
+        printContainer.appendChild(pageDiv);
+    });
+
     document.body.appendChild(printContainer);
 
     const opt = {
-        margin: [10, 10, 10, 10],
+        margin: [0, 0, 0, 0],
         filename: `Smart_Typing_Document_${Date.now()}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    const pdfBlob = await html2pdf().set(opt).from(printContainer).output('blob');
-    document.body.removeChild(printContainer);
-    return pdfBlob;
+    try {
+        const pdfBlob = await html2pdf().set(opt).from(printContainer).output('blob');
+        return pdfBlob;
+    } finally {
+        if (document.body.contains(printContainer)) {
+            document.body.removeChild(printContainer);
+        }
+    }
 }
 
 // Native WhatsApp PDF File Share (Sends the actual PDF document file directly into WhatsApp!)
 async function sharePdfOnWhatsApp() {
     const text = documentEditor ? documentEditor.value.trim() : '';
     if (!text) {
-        showToast('error', 'शेयर करने के लिए कोई टेक्स्ट नहीं है।');
+        showToast('error', 'शेयर करने के लिए कोई दस्तावेज़ नहीं है।');
         return;
     }
 
@@ -840,7 +865,9 @@ async function sharePdfOnWhatsApp() {
         const fileName = `Smart_Typing_Document_${Date.now()}.pdf`;
         const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-        // On mobile / Android Chrome: application/pdf is fully supported by Web Share API Level 2!
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        // Check if browser supports native file sharing (Web Share API Level 2)
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
             await navigator.share({
                 files: [pdfFile],
@@ -848,15 +875,24 @@ async function sharePdfOnWhatsApp() {
             });
             showToast('success', 'PDF फ़ाइल WhatsApp पर भेजी गई!');
         } else {
-            // Fallback: Download PDF directly and open WhatsApp
+            // Fallback (Desktop, Laptop, or browsers without file share API):
+            // 1. Download the PDF directly so the user has the file immediately
             const url = URL.createObjectURL(pdfBlob);
             const a = document.createElement('a');
+            a.style.display = 'none';
             a.href = url;
             a.download = fileName;
+            document.body.appendChild(a);
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => {
+                if (document.body.contains(a)) document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 2000);
+
             showToast('info', 'PDF डाउनलोड हो गई! WhatsApp में अटैच करें।');
-            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+
+            // 2. Launch WhatsApp or WhatsApp Web
+            if (isMobile) {
                 window.location.href = 'whatsapp://send';
             } else {
                 window.open('https://web.whatsapp.com/', '_blank');
@@ -865,7 +901,7 @@ async function sharePdfOnWhatsApp() {
     } catch (err) {
         if (err.name !== 'AbortError') {
             console.error('PDF share error:', err);
-            showToast('error', 'PDF शेयर करने में असमर्थ।');
+            showToast('error', 'PDF शेयर करने में समस्या आई: ' + (err.message || ''));
         }
     } finally {
         if (btn) btn.removeAttribute('disabled');
@@ -877,28 +913,39 @@ async function sharePdfOnWhatsApp() {
 async function downloadPdf() {
     const text = documentEditor ? documentEditor.value.trim() : '';
     if (!text) {
-        showToast('error', 'डाउनलोड करने के लिए कोई टेक्स्ट नहीं है।');
+        showToast('error', 'डाउनलोड करने के लिए कोई दस्तावेज़ नहीं है।');
         return;
     }
 
+    const btn = document.getElementById('download-pdf-btn');
     const btnText = document.getElementById('download-pdf-btn-text');
     const orig = btnText ? btnText.innerText : 'PDF फ़ाइल डाउनलोड करें';
+    if (btn) btn.setAttribute('disabled', 'true');
     if (btnText) btnText.innerText = 'PDF बन रही है...';
 
     try {
         const pdfBlob = await generatePdfBlob();
         const fileName = `Smart_Typing_Document_${Date.now()}.pdf`;
         const url = URL.createObjectURL(pdfBlob);
+        
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
         a.download = fileName;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        
+        setTimeout(() => {
+            if (document.body.contains(a)) document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 2000);
+
         showToast('success', 'PDF फ़ाइल डाउनलोड हो गई!');
     } catch (e) {
         console.error('PDF download error:', e);
-        showToast('error', 'PDF डाउनलोड करने में असमर्थ।');
+        showToast('error', 'PDF डाउनलोड करने में समस्या आई: ' + (e.message || ''));
     } finally {
+        if (btn) btn.removeAttribute('disabled');
         if (btnText) btnText.innerText = orig;
     }
 }
