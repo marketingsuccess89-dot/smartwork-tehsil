@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Typing | Fast & Accurate AI Document Assistant</title>
+    <!-- Google Fonts: Inter & Noto Sans Devanagari -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f7faf8;
+        }
+        /* Custom Keyframe Animations */
+        @keyframes popIn {
+            0% { transform: scale(0.92); opacity: 0; }
+            70% { transform: scale(1.02); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        /* Fast Drag Cloud Float Animation */
+        @keyframes floatFast {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-7px) scale(1.08); }
+        }
+        /* Camera Button Zoom In-Out Animation */
+        @keyframes cameraZoomInOut {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.25);
+            }
+            50% {
+                transform: scale(1.028);
+                box-shadow: 0 16px 32px -5px rgba(5, 150, 105, 0.45);
+            }
+        }
+        /* Mic Button Zoom In-Out Animation */
+        @keyframes micZoomInOut {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+            }
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 30px rgba(5, 150, 105, 0.6);
+            }
+        }
+        @keyframes pulseRing {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.25); opacity: 0.2; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .animate-pop-in {
+            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-float-fast {
+            animation: floatFast 1.2s ease-in-out infinite;
+        }
+        .animate-zoom-camera {
+            animation: cameraZoomInOut 2s ease-in-out infinite;
+        }
+        .animate-zoom-mic {
+            animation: micZoomInOut 1.4s ease-in-out infinite;
+        }
+        .pulse-wave {
+            animation: pulseRing 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .pop-card {
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .pop-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.08), 0 8px 10px -6px rgba(6, 78, 59, 0.04);
+        }
+        .pop-btn {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .pop-btn:hover {
+            transform: translateY(-2px) scale(1.01);
+        }
+        .pop-btn:active {
+            transform: scale(0.97);
+        }
+        /* Paper Document Aesthetics */
+        .paper-canvas {
+            box-shadow: 0 12px 30px -5px rgba(6, 78, 59, 0.07), 0 4px 10px -3px rgba(0, 0, 0, 0.03);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+        /* Authentic A4 Single-Page Sheet (Strictly Non-Expanding, Zero Scrolling) */
+        .a4-print-sheet {
+            aspect-ratio: 210 / 297;
+            height: 520px;
+            max-height: 520px;
+            width: auto;
+            max-width: 100%;
+            overflow: hidden !important;
+            background: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 12px 20px -3px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
+            border-radius: 4px;
+            padding: 20px 24px;
+            margin: 0 auto;
+            font-family: 'Nirmala UI', system-ui, -apple-system, sans-serif;
+            color: #0f172a;
+            line-height: 1.4;
+            font-size: 10.5px;
+            user-select: text;
+            -webkit-user-select: text;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        @media (max-width: 640px) {
+            .a4-print-sheet {
+                height: 420px;
+                max-height: 420px;
+                padding: 12px 14px;
+                font-size: 9.5px;
+                line-height: 1.35;
+            }
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a7f3d0;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body class="bg-[#f7faf8] text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Rich Emerald Luxury Header -->
+    <header class="bg-gradient-to-r from-[#06281e] via-[#0b3d2e] to-[#06281e] border-b border-emerald-900/60 text-white sticky top-0 z-30 shadow-md">
+        <div class="container mx-auto px-4 py-2.5 flex justify-between items-center">
+            <!-- Left: Brand with Rich Gold/Emerald Accent -->
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg text-white shadow-lg shadow-emerald-500/30 flex items-center justify-center">
+                    <i class="fa-solid fa-bolt-lightning text-sm text-emerald-950"></i>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-emerald-100 to-teal-200 bg-clip-text text-transparent">Smart Typing</span>
+                    <span class="text-[10px] text-emerald-300/80 hidden sm:inline font-medium">Fast &amp; Accurate Document Intelligence</span>
+                </div>
+            </div>
+            
+            <!-- Right: History Button in Top Right Corner -->
+            <div class="flex items-center space-x-3">
+                <button id="toggle-history" class="pop-btn bg-emerald-900/70 hover:bg-emerald-800 text-emerald-100 text-xs font-semibold py-1.5 px-3.5 rounded-lg border border-emerald-700/60 transition flex items-center space-x-1.5 shadow-sm">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-400 text-xs"></i>
+                    <span>इतिहास (History)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area: 2-Column Balanced Layout -->
+    <main class="flex-grow container mx-auto px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Left Column: Input Controls (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col space-y-4">
+            
+            <!-- Desktop Sync Card -->
+            <div class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-2.5">
+                    <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wide flex items-center">
+                        <i class="fa-solid fa-laptop-code text-emerald-600 mr-1.5 text-sm"></i>
+                        वर्ड लाइव सिंक (MS Word Sync)
+                    </h3>
+                    <span id="mobile-sync-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                        🔴 Offline
+                    </span>
+                </div>
+                
+                <div id="mobile-login-section" class="flex space-x-2">
+                    <input type="email" id="mobile-user-email" class="flex-grow text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition" placeholder="ईमेल आईडी दर्ज करें (e.g. karan@gmail.com)">
+                    <button id="mobile-login-btn" class="pop-btn bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-2 px-3.5 rounded-xl text-xs transition shadow-sm shadow-emerald-700/20">
+                        लिंक करें
+                    </button>
+                </div>
+                
+                <div id="mobile-active-section" class="hidden flex items-center justify-between bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 text-xs">
+                    <div class="flex items-center space-x-2 truncate">
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-xs"></i>
+                        <span id="mobile-email-display" class="font-medium text-emerald-950 truncate max-w-[190px]">karan@gmail.com</span>
+                    </div>
+                    <button id="mobile-logout-btn" class="text-rose-500 hover:text-rose-700 transition font-semibold text-[11px] ml-2">
+                        Unlink
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mode Selector Tabs (Image / Voice) - Turns Rich Green on Click -->
+            <div class="bg-emerald-950/5 p-1 rounded-2xl flex space-x-1 border border-emerald-100">
+                <button id="tab-image" class="w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 bg-emerald-700 text-white shadow-md shadow-emerald-700/20">
+                    <i class="fa-solid fa-camera mr-2"></i> फ़ोटो / स्कैन (Image)
+                </button>
+                <button id="tab-audio" class="w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/50">
+                    <i class="fa-solid fa-microphone mr-2"></i> बोलकर टाइपिंग (Voice)
+                </button>
+            </div>
+
+            <!-- Image Upload Panel -->
+            <div id="panel-image" class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-5 flex-grow flex flex-col">
+                
+                <!-- Popup Animated Mobile Camera Action Button with Smooth Zoom In-Out (Native Direct Camera Launch) -->
+                <div class="mb-4">
+                    <label for="camera-input" id="mobile-cam-label" class="animate-zoom-camera w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 text-white text-sm font-bold py-3.5 px-5 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer select-none">
+                        <div class="bg-white/20 p-1.5 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-camera text-sm"></i>
+                        </div>
+                        <span class="tracking-wide">मोबाइल कैमरा से फ़ोटो लें (Camera Capture)</span>
+                    </label>
+                    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+                </div>
+
+                <!-- Drag & Drop Zone with Faster Floating Cloud Animation (Gallery & Files) -->
+                <div id="drop-zone" class="border-2 border-dashed border-emerald-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/20 transition-all duration-200 bg-[#f9fbf9] flex-grow min-h-[180px] group">
+                    <div class="bg-emerald-50 text-emerald-600 h-12 w-12 rounded-2xl flex items-center justify-center mb-3 shadow-inner group-hover:scale-110 transition-transform duration-200">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl animate-float-fast text-emerald-600"></i>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">फ़ोटो यहाँ ड्रैग करें या गैलरी / फाइल से चुनें</p>
+                    <p class="text-[11px] text-slate-400 mt-1">PNG, JPG, WEBP formats supported</p>
+                    <input type="file" id="file-input" accept="image/*" class="hidden">
+                </div>
+
+                <!-- Pop-in Image Preview Area -->
+                <div id="image-preview-container" class="mt-4 hidden border border-emerald-100 rounded-xl p-2 bg-emerald-50/30 relative animate-pop-in">
+                    <img id="image-preview" src="#" alt="Preview" class="max-h-56 mx-auto rounded-lg object-contain shadow-sm">
+                    <button id="remove-image" title="Remove" class="pop-btn absolute top-3 right-3 bg-rose-500 hover:bg-rose-600 text-white h-7 w-7 rounded-full shadow-md flex items-center justify-center transition">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Voice Recording Panel with Zoom In-Out Mic Animation -->
+            <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-5 flex-grow flex flex-col hidden">
+                <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wide mb-3 flex items-center">
+                    <i class="fa-solid fa-microphone-lines text-emerald-600 mr-1.5 text-sm"></i>
+                    बोलकर जानकारी लिखवाएं
+                </h3>
+
+                <!-- Mic Container with Pulsing Waves & Zoom In-Out Button -->
+                <div class="border border-emerald-100/60 rounded-2xl p-6 flex flex-col items-center justify-center text-center bg-[#f9fbf9] flex-grow relative overflow-hidden">
+                    <div id="record-timer" class="text-3xl font-mono text-emerald-950 font-extrabold mb-4 tracking-tight">00:00</div>
+                    
+                    <!-- Pulsing Record Rings Animation -->
+                    <div class="relative flex items-center justify-center h-28 w-28">
+                        <div id="record-ring" class="absolute h-28 w-28 rounded-full bg-emerald-500 opacity-30 pulse-wave hidden"></div>
+                        <div id="record-ring-2" class="absolute h-24 w-24 rounded-full bg-teal-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
+                        <!-- Mic Button with Zoom In-Out Animation -->
+                        <button id="record-btn" class="animate-zoom-mic h-20 w-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xl shadow-emerald-700/30 flex items-center justify-center transition focus:outline-none relative z-10">
+                            <i id="record-icon" class="fa-solid fa-microphone text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <p id="record-status" class="text-xs font-bold text-slate-700 mt-5">माइक चालू करने के लिए बटन दबाएं</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Hindi, English &amp; Hinglish are auto-detected</p>
+                </div>
+
+                <!-- Audio File Upload (Alternative) -->
+                <div class="mt-4 border-t border-slate-100 pt-3">
+                    <label for="audio-input" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">या पहले से रिकॉर्ड ऑडियो चुनें:</label>
+                    <input type="file" id="audio-input" accept="audio/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                </div>
+
+                <!-- Audio Playback Preview -->
+                <div id="audio-preview-container" class="mt-3 hidden p-2.5 bg-emerald-50/60 rounded-xl flex items-center justify-between border border-emerald-100 animate-pop-in">
+                    <audio id="audio-preview" controls class="h-8 max-w-full"></audio>
+                    <button id="remove-audio" class="text-rose-500 hover:text-rose-700 p-2 transition">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Trigger Button (Name: Not 'Generate', but 'दस्तावेज़ तैयार करें (Start Smart Typing)') -->
+            <div class="pt-1">
+                <button id="process-btn" class="pop-btn w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95">
+                    <i class="fa-solid fa-wand-magic-sparkles text-sm text-emerald-200"></i>
+                    <span id="process-btn-text" class="tracking-wide text-sm">दस्तावेज़ तैयार करें (Start Smart Typing)</span>
+                </button>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Enhanced "तैयार दस्तावेज़" Document Canvas (7 cols) -->
+        <section class="lg:col-span-7 flex flex-col space-y-4">
+            
+            <!-- Modern Workspace Desk Card: A4 Preview Desk -->
+            <div class="bg-emerald-950/[0.03] rounded-2xl border border-emerald-100/90 p-3 sm:p-4 flex-grow flex flex-col min-h-[580px] shadow-sm">
+                
+                <!-- Document Header with Status, Counters and Tools -->
+                <div class="flex flex-wrap justify-between items-center bg-white rounded-xl p-3 mb-3 border border-emerald-100/80 shadow-xs">
+                    <!-- Left: Title & Preview Badge -->
+                    <div class="flex items-center space-x-2.5">
+                        <div class="bg-gradient-to-tr from-emerald-600 to-teal-600 text-white p-1.5 rounded-lg shadow-sm">
+                            <i class="fa-solid fa-file-lines text-xs"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h2 class="text-xs sm:text-sm font-bold text-emerald-950">A4 दस्तावेज़ प्रीव्यू (Preview Mode)</h2>
+                                <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 hidden sm:inline-block">
+                                    <i class="fa-solid fa-lock mr-1 text-[9px]"></i>Read-Only
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-2 mt-0.5">
+                                <span id="word-count-badge" class="text-[10px] font-semibold text-emerald-800 font-mono">0 Words • 0 Chars</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Font Zoom & Copy Actions -->
+                    <div class="flex items-center space-x-1.5 mt-2 sm:mt-0">
+                        <!-- Font Size Zoom Controls -->
+                        <div class="flex items-center bg-emerald-50/70 rounded-lg p-0.5 border border-emerald-200/60 text-xs text-emerald-900" title="Text Zoom">
+                            <button id="font-decrease-btn" title="Zoom Out" class="px-2 py-1 hover:bg-white hover:text-emerald-700 rounded-md transition font-bold">A-</button>
+                            <span class="text-[10px] text-emerald-300">|</span>
+                            <button id="font-increase-btn" title="Zoom In" class="px-2 py-1 hover:bg-white hover:text-emerald-700 rounded-md transition font-bold">A+</button>
+                        </div>
+
+                        <!-- Copy Button -->
+                        <button id="copy-btn" title="Copy to Clipboard" class="pop-btn px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-emerald-700 bg-slate-50 hover:bg-white rounded-lg transition border border-slate-200 flex items-center space-x-1.5 shadow-2xs">
+                            <i class="fa-regular fa-copy text-xs"></i>
+                            <span>Copy</span>
+                        </button>
+
+                        <!-- Clear / Reset Preview Button -->
+                        <button id="clear-btn" title="Clear Preview" class="pop-btn p-1.5 text-slate-400 hover:text-rose-600 bg-slate-50 hover:bg-white rounded-lg transition border border-slate-200 flex items-center justify-center shadow-2xs">
+                            <i class="fa-solid fa-rotate-left text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Page Navigation Controls (for Multi-Page A4 Documents) -->
+                <div id="page-nav-bar" class="hidden flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-emerald-100/90 shadow-2xs mb-3 text-xs select-none">
+                    <button id="prev-page-btn" class="px-2.5 py-1 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg font-semibold disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-1" disabled>
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                        <span>पिछला पेज</span>
+                    </button>
+                    <span id="page-indicator" class="font-bold text-emerald-950 font-mono text-xs bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200/60">
+                        पेज 1 / 1
+                    </span>
+                    <button id="next-page-btn" class="px-2.5 py-1 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg font-semibold disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-1" disabled>
+                        <span>अगला पेज</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                </div>
+
+                <!-- A4 Paper Preview Container (Fixed Non-Expanding Frame) -->
+                <div class="flex flex-col items-center justify-center rounded-xl relative p-2 sm:p-4 bg-slate-200/80 border border-slate-300/80 touch-pan-y">
+                    
+                    <div id="document-preview" class="a4-print-sheet select-text cursor-default relative">
+                        
+                        <!-- Stamp Paper Reserved Top Margin Indicator (Shows only on Page 1 if Stamp Paper active) -->
+                        <div id="stamp-paper-header" class="hidden w-full mb-3 p-2 text-center rounded border border-dashed border-amber-300 bg-amber-50 text-[10px] text-amber-800 font-semibold select-none">
+                            <i class="fa-solid fa-stamp mr-1.5 text-amber-600"></i>
+                            <span>स्टाम्प पेपर प्रिंट एरिया (3.0 Inch Margin Reserved)</span>
+                        </div>
+
+                        <!-- Placeholder state when document is empty -->
+                        <div id="preview-placeholder" class="h-full min-h-[350px] sm:min-h-[460px] flex flex-col items-center justify-center text-center text-slate-400 select-none p-4">
+                            <div class="w-14 h-18 rounded-lg border-2 border-dashed border-emerald-300 flex flex-col items-center justify-center mb-3 bg-emerald-50/50 shadow-inner">
+                                <i class="fa-solid fa-file-invoice text-emerald-600 text-2xl"></i>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-700 mb-1">A4 दस्तावेज़ प्रीव्यू</h4>
+                            <p class="text-xs text-slate-400 max-w-xs leading-relaxed">
+                                फ़ोटो अपलोड होते ही AI द्वारा तैयार असली दस्तावेज़ यहाँ दिखेगा।
+                            </p>
+                        </div>
+
+                        <!-- Rendered Read-Only Document Content -->
+                        <div id="preview-content" class="hidden text-slate-900 select-text leading-relaxed"></div>
+                    </div>
+
+                    <!-- Hidden textarea for form submissions, copy, and backward compatibility -->
+                    <textarea id="document-editor" class="hidden"></textarea>
+                    
+                    <!-- Loading Overlay Animation -->
+                    <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm hidden flex flex-col items-center justify-center rounded-xl z-20 animate-pop-in">
+                        <div class="h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <p class="text-sm font-bold text-emerald-950">Smart Typing जारी है...</p>
+                        <p class="text-xs text-emerald-600/80 mt-1">दस्तावेज़ का A4 प्रिंट प्रीव्यू तैयार किया जा रहा है</p>
+                    </div>
+                </div>
+
+                <!-- Bottom Actions Bar: Attractive Download Button in Rich Emerald -->
+                <div class="pt-3.5 flex flex-wrap justify-between items-center gap-3">
+                    <div class="flex items-center space-x-2 text-xs">
+                        <label class="flex items-center space-x-2 cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-emerald-100 shadow-2xs hover:border-emerald-300 transition">
+                            <input type="checkbox" id="stamp-paper-toggle" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                            <span class="font-bold text-slate-800 text-xs">📜 स्टाम्प पेपर मोड (3.0" Space)</span>
+                        </label>
+                    </div>
+
+                    <form id="download-form" action="/api/download-docx" method="POST" class="w-full sm:w-auto">
+                        <input type="hidden" name="text" id="download-text-input">
+                        <input type="hidden" name="stamp_paper" id="download-stamp-input" value="false">
+                        <button type="submit" id="download-docx-btn" class="pop-btn w-full sm:w-auto bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3.5 px-7 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer">
+                            <div class="bg-white/20 p-1 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-file-word text-base"></i>
+                            </div>
+                            <span class="tracking-wide">MS Word (.DOCX) डाउनलोड करें</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Slide-out Sidebar: Processing History -->
+    <div id="history-sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl border-l border-emerald-100 transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
+        <div class="p-3.5 border-b border-emerald-100/80 flex justify-between items-center bg-emerald-50/50">
+            <h3 class="font-bold text-emerald-950 text-sm flex items-center">
+                <i class="fa-solid fa-clock-rotate-left text-emerald-600 mr-2 text-xs"></i>
+                इतिहास (History)
+            </h3>
+            <button id="close-history" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-200 transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <div id="history-list" class="flex-grow overflow-y-auto p-4 space-y-2.5">
+            <div id="history-empty" class="text-center py-12 text-slate-400 text-xs">
+                <i class="fa-regular fa-folder-open text-3xl mb-3 text-slate-300 block"></i>
+                कोई पुराना इतिहास नहीं है
+            </div>
+        </div>
+        <div class="p-3.5 border-t border-slate-100">
+            <button id="clear-history" class="pop-btn w-full border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold py-2 px-4 rounded-xl text-xs transition text-center flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+                <span>सारे इतिहास डिलीट करें</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Backdrop for history sidebar -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-emerald-950/40 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+
+    <!-- WhatsApp Share Modal (Opens immediately upon download) -->
+    <div id="modal-share" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-emerald-950/60 backdrop-blur-sm" onclick="closeModal('modal-share')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-emerald-100 animate-pop-in">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-emerald-100/80 flex justify-between items-center bg-emerald-50/60">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-circle-check text-base text-emerald-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-emerald-950">फ़ाइल डाउनलोड हो गई!</h3>
+                        <p class="text-[10px] text-emerald-700 font-medium">MS Word (.DOCX) सेव हो चुका है</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-share')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div class="p-5 space-y-3.5 text-center">
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    यह दस्तावेज़ अपने क्लाइंट या किसी भी व्यक्ति को तुरंत WhatsApp पर भेजें:
+                </p>
+
+                <!-- Primary WhatsApp Share Button -->
+                <button id="whatsapp-share-btn" class="pop-btn w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-sm transition active:scale-95">
+                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                    <span id="whatsapp-share-btn-text" class="tracking-wide">Word (.DOCX) फ़ाइल WhatsApp पर भेजें</span>
+                </button>
+
+                <!-- Secondary Copy Text for WhatsApp Button -->
+                <button id="whatsapp-copy-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold py-2.5 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs">
+                    <i class="fa-regular fa-copy text-xs text-emerald-600"></i>
+                    <span>WhatsApp के लिए पूरा टेक्स्ट कॉपी करें</span>
+                </button>
+
+                <!-- Re-download fallback link -->
+                <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-400">
+                    <span>फ़ाइल नहीं मिली?</span>
+                    <button id="redownload-btn" class="text-emerald-700 hover:text-emerald-900 font-bold underline">
+                        दोबारा डाउनलोड करें
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frontend Core Application Script -->
+    <script src="/static/app.js?v=20260902_v15"></script>
+</body>
+</html>
