@@ -277,22 +277,41 @@ function setupEventListeners() {
     if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeHistorySidebar);
     if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearAllHistory);
 
-    // 9. WhatsApp Share Modal Controls
-    const whatsappShareBtn = document.getElementById('whatsapp-share-btn');
-    if (whatsappShareBtn) {
-        whatsappShareBtn.addEventListener('click', shareOnWhatsApp);
+    // 9. WhatsApp & PDF Action Controls
+    const shareWhatsappDirectBtn = document.getElementById('share-whatsapp-direct-btn');
+    if (shareWhatsappDirectBtn) {
+        shareWhatsappDirectBtn.addEventListener('click', () => {
+            const text = documentEditor ? documentEditor.value.trim() : '';
+            if (!text) {
+                showToast('error', 'कृपया पहले दस्तावेज़ तैयार करें।');
+                return;
+            }
+            openModal('modal-share');
+        });
     }
+
+    const whatsappPdfBtn = document.getElementById('whatsapp-pdf-btn');
+    if (whatsappPdfBtn) {
+        whatsappPdfBtn.addEventListener('click', sharePdfOnWhatsApp);
+    }
+
+    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    if (downloadPdfBtn) {
+        downloadPdfBtn.addEventListener('click', downloadPdf);
+    }
+
+    const downloadDocxModalBtn = document.getElementById('download-docx-modal-btn');
+    if (downloadDocxModalBtn) {
+        downloadDocxModalBtn.addEventListener('click', () => {
+            if (downloadForm) downloadForm.requestSubmit ? downloadForm.requestSubmit() : downloadForm.submit();
+        });
+    }
+
     const whatsappCopyBtn = document.getElementById('whatsapp-copy-btn');
     if (whatsappCopyBtn) {
         whatsappCopyBtn.addEventListener('click', () => {
             copyToClipboard();
             showToast('success', 'टेक्स्ट कॉपी हो गया! अब WhatsApp में पेस्ट करें।');
-        });
-    }
-    const redownloadBtn = document.getElementById('redownload-btn');
-    if (redownloadBtn) {
-        redownloadBtn.addEventListener('click', () => {
-            if (downloadForm) downloadForm.requestSubmit ? downloadForm.requestSubmit() : downloadForm.submit();
         });
     }
 }
@@ -741,6 +760,146 @@ async function shareOnWhatsApp() {
                 whatsappShareBtnText.innerText = originalText;
             }
         }
+    }
+}
+
+// Generate crisp, authentic A4 PDF blob using html2pdf.js
+async function generatePdfBlob() {
+    const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
+    
+    // Create an off-screen A4 container for crisp PDF rendering
+    const printContainer = document.createElement('div');
+    printContainer.style.width = '750px';
+    printContainer.style.background = '#ffffff';
+    printContainer.style.padding = '35px 45px';
+    printContainer.style.fontFamily = "'Nirmala UI', system-ui, -apple-system, sans-serif";
+    printContainer.style.fontSize = '12px';
+    printContainer.style.color = '#0f172a';
+    printContainer.style.lineHeight = '1.45';
+
+    if (isStamp) {
+        const stampDiv = document.createElement('div');
+        stampDiv.style.height = '180px';
+        stampDiv.style.border = '2px dashed #cbd5e1';
+        stampDiv.style.borderRadius = '8px';
+        stampDiv.style.marginBottom = '20px';
+        stampDiv.style.display = 'flex';
+        stampDiv.style.alignItems = 'center';
+        stampDiv.style.justifyContent = 'center';
+        stampDiv.style.color = '#64748b';
+        stampDiv.style.fontWeight = 'bold';
+        stampDiv.style.fontSize = '12px';
+        stampDiv.innerText = '📜 स्टाम्प पेपर हेतु आरक्षित स्थान (3.0 इंच स्पेस)';
+        printContainer.appendChild(stampDiv);
+    }
+
+    const text = documentEditor ? documentEditor.value : '';
+    const cleanText = unwrapParagraphs(text);
+    const blocks = parseDocumentIntoBlocks(cleanText);
+    for (const b of blocks) {
+        const div = document.createElement('div');
+        div.innerHTML = renderBlockHtml(b);
+        printContainer.appendChild(div);
+    }
+
+    printContainer.style.position = 'fixed';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '0';
+    document.body.appendChild(printContainer);
+
+    const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Smart_Typing_Document_${Date.now()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    const pdfBlob = await html2pdf().set(opt).from(printContainer).output('blob');
+    document.body.removeChild(printContainer);
+    return pdfBlob;
+}
+
+// Native WhatsApp PDF File Share (Sends the actual PDF document file directly into WhatsApp!)
+async function sharePdfOnWhatsApp() {
+    const text = documentEditor ? documentEditor.value.trim() : '';
+    if (!text) {
+        showToast('error', 'शेयर करने के लिए कोई टेक्स्ट नहीं है।');
+        return;
+    }
+
+    const btn = document.getElementById('whatsapp-pdf-btn');
+    const btnText = document.getElementById('whatsapp-pdf-btn-text');
+    const orig = btnText ? btnText.innerText : 'WhatsApp पर PDF फ़ाइल भेजें';
+
+    if (btn) btn.setAttribute('disabled', 'true');
+    if (btnText) btnText.innerHTML = `<span class="flex items-center justify-center"><div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>PDF तैयार हो रही है...</span>`;
+
+    try {
+        const pdfBlob = await generatePdfBlob();
+        const fileName = `Smart_Typing_Document_${Date.now()}.pdf`;
+        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+        // On mobile / Android Chrome: application/pdf is fully supported by Web Share API Level 2!
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+            await navigator.share({
+                files: [pdfFile],
+                title: fileName
+            });
+            showToast('success', 'PDF फ़ाइल WhatsApp पर भेजी गई!');
+        } else {
+            // Fallback: Download PDF directly and open WhatsApp
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('info', 'PDF डाउनलोड हो गई! WhatsApp में अटैच करें।');
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                window.location.href = 'whatsapp://send';
+            } else {
+                window.open('https://web.whatsapp.com/', '_blank');
+            }
+        }
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error('PDF share error:', err);
+            showToast('error', 'PDF शेयर करने में असमर्थ।');
+        }
+    } finally {
+        if (btn) btn.removeAttribute('disabled');
+        if (btnText) btnText.innerText = orig;
+    }
+}
+
+// Direct PDF File Download Handler
+async function downloadPdf() {
+    const text = documentEditor ? documentEditor.value.trim() : '';
+    if (!text) {
+        showToast('error', 'डाउनलोड करने के लिए कोई टेक्स्ट नहीं है।');
+        return;
+    }
+
+    const btnText = document.getElementById('download-pdf-btn-text');
+    const orig = btnText ? btnText.innerText : 'PDF फ़ाइल डाउनलोड करें';
+    if (btnText) btnText.innerText = 'PDF बन रही है...';
+
+    try {
+        const pdfBlob = await generatePdfBlob();
+        const fileName = `Smart_Typing_Document_${Date.now()}.pdf`;
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('success', 'PDF फ़ाइल डाउनलोड हो गई!');
+    } catch (e) {
+        console.error('PDF download error:', e);
+        showToast('error', 'PDF डाउनलोड करने में असमर्थ।');
+    } finally {
+        if (btnText) btnText.innerText = orig;
     }
 }
 
