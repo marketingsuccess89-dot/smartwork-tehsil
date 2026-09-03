@@ -91,13 +91,18 @@ async def process_image(file: UploadFile = File(...), user_id: str = Form(None))
     Receives an image file, runs Gemini Vision OCR, and broadcasts the result 
     to the user's active MS Word desktop connection.
     """
-    # Allow standard image MIME types or application/octet-stream (generic binary)
-    if not file.content_type.startswith("image/") and file.content_type != "application/octet-stream":
+    # Allow standard image MIME types, application/octet-stream, or common image extensions
+    is_img = (
+        (file.content_type and file.content_type.startswith("image/"))
+        or file.content_type == "application/octet-stream"
+        or (file.filename and file.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.bmp', '.heic', '.tiff')))
+    )
+    if not is_img:
         raise HTTPException(status_code=400, detail="Uploaded file must be an image.")
         
     try:
         contents = await file.read()
-        mime_type = file.content_type if file.content_type.startswith("image/") else "image/jpeg"
+        mime_type = file.content_type if (file.content_type and file.content_type.startswith("image/")) else "image/jpeg"
         result = extract_text_from_image(contents, mime_type=mime_type)
         
         # Sync to Desktop MS Word if user_id is provided and active
@@ -208,11 +213,17 @@ shared_documents = {}
 @app.post("/api/create-share-link")
 async def create_share_link(req: DocxRequest):
     """Creates an instant 1-click download link for WhatsApp sharing."""
+    # Evict expired documents (> 48 hours) to prevent memory leak
+    now = time.time()
+    expired = [k for k, v in shared_documents.items() if now - v.get('created_at', now) > 172800]
+    for k in expired:
+        shared_documents.pop(k, None)
+
     doc_id = str(uuid.uuid4())[:8]
     shared_documents[doc_id] = {
         'text': req.text,
         'stamp_paper': req.stamp_paper,
-        'created_at': time.time()
+        'created_at': now
     }
     return {"doc_id": doc_id}
 
