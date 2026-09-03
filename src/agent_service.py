@@ -108,6 +108,22 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
            Format the Main Title at the top as '# [Title]' followed by a blank line. Write party descriptions, preambles, and numbered clauses ('1.', '2.') as continuous full-width paragraphs.
          * Affidavit (शपथ पत्र):
            Format Title '# शपथ पत्र', Deponent details, sworn points, and bottom Verification ('# सत्यापन' or 'तस्दीक').
+         * Advocate Court Petitions & Applications (जमानत अर्जी, वकालतनामा, हाजिरी माफी, 156(3) अर्जी):
+            - Preserve Court Heading at top: 'न्यायालय श्रीमान [पद / कोर्ट] महोदय, [स्थान]'.
+            - Preserve Crime/Case citations: 'मुकदमा अपराध क्रमांक / वाद सं०: ...', 'थाना: ...', 'धारा: ...'.
+            - Preserve Cause Title: '[प्रार्थी / अभियुक्त] बनाम [शासन / अनावेदक]'.
+            - Main Petition Title: '# [प्रार्थना पत्र अंतर्गत धारा ... वास्ते जमानत / हाजिरी माफी / वकालतनामा]'.
+            - Numbered legal grounds ('1.', '2.', '3.') and Prayer ('# प्रार्थना' or 'प्रार्थना:-').
+            - Advocate signature & Bar Council details at bottom right:
+              | | द्वारा अधिवक्ता: |
+              | :--- | ---: |
+              | | [हस्ताक्षर / नाम / एडवोकेट / नामांकन क्रमांक / चेंबर नं.] |
+         * Advocate Legal Notices (विधिक नोटिस - e.g. धारा 138 चेक बाउंस, संपत्ति बेदखली):
+            - Preserve Advocate/Firm Letterhead at top with Chamber, Court, and Contact details.
+            - Format Date and Mode of Dispatch ('रजिस्टर्ड डाक / स्पीड पोस्ट A.D.').
+            - Format Title '# विधिक नोटिस (LEGAL NOTICE)'.
+            - Transcribe exact cheque numbers, dates, amounts, bank branches, and statutory demand periods ('15 दिवस').
+            - Format Advocate closing block cleanly at bottom.
          * For Any Other Document / Notice / Receipt:
            Apply clean, professional typography and layout appropriate for that specific document.
 
