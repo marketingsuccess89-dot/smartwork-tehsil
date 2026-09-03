@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp 
+  xmlns="http://schemas.microsoft.com/office/appshere/1.0" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" 
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" 
+  xsi:type="TaskPaneApp">
+  
+  <Id>50fff088-06d4-4a63-8826-5c9888e4089e</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Smart Typing</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Smart Typing" />
+  <Description DefaultValue="Fast &amp; Accurate Document Intelligence. Transcribe images and speech directly into your MS Word document." />
+  
+  <Hosts>
+    <Host Name="Document" />
+  </Hosts>
+  
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://thesmartwork.onrender.com/static/taskpane.html" />
+  </DefaultSettings>
+  
+  <Permissions>ReadWriteDocument</Permissions>
+  
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Description DefaultValue="Smart Typing Document Sync tool." />
+    <Requirements>
+      <Sets DefaultMinVersion="1.1">
+        <Set Name="WordApi" />
+      </Sets>
+    </Requirements>
+    
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title DefaultValue="Smart Typing" />
+            <Description DefaultValue="Click the button to open the Smart Typing Sidebar." />
+            <LearnMore Url="https://thesmartwork.onrender.com" />
+          </GetStarted>
+          
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="GroupSmartTyping">
+                <Label Resid="GroupLabel" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon16" />
+                  <bt:Image size="32" resid="Icon32" />
+                  <bt:Image size="80" resid="Icon80" />
+                </Icon>
+                
+                <Control xsi:type="Button" id="ButtonSmartTyping">
+                  <Label Resid="ButtonLabel" />
+                  <Supertip>
+                    <Title Resid="ButtonTitle" />
+                    <Description Resid="ButtonDesc" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon16" />
+                    <bt:Image size="32" resid="Icon32" />
+                    <bt:Image size="80" resid="Icon80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation Resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon16" DefaultValue="https://thesmartwork.onrender.com/static/icon16.png" />
+        <bt:Image id="Icon32" DefaultValue="https://thesmartwork.onrender.com/static/icon32.png" />
+        <bt:Image id="Icon80" DefaultValue="https://thesmartwork.onrender.com/static/icon80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://thesmartwork.onrender.com/static/taskpane.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GroupLabel" DefaultValue="Smart Typing" />
+        <bt:String id="ButtonLabel" DefaultValue="Smart Typing" />
+        <bt:String id="ButtonTitle" DefaultValue="Smart Typing" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="ButtonDesc" DefaultValue="Open the Smart Typing sidebar to link and sync your mobile scan and voice transcription." />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
