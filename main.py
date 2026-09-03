@@ -232,6 +232,42 @@ async def download_shared_doc(doc_id: str):
         }
     )
 
+# Health check endpoint for Render keep-alive bot and uptime monitoring
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "service": "smartwork-tehsil",
+        "timestamp": time.time()
+    }
+
+import threading
+import requests
+
+def keep_alive_worker():
+    """
+    Background daemon that pings Render's public URL every 9 minutes (540s)
+    to reset Render's 15-minute free-tier sleep timer, ensuring 24/7 uptime.
+    """
+    time.sleep(30)  # Initial boot buffer
+    app_url = os.getenv("RENDER_EXTERNAL_URL", "https://thesmartwork.onrender.com").rstrip("/")
+    ping_url = f"{app_url}/api/health"
+    print(f"[KeepAlive] 24/7 Watchdog daemon started. Target: {ping_url}")
+    while True:
+        try:
+            time.sleep(540)  # Ping every 9 minutes (well before 15-min sleep cutoff)
+            res = requests.get(ping_url, timeout=25)
+            print(f"[KeepAlive] Ping to {ping_url} -> Status {res.status_code}")
+        except Exception as e:
+            print(f"[KeepAlive] Heartbeat ping notice: {e}")
+
+@app.on_event("startup")
+def on_app_startup():
+    if os.getenv("RENDER") or os.getenv("RENDER_EXTERNAL_URL"):
+        t = threading.Thread(target=keep_alive_worker, daemon=True)
+        t.start()
+        print("[KeepAlive] 24/7 Render Keep-Alive background thread active.")
+
 # Serve Static Files
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
