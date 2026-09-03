@@ -780,7 +780,193 @@ async function shareOnWhatsApp() {
     }
 }
 
-// Generate crisp, authentic A4 PDF blob using html2pdf.js
+// Helper: Builds a dedicated, continuous, clean A4 HTML structure for PDF export
+// (No slicing by tiny mobile preview boxes, NO dashed border, NO emoji text, NO scroll offset bug)
+function buildCleanA4PdfElement(rawText, isStamp) {
+    const unwrappedText = unwrapParagraphs(rawText);
+    const lines = unwrappedText.split('\n');
+
+    const container = document.createElement('div');
+    container.id = 'pdf-export-container';
+    container.style.width = '700px';
+    container.style.margin = '0 auto';
+    container.style.padding = '15px 25px';
+    container.style.background = '#ffffff';
+    container.style.color = '#0f172a';
+    container.style.fontFamily = "'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif";
+    container.style.fontSize = '12.5px';
+    container.style.lineHeight = '1.6';
+    container.style.boxSizing = 'border-box';
+
+    // 1. If Stamp Paper is active: Add clean, transparent blank margin spacer for Page 1 (2.6 inches)
+    // Pure white space for physical stamp papers - NO dashed box, NO emoji text!
+    if (isStamp) {
+        const stampSpacer = document.createElement('div');
+        stampSpacer.style.height = '2.6in';
+        stampSpacer.style.width = '100%';
+        stampSpacer.style.margin = '0';
+        stampSpacer.style.padding = '0';
+        container.appendChild(stampSpacer);
+    }
+
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        if (!line) {
+            i++;
+            continue;
+        }
+
+        // Section Break (---)
+        if (/^-{3,}$/.test(line)) {
+            const pageBreak = document.createElement('div');
+            pageBreak.className = 'html2pdf__page-break';
+            pageBreak.style.pageBreakAfter = 'always';
+            pageBreak.style.breakAfter = 'page';
+            container.appendChild(pageBreak);
+            i++;
+            continue;
+        }
+
+        // Markdown Table
+        if (line.startsWith('|') && line.endsWith('|')) {
+            const tableLines = [];
+            while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+                tableLines.push(lines[i].trim());
+                i++;
+            }
+            
+            const tableRows = [];
+            for (let tLine of tableLines) {
+                if (!tLine.match(/^[\|\s\-:]+$/)) {
+                    let cells = tLine.split('|').slice(1, -1).map(c => c.trim());
+                    tableRows.push(cells);
+                }
+            }
+
+            if (tableRows.length > 0) {
+                const isSigTable = tableRows.some(row => 
+                    row.some(cell => {
+                        const cl = cell.toLowerCase();
+                        return ['हस्ताक्षर', 'साक्षी', 'गवाह', 'प्रथम पक्ष', 'द्वितीय पक्ष', 'क्रेता', 'विक्रेता', 'शपथकर्ता', 'आवेदक', 'signature', 'witness', 'party', 'landlord', 'tenant', 'deponent'].some(kw => cl.includes(kw));
+                    })
+                );
+
+                const cols = Math.max(...tableRows.map(r => r.length));
+                const tbl = document.createElement('table');
+                tbl.style.width = '100%';
+                tbl.style.borderCollapse = 'collapse';
+                tbl.style.marginTop = '18px';
+                tbl.style.marginBottom = '18px';
+                tbl.style.pageBreakInside = 'avoid';
+                tbl.style.breakInside = 'avoid';
+
+                if (!isSigTable) {
+                    tbl.style.border = '1px solid #06281e';
+                }
+
+                for (let r = 0; r < tableRows.length; r++) {
+                    const tr = document.createElement('tr');
+                    const isHeader = (r === 0 && !isSigTable);
+                    if (isHeader) {
+                        tr.style.backgroundColor = '#f0fdf4';
+                        tr.style.fontWeight = 'bold';
+                    }
+
+                    for (let c = 0; c < cols; c++) {
+                        const cellVal = tableRows[r][c] || '';
+                        const td = document.createElement(isHeader ? 'th' : 'td');
+                        td.style.padding = isSigTable ? '8px 4px' : '6px 10px';
+                        td.style.verticalAlign = 'top';
+                        td.style.lineHeight = '1.4';
+
+                        if (!isSigTable) {
+                            td.style.border = '1px solid #e2e8f0';
+                        }
+
+                        if (isSigTable && cols === 2) {
+                            td.style.textAlign = (c === 0) ? 'left' : 'right';
+                            td.style.width = '50%';
+                        } else if (isSigTable) {
+                            td.style.textAlign = 'center';
+                        } else {
+                            td.style.textAlign = isHeader ? 'center' : 'left';
+                        }
+
+                        td.innerHTML = formatInline(cellVal);
+                        tr.appendChild(td);
+                    }
+                    tbl.appendChild(tr);
+                }
+                container.appendChild(tbl);
+            }
+            continue;
+        }
+
+        // Title (# Title)
+        if (line.startsWith('# ')) {
+            const h1 = document.createElement('h1');
+            h1.style.textAlign = 'center';
+            h1.style.fontSize = '18px';
+            h1.style.fontWeight = '700';
+            h1.style.color = '#06281e';
+            h1.style.margin = '0 0 16px 0';
+            h1.style.pageBreakAfter = 'avoid';
+            h1.style.breakAfter = 'avoid';
+            h1.innerHTML = formatInline(line.substring(2).trim());
+            container.appendChild(h1);
+            i++;
+            continue;
+        }
+
+        // Section Heading (## Heading)
+        if (line.startsWith('## ')) {
+            const h2 = document.createElement('h2');
+            h2.style.fontSize = '14px';
+            h2.style.fontWeight = '700';
+            h2.style.color = '#0a1914';
+            h2.style.margin = '14px 0 6px 0';
+            h2.style.pageBreakAfter = 'avoid';
+            h2.style.breakAfter = 'avoid';
+            h2.innerHTML = formatInline(line.substring(3).trim());
+            container.appendChild(h2);
+            i++;
+            continue;
+        }
+
+        // Numbered Clause (e.g. 1. or (1) or (क))
+        const numMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+        if (numMatch) {
+            const num = numMatch[1] || numMatch[2];
+            const content = numMatch[3];
+            const clauseDiv = document.createElement('div');
+            clauseDiv.style.textAlign = 'justify';
+            clauseDiv.style.margin = '0 0 10px 0';
+            clauseDiv.style.lineHeight = '1.6';
+            clauseDiv.style.pageBreakInside = 'avoid';
+            clauseDiv.style.breakInside = 'avoid';
+            clauseDiv.innerHTML = `<strong>${num}.</strong> ${formatInline(content)}`;
+            container.appendChild(clauseDiv);
+            i++;
+            continue;
+        }
+
+        // Standard Paragraph
+        const p = document.createElement('p');
+        p.style.textAlign = 'justify';
+        p.style.margin = '0 0 10px 0';
+        p.style.lineHeight = '1.6';
+        p.style.pageBreakInside = 'avoid';
+        p.style.breakInside = 'avoid';
+        p.innerHTML = formatInline(line);
+        container.appendChild(p);
+        i++;
+    }
+
+    return container;
+}
+
+// Generate crisp, authentic A4 PDF blob using html2pdf.js with zero scroll offset
 async function generatePdfBlob() {
     const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
     const text = documentEditor ? documentEditor.value.trim() : '';
@@ -789,72 +975,32 @@ async function generatePdfBlob() {
         throw new Error('दस्तावेज़ में कोई सामग्री नहीं है।');
     }
 
-    // Ensure pagination is run with the current text
-    paginateDocument(text);
+    // Build dedicated, continuous clean A4 structure (NOT sliced into mobile screen fragments)
+    const printContainer = buildCleanA4PdfElement(text, isStamp);
 
-    if (!documentPages || documentPages.length === 0) {
-        throw new Error('दस्तावेज़ में कोई सामग्री नहीं है।');
-    }
-
-    // Create a container appended in normal document flow (NO left: -9999px!)
-    const printContainer = document.createElement('div');
-    printContainer.id = 'pdf-export-flow-container';
-    printContainer.style.width = '750px';
-    printContainer.style.margin = '0 auto';
-    printContainer.style.padding = '35px 45px';
-    printContainer.style.background = '#ffffff';
-    printContainer.style.color = '#0f172a';
-    printContainer.style.fontFamily = "'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif";
-    printContainer.style.fontSize = '12px';
-    printContainer.style.lineHeight = '1.5';
-    printContainer.style.boxSizing = 'border-box';
-
-    documentPages.forEach((pageHtml, index) => {
-        if (index > 0) {
-            const breakDiv = document.createElement('div');
-            breakDiv.className = 'html2pdf__page-break';
-            breakDiv.style.pageBreakAfter = 'always';
-            printContainer.appendChild(breakDiv);
-        }
-
-        const pageWrapper = document.createElement('div');
-        pageWrapper.className = 'pdf-page-content';
-        pageWrapper.style.width = '100%';
-        pageWrapper.style.boxSizing = 'border-box';
-
-        // Stamp Paper Margin on Page 1
-        if (isStamp && index === 0) {
-            const stampDiv = document.createElement('div');
-            stampDiv.style.height = '180px';
-            stampDiv.style.border = '2px dashed #94a3b8';
-            stampDiv.style.borderRadius = '8px';
-            stampDiv.style.marginBottom = '20px';
-            stampDiv.style.display = 'flex';
-            stampDiv.style.alignItems = 'center';
-            stampDiv.style.justifyContent = 'center';
-            stampDiv.style.color = '#64748b';
-            stampDiv.style.fontWeight = 'bold';
-            stampDiv.style.fontSize = '12px';
-            stampDiv.innerText = '📜 स्टाम्प पेपर हेतु आरक्षित स्थान (3.0 इंच स्पेस)';
-            pageWrapper.appendChild(stampDiv);
-        }
-
-        const bodyDiv = document.createElement('div');
-        bodyDiv.innerHTML = pageHtml;
-        pageWrapper.appendChild(bodyDiv);
-
-        printContainer.appendChild(pageWrapper);
-    });
-
+    // Position fixed at top-left so html2canvas is 100% immune to user scroll position
+    printContainer.style.position = 'fixed';
+    printContainer.style.top = '0';
+    printContainer.style.left = '0';
+    printContainer.style.zIndex = '-9999';
+    printContainer.style.opacity = '1';
+    printContainer.style.pointerEvents = 'none';
     document.body.appendChild(printContainer);
 
     const opt = {
-        margin: [10, 10, 10, 10],
+        margin: [10, 12, 10, 12], // 10mm top/bottom, 12mm left/right standard printable A4
         filename: `Smart_Typing_Document_${Date.now()}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            scrollY: 0,
+            scrollX: 0,
+            windowWidth: 1024
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     try {
@@ -1196,9 +1342,9 @@ function unwrapParagraphs(text) {
         const isHeading = stripped.startsWith('#');
         const isBullet = stripped.startsWith('* ') || stripped.startsWith('- ');
         const isTable = stripped.startsWith('|');
-        const isNewClause = /^(\d+|[०-९]+)[\.\)]\s+/.test(stripped);
+        const isNewClause = /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(stripped);
         const isLabelLine = /^[^:\n]{2,30}\s*:\s*.+$/.test(stripped);
-        const isFormalBreak = /^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|स्थान|दिनांक)/.test(stripped);
+        const isFormalBreak = /^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|To:|From:|Subject:|Dear|Respected|Sincerely|Regards|Date:)/i.test(stripped);
 
         if (isHeading || isBullet || isTable || isNewClause || isLabelLine || isFormalBreak) {
             if (currentP.length > 0) {
@@ -1211,7 +1357,7 @@ function unwrapParagraphs(text) {
                 !currentP[currentP.length - 1].startsWith('#') && 
                 !currentP[currentP.length - 1].startsWith('|') && 
                 !/^[^:\n]{2,30}\s*:\s*.+$/.test(currentP[currentP.length - 1]) &&
-                !/^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर)/.test(currentP[currentP.length - 1])) {
+                !/^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)/i.test(currentP[currentP.length - 1])) {
                 currentP.push(stripped);
             } else {
                 if (currentP.length > 0) {
@@ -1317,9 +1463,10 @@ function paginateDocument(rawText) {
         }
 
         // Numbered Clause
-        let numMatch = line.match(/^(\d+|[०-९]+)[\.\)]\s+(.*)$/);
+        let numMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
         if (numMatch) {
-            blocks.push({ type: 'clause', num: numMatch[1], raw: numMatch[2] });
+            const num = numMatch[1] || numMatch[2];
+            blocks.push({ type: 'clause', num: num, raw: numMatch[3] });
             i++;
             continue;
         }
