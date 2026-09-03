@@ -120,10 +120,12 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
          | [Left Party / Signature] | [Right Party / Signature] |
          | :--- | ---: |
          | [Details] | [Details] |
-       - If there is only ONE person signing (e.g. Applicant / Deponent in an application or affidavit like 'हस्ताक्षर शपथकर्ता'):
-         Format the single signature aligned to the right:
-         | | [हस्ताक्षर / नाम / पद] |
-         | :--- | ---: |
+        - If there is only ONE person signing (e.g. Applicant / Deponent in an application, Student in school letter, Employee in corporate letter):
+          * For Hindi applications, affidavits, and school letters: Keep the sign-off and credentials neatly aligned to the right:
+            | | [भवदीय / आज्ञाकारी शिष्य / शपथकर्ता] |
+            | :--- | ---: |
+            | | [नाम / पद / कक्षा / अनुक्रमांक] |
+          * For standard English corporate letters: Keep the entire sign-off block ('Sincerely,', Name, Title, Contact) uniformly left-aligned (standard corporate full-block format).
 
     Ensure your response strictly matches the required JSON schema.
     """
