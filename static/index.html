@@ -144,14 +144,14 @@
         }
     </style>
 </head>
-<body class="bg-[#f7faf8] text-slate-800 min-h-screen flex flex-col antialiased">
+<body class="bg-[#f7faf8] text-slate-800 min-h-screen flex flex-col antialiased overflow-x-hidden w-full max-w-full">
 
     <!-- Rich Emerald Luxury Header -->
-    <header class="bg-gradient-to-r from-[#06281e] via-[#0b3d2e] to-[#06281e] border-b border-emerald-900/60 text-white sticky top-0 z-30 shadow-md">
-        <div class="container mx-auto px-4 py-2.5 flex justify-between items-center">
+    <header class="bg-gradient-to-r from-[#06281e] via-[#0b3d2e] to-[#06281e] border-b border-emerald-900/60 text-white sticky top-0 z-30 shadow-md w-full">
+        <div class="container mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
             <!-- Left: Brand with Rich Gold/Emerald Accent -->
-            <div class="flex items-center space-x-2.5">
-                <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg text-white shadow-lg shadow-emerald-500/30 flex items-center justify-center">
+            <div class="flex items-center space-x-2">
+                <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg text-white shadow-lg shadow-emerald-500/30 flex items-center justify-center flex-shrink-0">
                     <i class="fa-solid fa-bolt-lightning text-sm text-emerald-950"></i>
                 </div>
                 <div class="flex items-baseline space-x-2">
@@ -161,17 +161,17 @@
             </div>
             
             <!-- Right: History Button in Top Right Corner -->
-            <div class="flex items-center space-x-3">
-                <button id="toggle-history" class="pop-btn bg-emerald-900/70 hover:bg-emerald-800 text-emerald-100 text-xs font-semibold py-1.5 px-3.5 rounded-lg border border-emerald-700/60 transition flex items-center space-x-1.5 shadow-sm">
+            <div class="flex items-center space-x-2 flex-shrink-0">
+                <button id="toggle-history" class="pop-btn bg-emerald-900/70 hover:bg-emerald-800 text-emerald-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-emerald-700/60 transition flex items-center space-x-1.5 shadow-sm">
                     <i class="fa-solid fa-clock-rotate-left text-emerald-400 text-xs"></i>
-                    <span>इतिहास (History)</span>
+                    <span>इतिहास</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Main Content Area: 2-Column Balanced Layout -->
-    <main class="flex-grow container mx-auto px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <main class="flex-grow container mx-auto px-3 sm:px-4 py-4 sm:py-5 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 w-full max-w-full overflow-x-hidden">
         
         <!-- Left Column: Input Controls (5 cols) -->
         <section class="lg:col-span-5 flex flex-col space-y-4">
@@ -208,24 +208,24 @@
             
             <!-- Mode Selector Tabs (Image / Voice) - Turns Rich Green on Click -->
             <div class="bg-emerald-950/5 p-1 rounded-2xl flex space-x-1 border border-emerald-100">
-                <button id="tab-image" class="w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 bg-emerald-700 text-white shadow-md shadow-emerald-700/20">
-                    <i class="fa-solid fa-camera mr-2"></i> फ़ोटो / स्कैन (Image)
+                <button id="tab-image" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-emerald-700 text-white shadow-md shadow-emerald-700/20">
+                    <i class="fa-solid fa-camera mr-1.5 text-xs"></i> <span>फ़ोटो (Image)</span>
                 </button>
-                <button id="tab-audio" class="w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/50">
-                    <i class="fa-solid fa-microphone mr-2"></i> बोलकर टाइपिंग (Voice)
+                <button id="tab-audio" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/50">
+                    <i class="fa-solid fa-microphone mr-1.5 text-xs"></i> <span>बोलकर (Voice)</span>
                 </button>
             </div>
 
             <!-- Image Upload Panel -->
-            <div id="panel-image" class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-5 flex-grow flex flex-col">
+            <div id="panel-image" class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-3.5 sm:p-5 flex-grow flex flex-col">
                 
                 <!-- Popup Animated Mobile Camera Action Button with Smooth Zoom In-Out (Native Direct Camera Launch) -->
                 <div class="mb-4">
-                    <label for="camera-input" id="mobile-cam-label" class="animate-zoom-camera w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 text-white text-sm font-bold py-3.5 px-5 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer select-none">
-                        <div class="bg-white/20 p-1.5 rounded-lg flex items-center justify-center">
-                            <i class="fa-solid fa-camera text-sm"></i>
+                    <label for="camera-input" id="mobile-cam-label" class="animate-zoom-camera w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 text-white text-xs sm:text-sm font-bold py-3 px-3 sm:px-5 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer select-none text-center">
+                        <div class="bg-white/20 p-1.5 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-camera text-xs sm:text-sm"></i>
                         </div>
-                        <span class="tracking-wide">मोबाइल कैमरा से फ़ोटो लें (Camera Capture)</span>
+                        <span class="tracking-wide">कैमरा से फ़ोटो लें (Camera Capture)</span>
                     </label>
                     <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
                 </div>
@@ -291,9 +291,9 @@
 
             <!-- Action Trigger Button (Name: Not 'Generate', but 'दस्तावेज़ तैयार करें (Start Smart Typing)') -->
             <div class="pt-1">
-                <button id="process-btn" class="pop-btn w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95">
-                    <i class="fa-solid fa-wand-magic-sparkles text-sm text-emerald-200"></i>
-                    <span id="process-btn-text" class="tracking-wide text-sm">दस्तावेज़ तैयार करें (Start Smart Typing)</span>
+                <button id="process-btn" class="pop-btn w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3 sm:py-3.5 px-3 sm:px-5 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 text-center">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xs sm:text-sm text-emerald-200 flex-shrink-0"></i>
+                    <span id="process-btn-text" class="tracking-wide text-xs sm:text-sm">दस्तावेज़ तैयार करें (Smart Typing)</span>
                 </button>
             </div>
 
