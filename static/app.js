@@ -290,15 +290,6 @@ function setupEventListeners() {
         });
     }
 
-    const nativePrintBtn = document.getElementById('native-print-btn');
-    if (nativePrintBtn) {
-        nativePrintBtn.addEventListener('click', triggerNativePrint);
-    }
-
-    const quickPrintBtn = document.getElementById('quick-print-btn');
-    if (quickPrintBtn) {
-        quickPrintBtn.addEventListener('click', triggerNativePrint);
-    }
 
     const whatsappLinkModalBtn = document.getElementById('whatsapp-link-modal-btn');
     if (whatsappLinkModalBtn) {
