@@ -176,19 +176,32 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     client = get_genai_client()
     
     prompt = """
-    You are an expert audio transcription assistant.
-    Transcribe the spoken audio dictation EXACTLY as spoken.
+    You are an expert audio transcription assistant for legal, official, and administrative document dictation.
+    Transcribe the spoken audio dictation into a clean, professional, print-ready Markdown document.
 
-    STRICT RULES:
-    1. **Faithful Transcription (जैसा बोला गया है, हूबहू वैसा ही लिखें)**:
-       - Transcribe ONLY what the speaker dictated.
-       - DO NOT add or invent any unmentioned legal boilerplate, preambles, artificial declarations, or fabricated witness sections.
-       - If the speaker made a slip of tongue or stuttered and corrected themselves (e.g. "नाम अमित... नहीं नहीं, सुमित लिखो"), write only the intended corrected text ("सुमित").
+    STRICT RULES FOR REAL HUMAN SPEECH:
+    1. **Conversational Chitchat & Noise Filtering (बातचीत व फ़ालतू बातों को हटाएं)**:
+       - Speakers often converse with the typist, ask for water/tea, check on the printer, or greet (e.g. "Hello brother", "चाय पी लूँ...", "प्रिंटर चल रहा है क्या", "Wait, hold on, let me take a sip of tea... where were we?").
+       - COMPLETELY OMIT all conversational chit-chat, side remarks, and casual talk. Do NOT put them in the final document!
 
-    2. **Clean Formatting & Spacing (स्पेसिंग का ध्यान रखें)**:
-       - Organize the dictated text with clean paragraphs, clear line breaks, and proper spacing.
-       - Use numbered points only if the speaker dictated numbers.
-       - If the speaker dictates signatures or dates at the end, arrange them with clean spacing so they do not collide.
+    2. **Convert Spoken Formatting Commands into Markdown (निर्देशों को फ़ॉर्मैटिंग में बदलें)**:
+       - If the speaker says: "Title at top: [Title]" or "ऊपर हेडिंग डालो [शीर्षक]" -> '# [Title]'
+       - If the speaker says: "Point number one / पहला पॉइंट" -> '1. [Text]'
+       - If the speaker dictates side-by-side signatures (e.g. "At the bottom, make two signature columns: on the left Landlord..., on the right Tenant..."):
+         Format as a clean 2-column Markdown table:
+         | [Left Party / Title] | [Right Party / Title] |
+         | :--- | ---: |
+         | [Left Name] | [Right Name] |
+       - If the speaker dictates a single signature at the end, align it to the right:
+         | | [हस्ताक्षर / नाम / पद] |
+         | :--- | ---: |
+
+    3. **Stutter, Slip of Tongue & Self-Corrections (हकलाना व सुधार)**:
+       - When the speaker corrects themselves (e.g. "9000... no wait, make that 9500", or "नाम अमित... नहीं नहीं, सुमित लिखो"), transcribe ONLY the final intended correction ("9500" / "सुमित").
+
+    4. **Accurate Legal Text & Numbers**:
+       - Transcribe the actual agreement terms, party names, dates, and amounts faithfully.
+       - DO NOT invent or add any unmentioned clauses or legal boilerplate.
 
     Ensure your response strictly matches the required JSON schema.
     """
