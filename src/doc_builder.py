@@ -243,6 +243,7 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
     text = unwrap_paragraphs(text)
     lines = text.split('\n')
     i = 0
+    in_closing_block = False
     while i < len(lines):
         line = lines[i]
         stripped = line.strip()
@@ -273,12 +274,14 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
 
         # 4. Heading 1 (Title) e.g. # Title
         if stripped.startswith('# '):
+            in_closing_block = False
             add_styled_paragraph(doc, stripped[2:], style_type='title', alignment=WD_ALIGN_PARAGRAPH.CENTER)
             i += 1
             continue
 
         # 5. Heading 2 e.g. ## Section
         if stripped.startswith('## '):
+            in_closing_block = False
             add_styled_paragraph(doc, stripped[3:], style_type='heading', alignment=WD_ALIGN_PARAGRAPH.LEFT)
             i += 1
             continue
@@ -370,8 +373,12 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
             if consumed_l2: i += 1
             continue
 
-        # 10. Standard legal paragraph
-        add_styled_paragraph(doc, stripped, style_type='body', alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        # 10. Single closing / signature block detection (e.g. द्वारा अधिवक्ता, भवदीय, आपका आज्ञाकारी)
+        if re.match(r'^(द्वारा अधिवक्ता|हस्ताक्षर शपथकर्ता|हस्ताक्षर आवेदक|हस्ताक्षर प्रार्थी|हस्ताक्षर|भवदीय|आपका आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता)', stripped):
+            in_closing_block = True
+
+        align = WD_ALIGN_PARAGRAPH.RIGHT if in_closing_block else WD_ALIGN_PARAGRAPH.JUSTIFY
+        add_styled_paragraph(doc, stripped, style_type='body', alignment=align)
         i += 1
 
     file_stream = io.BytesIO()
