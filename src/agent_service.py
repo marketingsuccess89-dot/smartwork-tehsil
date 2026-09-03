@@ -31,12 +31,7 @@ def compress_image(image_bytes: bytes, max_size: int = 1400, quality: int = 80) 
         if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
             img = img.convert('RGB')
 
-        # Intelligent contrast & sharpness boost for faint handwriting and low-contrast lighting
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(1.15)
-        sharpener = ImageEnhance.Sharpness(img)
-        img = sharpener.enhance(1.25)
-            
+        # Resize first to target resolution to minimize memory and accelerate processing
         width, height = img.size
         if max(width, height) > max_size:
             if width > height:
@@ -46,6 +41,12 @@ def compress_image(image_bytes: bytes, max_size: int = 1400, quality: int = 80) 
                 new_height = max_size
                 new_width = int(width * (max_size / height))
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Intelligent contrast & sharpness boost on target resolution for crisp OCR legibility
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(1.15)
+        sharpener = ImageEnhance.Sharpness(img)
+        img = sharpener.enhance(1.25)
             
         out_io = io.BytesIO()
         img.save(out_io, format="JPEG", quality=quality, optimize=True)
