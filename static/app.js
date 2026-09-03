@@ -576,6 +576,16 @@ async function processWithAI(mode) {
 
         const data = await response.json();
         
+        // Auto-enable 3.0 inch stamp paper margin if Stamp Paper was detected in photo
+        if (data.stamp_paper_detected && stampPaperToggle) {
+            stampPaperToggle.checked = true;
+            if (downloadStampInput) downloadStampInput.value = 'true';
+            showToast('info', '📜 स्टाम्प पेपर पहचाना गया: 3-इंच मार्जिन स्वतः लागू हो गया!');
+        } else if (stampPaperToggle && !data.stamp_paper_detected) {
+            stampPaperToggle.checked = false;
+            if (downloadStampInput) downloadStampInput.value = 'false';
+        }
+
         // Populate document editor & A4 Preview
         if (documentEditor) {
             documentEditor.value = data.transcribed_text;
