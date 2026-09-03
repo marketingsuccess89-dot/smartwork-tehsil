@@ -610,7 +610,7 @@ async function processWithAI(mode) {
         if (loadingOverlay) loadingOverlay.classList.add('hidden');
         if (processBtn && processBtnText) {
             processBtn.removeAttribute('disabled');
-            processBtnText.innerHTML = `दस्तावेज़ तैयार करें (Start Smart Typing)`;
+            processBtnText.innerHTML = `दस्तावेज़ तैयार करें (Smart Typing)`;
         }
     }
 }
@@ -638,6 +638,7 @@ function downloadWordDocument() {
 // Direct form download for seamless native downloading across all platforms
 function triggerDirectFormDownload(text, fileName) {
     try {
+        const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/api/download-docx';
@@ -648,6 +649,12 @@ function triggerDirectFormDownload(text, fileName) {
         input.name = 'text';
         input.value = text;
         form.appendChild(input);
+
+        const stampInput = document.createElement('input');
+        stampInput.type = 'hidden';
+        stampInput.name = 'stamp_paper';
+        stampInput.value = isStamp ? 'true' : 'false';
+        form.appendChild(stampInput);
 
         document.body.appendChild(form);
         form.submit();
