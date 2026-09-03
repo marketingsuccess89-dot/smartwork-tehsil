@@ -1,13 +1,14 @@
 import os
 import json
 import io
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
+# Allow processing very large DSLR and high-megapixel camera photos without DecompressionBombError
+Image.MAX_IMAGE_PIXELS = None
+
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-
-from PIL import Image, ImageOps, ImageEnhance
 
 # Load environment variables
 load_dotenv(override=True)
