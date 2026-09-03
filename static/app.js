@@ -1322,22 +1322,30 @@ function paginateDocument(rawText) {
         i++;
     }
 
-    // Temporary measuring container to determine DOM heights accurately
+    const sheet = document.getElementById('document-preview');
+    const isMobile = window.innerWidth < 640;
+    const sheetWidth = (sheet && sheet.clientWidth > 50) ? sheet.clientWidth : (isMobile ? 297 : 368);
+    const sheetHeight = (sheet && sheet.clientHeight > 100) ? sheet.clientHeight : (isMobile ? 420 : 520);
+    const isStampPaper = Boolean(stampPaperToggle && stampPaperToggle.checked);
+
+    // Accurate interior vertical capacity excluding top/bottom sheet padding
+    const baseMaxH = sheetHeight - (isMobile ? 32 : 44);
+    // 3.0-inch Stamp Paper reservation: ~110px on desktop (520px sheet), ~85px on mobile (420px sheet)
+    const stampReservationH = isMobile ? 85 : 110;
+
+    // Temporary measuring container with the EXACT width of the A4 preview sheet
     const measureBox = document.createElement('div');
     measureBox.className = 'a4-print-sheet';
     measureBox.style.visibility = 'hidden';
     measureBox.style.position = 'absolute';
     measureBox.style.top = '-9999px';
     measureBox.style.left = '-9999px';
+    measureBox.style.width = sheetWidth + 'px';
+    measureBox.style.maxWidth = sheetWidth + 'px';
     measureBox.style.height = 'auto';
     measureBox.style.maxHeight = 'none';
     measureBox.style.fontSize = `${currentFontSize}px`;
     document.body.appendChild(measureBox);
-
-    const sheet = document.getElementById('document-preview');
-    const isMobile = window.innerWidth < 640;
-    const baseMaxH = (sheet && sheet.clientHeight > 100) ? sheet.clientHeight - (isMobile ? 32 : 44) : (isMobile ? 388 : 476);
-    const isStampPaper = Boolean(stampPaperToggle && stampPaperToggle.checked);
 
     const pages = [[]];
     let currentH = 0;
@@ -1347,9 +1355,10 @@ function paginateDocument(rawText) {
         const blockHtml = renderBlockHtml(block);
 
         measureBox.innerHTML = blockHtml;
-        const blockH = measureBox.firstElementChild ? measureBox.firstElementChild.offsetHeight + (isMobile ? 6 : 8) : (isMobile ? 24 : 30);
+        const blockH = measureBox.firstElementChild ? measureBox.firstElementChild.offsetHeight + (isMobile ? 4 : 6) : (isMobile ? 20 : 26);
 
-        const pageLimit = (pages.length === 1 && isStampPaper) ? (baseMaxH - 45) : baseMaxH;
+        // Page 1 with Stamp Paper gets reduced height; subsequent pages get full 100% A4 height
+        const pageLimit = (pages.length === 1 && isStampPaper) ? (baseMaxH - stampReservationH) : baseMaxH;
 
         if (currentH + blockH > pageLimit && pages[pages.length - 1].length > 0) {
             pages.push([blockHtml]);
