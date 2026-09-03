@@ -123,7 +123,7 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
     Ensure your response strictly matches the required JSON schema.
     """
     
-    models = ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"]
+    models = ["gemini-3.7-flash", "gemini-flash-lite-latest", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
     last_err = None
     for model_name in models:
         try:
@@ -134,7 +134,6 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
                     prompt
                 ],
                 config=types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                     response_mime_type="application/json",
                     response_schema=TranscriptionResult
                 )
@@ -171,7 +170,7 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     Ensure your response strictly matches the required JSON schema.
     """
     
-    models = ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"]
+    models = ["gemini-3.7-flash", "gemini-flash-lite-latest", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
     last_err = None
     for model_name in models:
         try:
@@ -182,7 +181,6 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
                     prompt
                 ],
                 config=types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                     response_mime_type="application/json",
                     response_schema=TranscriptionResult
                 )
