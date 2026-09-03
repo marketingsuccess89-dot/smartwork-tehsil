@@ -121,7 +121,13 @@ def render_markdown_table(doc, table_lines):
     num_cols = max(len(r) for r in raw_rows)
     num_rows = len(raw_rows)
 
-    is_sig_table = any('हस्ताक्षर' in cell or 'साक्षी' in cell for row in raw_rows for cell in row)
+    sig_keywords = (
+        'हस्ताक्षर', 'साक्षी', 'गवाह', 'प्रथम पक्ष', 'द्वितीय पक्ष', 'क्रेता', 'विक्रेता',
+        'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'मुवक्किल', 'अधिवक्ता',
+        'signature', 'witness', 'first party', 'second party', 'landlord', 'tenant',
+        'buyer', 'seller', 'deponent', 'applicant', 'sincerely', 'regards'
+    )
+    is_sig_table = any(any(kw in cell.lower() for kw in sig_keywords) for row in raw_rows for cell in row)
     table = doc.add_table(rows=num_rows, cols=num_cols)
     set_table_styling(table, is_signature=is_sig_table)
 
@@ -201,11 +207,11 @@ def unwrap_paragraphs(text: str) -> str:
         is_heading = stripped.startswith('#')
         is_bullet = stripped.startswith('* ') or stripped.startswith('- ')
         is_table = stripped.startswith('|')
-        is_new_clause = bool(re.match(r'^(\d+|[०-९]+)[\.\)]\s+', stripped))
+        is_new_clause = bool(re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', stripped))
         # Universal label line: e.g. "नाम :", "विषय :", "पता :", "कक्षा :", "दिनांक :"
         is_label_line = bool(re.match(r'^[^:\n]{2,30}\s*:\s*.+$', stripped))
-        # Universal formal opening / closing
-        is_formal_break = bool(re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|स्थान|दिनांक)', stripped))
+        # Universal formal opening / closing / court headers
+        is_formal_break = bool(re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|To:|From:|Subject:|Dear|Respected|Sincerely|Regards|Date:)', stripped, re.IGNORECASE))
 
         if is_heading or is_bullet or is_table or is_new_clause or is_label_line or is_formal_break:
             if current_p:
@@ -213,7 +219,7 @@ def unwrap_paragraphs(text: str) -> str:
                 current_p = []
             current_p.append(stripped)
         else:
-            if current_p and not (current_p[-1].startswith('#') or current_p[-1].startswith('|') or re.match(r'^[^:\n]{2,30}\s*:\s*.+$', current_p[-1]) or re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर)', current_p[-1])):
+            if current_p and not (current_p[-1].startswith('#') or current_p[-1].startswith('|') or re.match(r'^[^:\n]{2,30}\s*:\s*.+$', current_p[-1]) or re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)', current_p[-1], re.IGNORECASE)):
                 current_p.append(stripped)
             else:
                 if current_p:
@@ -311,11 +317,11 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
             i += 1
             continue
 
-        # 8. Numbered list items (e.g. 1. or १.)
-        match = re.match(r'^(\d+|[०-९]+)[\.\)]\s+(.*)$', stripped)
+        # 8. Numbered list items (e.g. 1., १., (1), (१), (क))
+        match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', stripped)
         if match:
-            num = match.group(1)
-            content = match.group(2)
+            num = match.group(1) or match.group(2)
+            content = match.group(3)
             add_styled_paragraph(doc, f"**{num}.** {content}", style_type='clause', alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
             i += 1
             continue
