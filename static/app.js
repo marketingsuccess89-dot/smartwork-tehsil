@@ -766,43 +766,46 @@ async function shareOnWhatsApp() {
 // Generate crisp, authentic A4 PDF blob using html2pdf.js
 async function generatePdfBlob() {
     const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
+    const text = documentEditor ? documentEditor.value.trim() : '';
     
-    // Ensure documentPages is populated
-    if (!documentPages || documentPages.length === 0) {
-        paginateAndRenderDocument();
+    if (!text) {
+        throw new Error('दस्तावेज़ में कोई सामग्री नहीं है।');
     }
+
+    // Ensure pagination is run with the current text
+    paginateDocument(text);
 
     if (!documentPages || documentPages.length === 0) {
         throw new Error('दस्तावेज़ में कोई सामग्री नहीं है।');
     }
 
-    // Create an off-screen A4 print container with exact styling
+    // Create a container appended in normal document flow (NO left: -9999px!)
     const printContainer = document.createElement('div');
-    printContainer.id = 'pdf-render-export-container';
-    printContainer.style.position = 'fixed';
-    printContainer.style.left = '-9999px';
-    printContainer.style.top = '0';
-    printContainer.style.width = '794px';
+    printContainer.id = 'pdf-export-flow-container';
+    printContainer.style.width = '750px';
+    printContainer.style.margin = '0 auto';
+    printContainer.style.padding = '35px 45px';
     printContainer.style.background = '#ffffff';
-    printContainer.style.zIndex = '-9999';
+    printContainer.style.color = '#0f172a';
+    printContainer.style.fontFamily = "'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif";
+    printContainer.style.fontSize = '12px';
+    printContainer.style.lineHeight = '1.5';
+    printContainer.style.boxSizing = 'border-box';
 
     documentPages.forEach((pageHtml, index) => {
-        const pageDiv = document.createElement('div');
-        pageDiv.style.width = '794px';
-        pageDiv.style.minHeight = '1120px';
-        pageDiv.style.padding = '40px 50px';
-        pageDiv.style.boxSizing = 'border-box';
-        pageDiv.style.background = '#ffffff';
-        pageDiv.style.fontFamily = "'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif";
-        pageDiv.style.fontSize = '12.5px';
-        pageDiv.style.lineHeight = '1.5';
-        pageDiv.style.color = '#0f172a';
-        pageDiv.style.wordBreak = 'break-word';
-
         if (index > 0) {
-            pageDiv.style.pageBreakBefore = 'always';
+            const breakDiv = document.createElement('div');
+            breakDiv.className = 'html2pdf__page-break';
+            breakDiv.style.pageBreakAfter = 'always';
+            printContainer.appendChild(breakDiv);
         }
 
+        const pageWrapper = document.createElement('div');
+        pageWrapper.className = 'pdf-page-content';
+        pageWrapper.style.width = '100%';
+        pageWrapper.style.boxSizing = 'border-box';
+
+        // Stamp Paper Margin on Page 1
         if (isStamp && index === 0) {
             const stampDiv = document.createElement('div');
             stampDiv.style.height = '180px';
@@ -816,23 +819,25 @@ async function generatePdfBlob() {
             stampDiv.style.fontWeight = 'bold';
             stampDiv.style.fontSize = '12px';
             stampDiv.innerText = '📜 स्टाम्प पेपर हेतु आरक्षित स्थान (3.0 इंच स्पेस)';
-            pageDiv.appendChild(stampDiv);
+            pageWrapper.appendChild(stampDiv);
         }
 
         const bodyDiv = document.createElement('div');
         bodyDiv.innerHTML = pageHtml;
-        pageDiv.appendChild(bodyDiv);
-        printContainer.appendChild(pageDiv);
+        pageWrapper.appendChild(bodyDiv);
+
+        printContainer.appendChild(pageWrapper);
     });
 
     document.body.appendChild(printContainer);
 
     const opt = {
-        margin: [0, 0, 0, 0],
+        margin: [10, 10, 10, 10],
         filename: `Smart_Typing_Document_${Date.now()}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
     };
 
     try {
