@@ -290,14 +290,19 @@ function setupEventListeners() {
         });
     }
 
-    const whatsappPdfBtn = document.getElementById('whatsapp-pdf-btn');
-    if (whatsappPdfBtn) {
-        whatsappPdfBtn.addEventListener('click', sharePdfOnWhatsApp);
+    const nativePrintBtn = document.getElementById('native-print-btn');
+    if (nativePrintBtn) {
+        nativePrintBtn.addEventListener('click', triggerNativePrint);
     }
 
-    const downloadPdfBtn = document.getElementById('download-pdf-btn');
-    if (downloadPdfBtn) {
-        downloadPdfBtn.addEventListener('click', downloadPdf);
+    const quickPrintBtn = document.getElementById('quick-print-btn');
+    if (quickPrintBtn) {
+        quickPrintBtn.addEventListener('click', triggerNativePrint);
+    }
+
+    const whatsappLinkModalBtn = document.getElementById('whatsapp-link-modal-btn');
+    if (whatsappLinkModalBtn) {
+        whatsappLinkModalBtn.addEventListener('click', shareOnWhatsApp);
     }
 
     const downloadDocxModalBtn = document.getElementById('download-docx-modal-btn');
@@ -780,33 +785,31 @@ async function shareOnWhatsApp() {
     }
 }
 
-// Helper: Builds a dedicated, continuous, clean A4 HTML structure for PDF export
-// (No slicing by tiny mobile preview boxes, NO dashed border, NO emoji text, NO scroll offset bug)
-function buildCleanA4PdfElement(rawText, isStamp) {
-    const unwrappedText = unwrapParagraphs(rawText);
+// Native A4 Print & "Save as PDF" Handler (100% Crisp Vector Text, Zero Dependency, Never Cuts)
+function triggerNativePrint() {
+    const text = documentEditor ? documentEditor.value.trim() : '';
+    if (!text) {
+        showToast('error', 'प्रिंट करने के लिए कोई दस्तावेज़ नहीं है।');
+        return;
+    }
+
+    const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
+    const unwrappedText = unwrapParagraphs(text);
     const lines = unwrappedText.split('\n');
 
-    const container = document.createElement('div');
-    container.id = 'pdf-export-container';
-    container.style.width = '700px';
-    container.style.margin = '0 auto';
-    container.style.padding = '15px 25px';
-    container.style.background = '#ffffff';
-    container.style.color = '#0f172a';
-    container.style.fontFamily = "'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif";
-    container.style.fontSize = '12.5px';
-    container.style.lineHeight = '1.6';
-    container.style.boxSizing = 'border-box';
+    let printMount = document.getElementById('print-mount-point');
+    if (!printMount) {
+        printMount = document.createElement('div');
+        printMount.id = 'print-mount-point';
+        document.body.appendChild(printMount);
+    }
+    printMount.innerHTML = '';
 
-    // 1. If Stamp Paper is active: Add clean, transparent blank margin spacer for Page 1 (2.6 inches)
-    // Pure white space for physical stamp papers - NO dashed box, NO emoji text!
+    // 1. If Stamp Paper mode: add 2.7-inch blank space on Page 1 (No dashed borders, no emoji)
     if (isStamp) {
-        const stampSpacer = document.createElement('div');
-        stampSpacer.style.height = '2.6in';
-        stampSpacer.style.width = '100%';
-        stampSpacer.style.margin = '0';
-        stampSpacer.style.padding = '0';
-        container.appendChild(stampSpacer);
+        const spacer = document.createElement('div');
+        spacer.className = 'stamp-print-spacer';
+        printMount.appendChild(spacer);
     }
 
     let i = 0;
@@ -820,10 +823,8 @@ function buildCleanA4PdfElement(rawText, isStamp) {
         // Section Break (---)
         if (/^-{3,}$/.test(line)) {
             const pageBreak = document.createElement('div');
-            pageBreak.className = 'html2pdf__page-break';
-            pageBreak.style.pageBreakAfter = 'always';
-            pageBreak.style.breakAfter = 'page';
-            container.appendChild(pageBreak);
+            pageBreak.className = 'print-page-break';
+            printMount.appendChild(pageBreak);
             i++;
             continue;
         }
@@ -854,15 +855,10 @@ function buildCleanA4PdfElement(rawText, isStamp) {
 
                 const cols = Math.max(...tableRows.map(r => r.length));
                 const tbl = document.createElement('table');
-                tbl.style.width = '100%';
-                tbl.style.borderCollapse = 'collapse';
-                tbl.style.marginTop = '18px';
-                tbl.style.marginBottom = '18px';
-                tbl.style.pageBreakInside = 'avoid';
-                tbl.style.breakInside = 'avoid';
+                tbl.className = 'print-table';
 
                 if (!isSigTable) {
-                    tbl.style.border = '1px solid #06281e';
+                    tbl.style.border = '1.5pt solid #06281e';
                 }
 
                 for (let r = 0; r < tableRows.length; r++) {
@@ -876,12 +872,9 @@ function buildCleanA4PdfElement(rawText, isStamp) {
                     for (let c = 0; c < cols; c++) {
                         const cellVal = tableRows[r][c] || '';
                         const td = document.createElement(isHeader ? 'th' : 'td');
-                        td.style.padding = isSigTable ? '8px 4px' : '6px 10px';
-                        td.style.verticalAlign = 'top';
-                        td.style.lineHeight = '1.4';
-
+                        
                         if (!isSigTable) {
-                            td.style.border = '1px solid #e2e8f0';
+                            td.style.border = '1pt solid #cbd5e1';
                         }
 
                         if (isSigTable && cols === 2) {
@@ -898,7 +891,7 @@ function buildCleanA4PdfElement(rawText, isStamp) {
                     }
                     tbl.appendChild(tr);
                 }
-                container.appendChild(tbl);
+                printMount.appendChild(tbl);
             }
             continue;
         }
@@ -906,15 +899,9 @@ function buildCleanA4PdfElement(rawText, isStamp) {
         // Title (# Title)
         if (line.startsWith('# ')) {
             const h1 = document.createElement('h1');
-            h1.style.textAlign = 'center';
-            h1.style.fontSize = '18px';
-            h1.style.fontWeight = '700';
-            h1.style.color = '#06281e';
-            h1.style.margin = '0 0 16px 0';
-            h1.style.pageBreakAfter = 'avoid';
-            h1.style.breakAfter = 'avoid';
+            h1.className = 'print-title';
             h1.innerHTML = formatInline(line.substring(2).trim());
-            container.appendChild(h1);
+            printMount.appendChild(h1);
             i++;
             continue;
         }
@@ -922,14 +909,9 @@ function buildCleanA4PdfElement(rawText, isStamp) {
         // Section Heading (## Heading)
         if (line.startsWith('## ')) {
             const h2 = document.createElement('h2');
-            h2.style.fontSize = '14px';
-            h2.style.fontWeight = '700';
-            h2.style.color = '#0a1914';
-            h2.style.margin = '14px 0 6px 0';
-            h2.style.pageBreakAfter = 'avoid';
-            h2.style.breakAfter = 'avoid';
+            h2.className = 'print-heading';
             h2.innerHTML = formatInline(line.substring(3).trim());
-            container.appendChild(h2);
+            printMount.appendChild(h2);
             i++;
             continue;
         }
@@ -940,182 +922,28 @@ function buildCleanA4PdfElement(rawText, isStamp) {
             const num = numMatch[1] || numMatch[2];
             const content = numMatch[3];
             const clauseDiv = document.createElement('div');
-            clauseDiv.style.textAlign = 'justify';
-            clauseDiv.style.margin = '0 0 10px 0';
-            clauseDiv.style.lineHeight = '1.6';
-            clauseDiv.style.pageBreakInside = 'avoid';
-            clauseDiv.style.breakInside = 'avoid';
+            clauseDiv.className = 'print-clause';
             clauseDiv.innerHTML = `<strong>${num}.</strong> ${formatInline(content)}`;
-            container.appendChild(clauseDiv);
+            printMount.appendChild(clauseDiv);
             i++;
             continue;
         }
 
         // Standard Paragraph
         const p = document.createElement('p');
-        p.style.textAlign = 'justify';
-        p.style.margin = '0 0 10px 0';
-        p.style.lineHeight = '1.6';
-        p.style.pageBreakInside = 'avoid';
-        p.style.breakInside = 'avoid';
+        p.className = 'print-p';
         p.innerHTML = formatInline(line);
-        container.appendChild(p);
+        printMount.appendChild(p);
         i++;
     }
 
-    return container;
-}
+    // Close modal if open so it doesn't block the screen
+    closeModal('modal-share');
 
-// Generate crisp, authentic A4 PDF blob using html2pdf.js with zero scroll offset
-async function generatePdfBlob() {
-    const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
-    const text = documentEditor ? documentEditor.value.trim() : '';
-    
-    if (!text) {
-        throw new Error('दस्तावेज़ में कोई सामग्री नहीं है।');
-    }
-
-    // Build dedicated, continuous clean A4 structure (NOT sliced into mobile screen fragments)
-    const printContainer = buildCleanA4PdfElement(text, isStamp);
-
-    // Position fixed at top-left so html2canvas is 100% immune to user scroll position
-    printContainer.style.position = 'fixed';
-    printContainer.style.top = '0';
-    printContainer.style.left = '0';
-    printContainer.style.zIndex = '-9999';
-    printContainer.style.opacity = '1';
-    printContainer.style.pointerEvents = 'none';
-    document.body.appendChild(printContainer);
-
-    const opt = {
-        margin: [10, 12, 10, 12], // 10mm top/bottom, 12mm left/right standard printable A4
-        filename: `Smart_Typing_Document_${Date.now()}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            logging: false,
-            scrollY: 0,
-            scrollX: 0,
-            windowWidth: 1024
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    try {
-        const pdfBlob = await html2pdf().set(opt).from(printContainer).output('blob');
-        return pdfBlob;
-    } finally {
-        if (document.body.contains(printContainer)) {
-            document.body.removeChild(printContainer);
-        }
-    }
-}
-
-// Native WhatsApp PDF File Share (Sends the actual PDF document file directly into WhatsApp!)
-async function sharePdfOnWhatsApp() {
-    const text = documentEditor ? documentEditor.value.trim() : '';
-    if (!text) {
-        showToast('error', 'शेयर करने के लिए कोई दस्तावेज़ नहीं है।');
-        return;
-    }
-
-    const btn = document.getElementById('whatsapp-pdf-btn');
-    const btnText = document.getElementById('whatsapp-pdf-btn-text');
-    const orig = btnText ? btnText.innerText : 'WhatsApp पर PDF फ़ाइल भेजें';
-
-    if (btn) btn.setAttribute('disabled', 'true');
-    if (btnText) btnText.innerHTML = `<span class="flex items-center justify-center"><div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>PDF तैयार हो रही है...</span>`;
-
-    try {
-        const pdfBlob = await generatePdfBlob();
-        const fileName = `Smart_Typing_Document_${Date.now()}.pdf`;
-        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        // Check if browser supports native file sharing (Web Share API Level 2)
-        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-            await navigator.share({
-                files: [pdfFile],
-                title: fileName
-            });
-            showToast('success', 'PDF फ़ाइल WhatsApp पर भेजी गई!');
-        } else {
-            // Fallback (Desktop, Laptop, or browsers without file share API):
-            // 1. Download the PDF directly so the user has the file immediately
-            const url = URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                if (document.body.contains(a)) document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 2000);
-
-            showToast('info', 'PDF डाउनलोड हो गई! WhatsApp में अटैच करें।');
-
-            // 2. Launch WhatsApp or WhatsApp Web
-            if (isMobile) {
-                window.location.href = 'whatsapp://send';
-            } else {
-                window.open('https://web.whatsapp.com/', '_blank');
-            }
-        }
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            console.error('PDF share error:', err);
-            showToast('error', 'PDF शेयर करने में समस्या आई: ' + (err.message || ''));
-        }
-    } finally {
-        if (btn) btn.removeAttribute('disabled');
-        if (btnText) btnText.innerText = orig;
-    }
-}
-
-// Direct PDF File Download Handler
-async function downloadPdf() {
-    const text = documentEditor ? documentEditor.value.trim() : '';
-    if (!text) {
-        showToast('error', 'डाउनलोड करने के लिए कोई दस्तावेज़ नहीं है।');
-        return;
-    }
-
-    const btn = document.getElementById('download-pdf-btn');
-    const btnText = document.getElementById('download-pdf-btn-text');
-    const orig = btnText ? btnText.innerText : 'PDF फ़ाइल डाउनलोड करें';
-    if (btn) btn.setAttribute('disabled', 'true');
-    if (btnText) btnText.innerText = 'PDF बन रही है...';
-
-    try {
-        const pdfBlob = await generatePdfBlob();
-        const fileName = `Smart_Typing_Document_${Date.now()}.pdf`;
-        const url = URL.createObjectURL(pdfBlob);
-        
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            if (document.body.contains(a)) document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 2000);
-
-        showToast('success', 'PDF फ़ाइल डाउनलोड हो गई!');
-    } catch (e) {
-        console.error('PDF download error:', e);
-        showToast('error', 'PDF डाउनलोड करने में समस्या आई: ' + (e.message || ''));
-    } finally {
-        if (btn) btn.removeAttribute('disabled');
-        if (btnText) btnText.innerText = orig;
-    }
+    // Trigger Browser Native Print Dialog
+    setTimeout(() => {
+        window.print();
+    }, 150);
 }
 
 // Copy to Clipboard with Full Formatting (Rich Text HTML for MS Word + Plain Text fallback)
