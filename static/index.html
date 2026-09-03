@@ -12,8 +12,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2pdf.js for High-Quality Native PDF Generation and Direct File Sharing -->
-    <script src="/static/html2pdf.bundle.min.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -141,6 +139,88 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #059669;
+        }
+
+        /* High-Fidelity A4 Native Print & Save as PDF Styles */
+        @media print {
+            /* Hide all web application UI components (navbar, editor, buttons, sidebars) */
+            body > *:not(#print-mount-point) {
+                display: none !important;
+            }
+            #print-mount-point {
+                display: block !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-family: 'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif !important;
+                font-size: 12pt !important;
+                line-height: 1.6 !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 12mm 15mm 12mm 15mm; /* Standard 0.5-inch printable margins */
+            }
+            .stamp-print-spacer {
+                height: 2.7in !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-page-break {
+                page-break-after: always !important;
+                break-after: page !important;
+            }
+            h1.print-title {
+                text-align: center !important;
+                font-size: 16pt !important;
+                font-weight: bold !important;
+                color: #06281e !important;
+                margin-top: 0 !important;
+                margin-bottom: 12pt !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+            h2.print-heading {
+                font-size: 13pt !important;
+                font-weight: bold !important;
+                color: #0a1914 !important;
+                margin-top: 10pt !important;
+                margin-bottom: 4pt !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+            p.print-p, .print-clause {
+                text-align: justify !important;
+                margin-top: 0 !important;
+                margin-bottom: 7pt !important;
+                line-height: 1.6 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            table.print-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-top: 12pt !important;
+                margin-bottom: 12pt !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            table.print-table td, table.print-table th {
+                padding: 6pt 6pt !important;
+                vertical-align: top !important;
+                font-size: 11pt !important;
+                line-height: 1.4 !important;
+            }
+        }
+        @media screen {
+            #print-mount-point {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -409,6 +489,12 @@
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                        <!-- Native A4 Print / Save as PDF Button -->
+                        <button type="button" id="quick-print-btn" class="pop-btn w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 px-5 rounded-xl border border-slate-300 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer shadow-2xs">
+                            <i class="fa-solid fa-print text-emerald-700 text-sm"></i>
+                            <span>A4 प्रिंट / PDF</span>
+                        </button>
+
                         <!-- Direct WhatsApp Share Button -->
                         <button type="button" id="share-whatsapp-direct-btn" class="pop-btn w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer">
                             <i class="fa-brands fa-whatsapp text-lg"></i>
@@ -487,22 +573,22 @@
                     दस्तावेज़ को WhatsApp पर भेजने या डाउनलोड करने के विकल्प:
                 </p>
 
-                <!-- Primary WhatsApp PDF File Share Button (Native Attachment!) -->
-                <button id="whatsapp-pdf-btn" class="pop-btn w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-sm transition active:scale-95 cursor-pointer">
-                    <i class="fa-solid fa-file-pdf text-xl text-rose-200"></i>
-                    <span id="whatsapp-pdf-btn-text" class="tracking-wide">WhatsApp पर PDF फ़ाइल भेजें</span>
-                </button>
-
-                <!-- Direct PDF Download Button -->
-                <button id="download-pdf-btn" class="pop-btn w-full bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold py-2.5 px-4 rounded-xl text-xs border border-rose-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
-                    <i class="fa-solid fa-download text-xs text-rose-600"></i>
-                    <span id="download-pdf-btn-text">PDF फ़ाइल डाउनलोड करें</span>
+                <!-- Primary Native A4 Print & Save as PDF Button -->
+                <button id="native-print-btn" class="pop-btn w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/25 flex items-center justify-center space-x-2 text-sm transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-print text-lg text-emerald-200"></i>
+                    <span class="tracking-wide">A4 प्रिंट / PDF सेव करें (Print to PDF)</span>
                 </button>
 
                 <!-- Direct Word DOCX Download Button -->
                 <button id="download-docx-modal-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
                     <i class="fa-solid fa-file-word text-xs text-emerald-600"></i>
                     <span>Word (.DOCX) फ़ाइल डाउनलोड करें</span>
+                </button>
+
+                <!-- WhatsApp Cloud Download Link Button -->
+                <button id="whatsapp-link-modal-btn" class="pop-btn w-full bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] font-bold py-2.5 px-4 rounded-xl text-xs border border-[#25D366]/30 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
+                    <i class="fa-brands fa-whatsapp text-sm text-[#25D366]"></i>
+                    <span>Word फ़ाइल WhatsApp पर भेजें</span>
                 </button>
 
                 <!-- Secondary Copy Text for WhatsApp Button -->
@@ -515,6 +601,6 @@
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260903_v22"></script>
+    <script src="/static/app.js?v=20260903_v23"></script>
 </body>
 </html>
