@@ -96,18 +96,18 @@
         /* Authentic A4 Print Paper Preview Sheet */
         .a4-print-sheet {
             width: 100%;
-            max-width: 680px;
-            min-height: 750px;
+            max-width: 520px;
+            min-height: 480px;
             background: #ffffff;
-            box-shadow: 0 10px 30px -5px rgba(6, 78, 59, 0.10), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 25px -5px rgba(6, 78, 59, 0.10), 0 3px 8px -2px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
             border-radius: 6px;
-            padding: 36px 44px;
+            padding: 24px 30px;
             margin: 0 auto;
             font-family: 'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif;
             color: #0f172a;
-            line-height: 1.6;
-            font-size: 13px;
+            line-height: 1.55;
+            font-size: 12.5px;
             user-select: text;
             -webkit-user-select: text;
             box-sizing: border-box;
@@ -117,9 +117,10 @@
         }
         @media (max-width: 640px) {
             .a4-print-sheet {
-                padding: 20px 16px;
-                font-size: 12px;
-                line-height: 1.5;
+                padding: 18px 14px;
+                font-size: 11.5px;
+                min-height: 360px;
+                line-height: 1.45;
             }
         }
         /* Custom Scrollbars */
@@ -440,7 +441,7 @@
                 </div>
 
                 <!-- A4 Paper Preview Container (Natural Scrollable Desk Frame) -->
-                <div class="flex flex-col items-center justify-start rounded-xl relative p-2 sm:p-4 bg-slate-200/80 border border-slate-300/80 touch-pan-y max-h-[640px] overflow-y-auto w-full">
+                <div class="flex flex-col items-center justify-start rounded-xl relative p-2 sm:p-3 bg-slate-200/80 border border-slate-300/80 touch-pan-y max-h-[550px] overflow-y-auto w-full">
                     
                     <div id="document-preview" class="a4-print-sheet select-text cursor-default relative">
                         
@@ -451,7 +452,7 @@
                         </div>
 
                         <!-- Placeholder state when document is empty -->
-                        <div id="preview-placeholder" class="h-full min-h-[350px] sm:min-h-[460px] flex flex-col items-center justify-center text-center text-slate-400 select-none p-4">
+                        <div id="preview-placeholder" class="h-full min-h-[260px] sm:min-h-[360px] flex flex-col items-center justify-center text-center text-slate-400 select-none p-4">
                             <div class="w-14 h-18 rounded-lg border-2 border-dashed border-emerald-300 flex flex-col items-center justify-center mb-3 bg-emerald-50/50 shadow-inner">
                                 <i class="fa-solid fa-file-invoice text-emerald-600 text-2xl"></i>
                             </div>
@@ -486,12 +487,6 @@
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-                        <!-- Native A4 Print / Save as PDF Button -->
-                        <button type="button" id="quick-print-btn" class="pop-btn w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 px-5 rounded-xl border border-slate-300 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer shadow-2xs">
-                            <i class="fa-solid fa-print text-emerald-700 text-sm"></i>
-                            <span>A4 प्रिंट / PDF</span>
-                        </button>
-
                         <!-- Direct WhatsApp Share Button -->
                         <button type="button" id="share-whatsapp-direct-btn" class="pop-btn w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer">
                             <i class="fa-brands fa-whatsapp text-lg"></i>
@@ -570,25 +565,19 @@
                     दस्तावेज़ को WhatsApp पर भेजने या डाउनलोड करने के विकल्प:
                 </p>
 
-                <!-- Primary Native A4 Print & Save as PDF Button -->
-                <button id="native-print-btn" class="pop-btn w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/25 flex items-center justify-center space-x-2 text-sm transition active:scale-95 cursor-pointer">
-                    <i class="fa-solid fa-print text-lg text-emerald-200"></i>
-                    <span class="tracking-wide">A4 प्रिंट / PDF सेव करें (Print to PDF)</span>
+                <!-- 1. Primary WhatsApp Share Button (sent whatsapp) -->
+                <button id="whatsapp-link-modal-btn" class="pop-btn w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-sm transition active:scale-95 cursor-pointer">
+                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                    <span class="tracking-wide">WhatsApp पर भेजें</span>
                 </button>
 
-                <!-- Direct Word DOCX Download Button -->
+                <!-- 2. Direct Word DOCX Download Button (docx download) -->
                 <button id="download-docx-modal-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
                     <i class="fa-solid fa-file-word text-xs text-emerald-600"></i>
                     <span>Word (.DOCX) फ़ाइल डाउनलोड करें</span>
                 </button>
 
-                <!-- WhatsApp Cloud Download Link Button -->
-                <button id="whatsapp-link-modal-btn" class="pop-btn w-full bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] font-bold py-2.5 px-4 rounded-xl text-xs border border-[#25D366]/30 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
-                    <i class="fa-brands fa-whatsapp text-sm text-[#25D366]"></i>
-                    <span>Word फ़ाइल WhatsApp पर भेजें</span>
-                </button>
-
-                <!-- Secondary Copy Text for WhatsApp Button -->
+                <!-- 3. Copy Text for WhatsApp Button (text copy) -->
                 <button id="whatsapp-copy-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold py-2 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
                     <i class="fa-regular fa-copy text-xs text-emerald-600"></i>
                     <span>पूरा टेक्स्ट कॉपी करें</span>
@@ -598,6 +587,6 @@
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260903_v24"></script>
+    <script src="/static/app.js?v=20260903_v25"></script>
 </body>
 </html>
