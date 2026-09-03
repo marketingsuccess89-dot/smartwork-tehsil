@@ -7,17 +7,20 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
+from PIL import Image, ImageOps, ImageEnhance
+
 # Load environment variables
 load_dotenv(override=True)
 
 # Pydantic schema for structured JSON output
 class TranscriptionResult(BaseModel):
     transcribed_text: str = Field(description="The full verbatim transcription and formatted document text (with paragraphs, headings, lists, tables)")
+    stamp_paper_detected: bool = Field(default=False, description="Set to true if the document was photographed on an Indian government Stamp Paper")
 
-def compress_image(image_bytes: bytes, max_size: int = 1280, quality: int = 75) -> bytes:
+def compress_image(image_bytes: bytes, max_size: int = 1400, quality: int = 80) -> bytes:
     """
-    Resizes and compresses the uploaded image to reduce payload size
-    and optimize Gemini API upload speeds.
+    Resizes, contrast-enhances, and sharpens the uploaded image to maximize
+    OCR legibility for faint ballpoint pen, low-light shadows, and handwritten strokes.
     """
     try:
         img = Image.open(io.BytesIO(image_bytes))
@@ -27,6 +30,12 @@ def compress_image(image_bytes: bytes, max_size: int = 1280, quality: int = 75) 
         
         if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
             img = img.convert('RGB')
+
+        # Intelligent contrast & sharpness boost for faint handwriting and low-contrast lighting
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(1.15)
+        sharpener = ImageEnhance.Sharpness(img)
+        img = sharpener.enhance(1.25)
             
         width, height = img.size
         if max(width, height) > max_size:
@@ -62,7 +71,7 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
     Sends document image to Gemini Vision to perform verbatim OCR with legal standardization rules.
     Optimized with google.genai and zero thinking budget for sub-8-second turnaround.
     """
-    # Fast compress and resize the image to optimize network upload speeds
+    # Fast compress, contrast-enhance, and resize the image to optimize OCR and upload speed
     processed_image_bytes = compress_image(image_bytes)
     target_mime_type = "image/jpeg"
     
@@ -74,32 +83,42 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
 
     UNIVERSAL PRINCIPLES:
     1. **100% Strict Verbatim Words (शब्द बिल्कुल नहीं बदलेंगे, न जोड़ेंगे, न घटाएंगे)**:
-       - Transcribe EVERY single word written in the image faithfully and accurately.
+       - Transcribe EVERY single word written in the document faithfully and accurately.
        - DO NOT add any extra unwritten words, declarations, boilerplate, or summaries.
        - DO NOT remove or skip any written words.
-       - If any word or line is crossed out (काटा हुआ है), ignore only the crossed-out text.
+       - If any word or line is crossed out (काटा हुआ है), ignore only the crossed-out text and transcribe the intended correction.
 
-    2. **Intelligent Document Format Recognition (दस्तावेज़ के प्रकार अनुसार सही फ़ॉर्मैटिंग)**:
+    2. **Pre-Printed Government Stamp Paper Rule (स्टाम्प पेपर के सरकारी हेडर को कभी न लिखें)**:
+       - If the document is written on an official Indian Stamp Paper (₹10, ₹50, ₹100, ₹500 Non-Judicial paper with State/Government emblem):
+         * Set `stamp_paper_detected = True`.
+         * DO NOT transcribe the pre-printed government stamp header (e.g. "भारत सरकार", "GOVERNMENT OF INDIA", National Emblem / Lion Capital, "NON JUDICIAL / गैर न्यायिक", "₹100", Serial No., Vendor Name/Seal/Barcode, or "Notary Stamp below").
+         * Physical stamp papers already contain these factory-printed. Typists insert the physical stamp paper into the printer, and typing MUST start strictly from the actual legal content (e.g. '# शपथ पत्र (Affidavit)', or Court/Authority heading 'समक्ष: श्रीमान...').
+       - If it is on normal notebook, register, or plain blank paper, set `stamp_paper_detected = False`.
+
+    3. **Intelligent Document Format Recognition (दस्तावेज़ के प्रकार अनुसार सही फ़ॉर्मैटिंग)**:
        - Understand the exact nature of the document from the image:
          * Formal Application / Letter (e.g. School leave letter, Police complaint, Municipal application):
            Format recipient ('सेवा में, ...'), Subject ('विषय: ...'), Salutation ('महोदय / महोदया, ...'), Body paragraphs, and closing ('भवदीय / प्रार्थी / आपका आज्ञाकारी') in their natural, standard Indian official letter layout.
          * Legal Agreement / Deed (विलेख / अनुबंध):
            Format the Main Title at the top as '# [Title]' followed by a blank line. Write party descriptions, preambles, and numbered clauses ('1.', '2.') as continuous full-width paragraphs.
          * Affidavit (शपथ पत्र):
-           Format Title '# शपथ पत्र', Deponent details, sworn points, and bottom Verification ('तस्दीक / सत्यापन').
+           Format Title '# शपथ पत्र', Deponent details, sworn points, and bottom Verification ('# सत्यापन' or 'तस्दीक').
          * For Any Other Document / Notice / Receipt:
            Apply clean, professional typography and layout appropriate for that specific document.
 
-    3. **Continuous Full-Width Paragraphs (आधी-अधूरी लाइन न तोड़ें, पूरा पैराग्राफ लिखें)**:
+    4. **Continuous Full-Width Paragraphs (आधी-अधूरी लाइन न तोड़ें, पूरा पैराग्राफ लिखें)**:
        - DO NOT break sentences into short half-lines just because a notebook line ended physically.
        - Write each paragraph or numbered clause as ONE continuous flowing block so that in MS Word and A4 paper it fills the entire width naturally.
 
-    4. **Smart Signatures & Layout (हस्ताक्षर स्पेसिंग)**:
+    5. **Smart Signatures & Layout (हस्ताक्षर स्पेसिंग)**:
        - If there are TWO parties/signatures side-by-side (left and right), format them as a clean 2-column Markdown table:
          | [Left Party / Signature] | [Right Party / Signature] |
          | :--- | ---: |
          | [Details] | [Details] |
-       - If there is only ONE person signing (e.g. Applicant / Deponent in an application or affidavit), DO NOT create a 2-column table. Format the single signature block cleanly as written in the document.
+       - If there is only ONE person signing (e.g. Applicant / Deponent in an application or affidavit like 'हस्ताक्षर शपथकर्ता'):
+         Format the single signature aligned to the right:
+         | | [हस्ताक्षर / नाम / पद] |
+         | :--- | ---: |
 
     Ensure your response strictly matches the required JSON schema.
     """
