@@ -689,7 +689,7 @@ function closeModal(modalId) {
 window.openModal = openModal;
 window.closeModal = closeModal;
 
-// WhatsApp File Share Handler (Directly launches WhatsApp / WhatsApp Business app)
+// WhatsApp Share Handler (Directly launches WhatsApp with 1-Click DOCX Download + A4 View/PDF links)
 async function shareOnWhatsApp() {
     const text = documentEditor ? documentEditor.value.trim() : '';
     if (!text) {
@@ -698,55 +698,14 @@ async function shareOnWhatsApp() {
     }
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const whatsappShareBtn = document.getElementById('whatsapp-share-btn');
-    const whatsappShareBtnText = document.getElementById('whatsapp-share-btn-text');
-    const originalText = whatsappShareBtnText ? whatsappShareBtnText.innerText : 'Word (.DOCX) फ़ाइल WhatsApp पर भेजें';
-
-    if (whatsappShareBtn) {
-        whatsappShareBtn.setAttribute('disabled', 'true');
-        if (whatsappShareBtnText) {
-            whatsappShareBtnText.innerText = 'WhatsApp खुल रहा है...';
-        }
-    }
+    const whatsappShareBtn = document.getElementById('share-whatsapp-direct-btn');
 
     try {
         const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
-        
-        // 1. Try Native File Share if browser supports it (HTTPS / Secure Context)
-        if (navigator.canShare) {
-            try {
-                const response = await fetch('/api/generate-docx', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, stamp_paper: isStamp })
-                });
+        showToast('info', 'WhatsApp लिंक तैयार हो रहा है...');
 
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const fileName = `Smart_Typing_Document_${Date.now()}.docx`;
-                    const docxFile = new File(
-                        [blob], 
-                        fileName, 
-                        { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
-                    );
-
-                    if (navigator.canShare({ files: [docxFile] })) {
-                        await navigator.share({
-                            files: [docxFile],
-                            title: fileName
-                        });
-                        showToast('success', 'Word फ़ाइल WhatsApp पर भेजी गई!');
-                        return;
-                    }
-                }
-            } catch (shareErr) {
-                if (shareErr.name === 'AbortError') return;
-                console.log('Native file share failed, falling back to app intent:', shareErr);
-            }
-        }
-
-        // 2. WAY 4 (Integrated Fallback): Generate Instant 1-Click .DOCX Download Link for WhatsApp
-        let shareLink = window.location.href;
+        // 1. Generate Instant 1-Click Share Link from backend
+        let docId = '';
         try {
             const linkRes = await fetch('/api/create-share-link', {
                 method: 'POST',
@@ -755,33 +714,31 @@ async function shareOnWhatsApp() {
             });
             if (linkRes.ok) {
                 const linkData = await linkRes.json();
-                shareLink = `${window.location.origin}/d/${linkData.doc_id}`;
+                docId = linkData.doc_id;
             }
         } catch (e) {
             console.error('Share link generation error:', e);
         }
 
-        const whatsappMessage = `📄 *तहसील विलेख / दस्तावेज़ (MS Word .docx फ़ाइल)*\n\nनमस्ते, आपके लिए तैयार किया गया MS Word (.docx) दस्तावेज़ सीधे यहाँ क्लिक करके डाउनलोड करें:\n👉 ${shareLink}`;
+        const docxDownloadLink = docId ? `${window.location.origin}/d/${docId}` : window.location.href;
+        const viewPrintLink = docId ? `${window.location.origin}/v/${docId}` : window.location.href;
+
+        const whatsappMessage = `📄 *तहसील विलेख / कानूनी दस्तावेज़ (Smart Typing)*\n\nनमस्ते, आपके लिए तैयार किया गया दस्तावेज़ निम्नलिखित लिंक से प्राप्त करें:\n\n📥 *MS Word (.DOCX) फ़ाइल डाउनलोड लिंक:*\n👉 ${docxDownloadLink}\n\n👁️ *मोबाइल पर A4 देखें व PDF सेव करें:*\n👉 ${viewPrintLink}\n\n_(यह लिंक 48 घंटे के लिए सक्रिय है)_`;
+
+        // Close modal if open
+        closeModal('modal-share');
 
         if (isMobile) {
-            showToast('success', 'WhatsApp Business खोला जा रहा है...');
-            // Directly triggers native WhatsApp / WhatsApp Business app on Android & iOS
+            showToast('success', 'WhatsApp खोला जा रहा है...');
+            // Direct launch into WhatsApp / WhatsApp Business app
             window.location.href = `whatsapp://send?text=${encodeURIComponent(whatsappMessage)}`;
         } else {
-            // Desktop fallback: Open WhatsApp Web
-            showToast('info', 'Word फ़ाइल Downloads में है। WhatsApp Web खोला जा रहा है...');
+            showToast('info', 'WhatsApp Web खोला जा रहा है...');
             window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
         }
     } catch (err) {
-        console.error('File share error:', err);
+        console.error('WhatsApp share error:', err);
         showToast('error', 'WhatsApp खोलने में असमर्थ।');
-    } finally {
-        if (whatsappShareBtn) {
-            whatsappShareBtn.removeAttribute('disabled');
-            if (whatsappShareBtnText) {
-                whatsappShareBtnText.innerText = originalText;
-            }
-        }
     }
 }
 
@@ -1245,6 +1202,7 @@ function renderBlockHtml(block) {
 }
 
 // Universal A4 Pagination: divides any document across Page 1, Page 2 with ZERO scrolling
+// Render Authentic A4 Print Preview directly in the on-screen preview box
 function paginateDocument(rawText) {
     if (!rawText || !rawText.trim()) {
         documentPages = [];
@@ -1254,6 +1212,7 @@ function paginateDocument(rawText) {
 
     const unwrappedText = unwrapParagraphs(rawText);
     const lines = unwrappedText.split('\n');
+    const isStampPaper = Boolean(stampPaperToggle && stampPaperToggle.checked);
 
     // Parse into distinct semantic blocks
     const blocks = [];
@@ -1261,6 +1220,13 @@ function paginateDocument(rawText) {
     while (i < lines.length) {
         let line = lines[i].trim();
         if (!line) {
+            i++;
+            continue;
+        }
+
+        // Section Break
+        if (/^-{3,}$/.test(line)) {
+            blocks.push({ type: 'break' });
             i++;
             continue;
         }
@@ -1304,63 +1270,22 @@ function paginateDocument(rawText) {
         i++;
     }
 
-    const sheet = document.getElementById('document-preview');
-    const isMobile = window.innerWidth < 640;
-    const sheetWidth = (sheet && sheet.clientWidth > 50) ? sheet.clientWidth : (isMobile ? 297 : 368);
-    const sheetHeight = (sheet && sheet.clientHeight > 100) ? sheet.clientHeight : (isMobile ? 420 : 520);
-    const isStampPaper = Boolean(stampPaperToggle && stampPaperToggle.checked);
-
-    // Accurate interior vertical capacity excluding top/bottom sheet padding
-    const baseMaxH = sheetHeight - (isMobile ? 32 : 44);
-    // 3.0-inch Stamp Paper reservation: ~110px on desktop (520px sheet), ~85px on mobile (420px sheet)
-    const stampReservationH = isMobile ? 85 : 110;
-
-    // Temporary measuring container with the EXACT width of the A4 preview sheet
-    const measureBox = document.createElement('div');
-    measureBox.className = 'a4-print-sheet';
-    measureBox.style.visibility = 'hidden';
-    measureBox.style.position = 'absolute';
-    measureBox.style.top = '-9999px';
-    measureBox.style.left = '-9999px';
-    measureBox.style.width = sheetWidth + 'px';
-    measureBox.style.maxWidth = sheetWidth + 'px';
-    measureBox.style.height = 'auto';
-    measureBox.style.maxHeight = 'none';
-    measureBox.style.fontSize = `${currentFontSize}px`;
-    document.body.appendChild(measureBox);
-
-    const pages = [[]];
-    let currentH = 0;
-
-    for (let b = 0; b < blocks.length; b++) {
-        const block = blocks[b];
-        const blockHtml = renderBlockHtml(block);
-
-        measureBox.innerHTML = blockHtml;
-        const blockH = measureBox.firstElementChild ? measureBox.firstElementChild.offsetHeight + (isMobile ? 4 : 6) : (isMobile ? 20 : 26);
-
-        // Page 1 with Stamp Paper gets reduced height; subsequent pages get full 100% A4 height
-        const pageLimit = (pages.length === 1 && isStampPaper) ? (baseMaxH - stampReservationH) : baseMaxH;
-
-        if (currentH + blockH > pageLimit && pages[pages.length - 1].length > 0) {
-            pages.push([blockHtml]);
-            currentH = blockH;
-        } else {
-            pages[pages.length - 1].push(blockHtml);
-            currentH += blockH;
-        }
+    let renderedBlocks = [];
+    if (isStampPaper) {
+        renderedBlocks.push('<div class="stamp-space-box w-full mb-5 py-6 border-2 border-dashed border-emerald-300 rounded-xl bg-emerald-50/50 text-center text-emerald-800 font-bold text-xs select-none flex items-center justify-center space-x-2"><i class="fa-solid fa-stamp text-emerald-600 text-sm"></i><span>📜 स्टाम्प पेपर प्रिंट एरिया (3.0" Space Reserved)</span></div>');
     }
 
-    document.body.removeChild(measureBox);
+    for (let b = 0; b < blocks.length; b++) {
+        renderedBlocks.push(renderBlockHtml(blocks[b]));
+    }
 
-    documentPages = pages.map(pageBlocks => pageBlocks.join(''));
+    const fullA4Html = renderedBlocks.join('');
+    documentPages = [fullA4Html];
     currentPageIndex = 0;
 }
 
-// Render the currently active page inside the A4 sheet with ZERO scrolling
+// Render the A4 Print Preview with natural reading flow
 function renderCurrentPage() {
-    const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
-
     if (!documentPages || documentPages.length === 0) {
         if (previewContent) previewContent.classList.add('hidden');
         if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
@@ -1371,29 +1296,13 @@ function renderCurrentPage() {
 
     if (previewPlaceholder) previewPlaceholder.classList.add('hidden');
     if (previewContent) {
-        previewContent.innerHTML = documentPages[currentPageIndex] || '';
+        previewContent.innerHTML = documentPages[0] || '';
         previewContent.style.fontSize = `${currentFontSize}px`;
         previewContent.classList.remove('hidden');
     }
 
-    // Stamp Paper Header indicator (only on Page 1)
-    if (stampPaperHeader) {
-        if (isStamp && currentPageIndex === 0) {
-            stampPaperHeader.classList.remove('hidden');
-        } else {
-            stampPaperHeader.classList.add('hidden');
-        }
-    }
-
-    // Page Navigation Bar
-    if (documentPages.length > 1) {
-        if (pageNavBar) pageNavBar.classList.remove('hidden');
-        if (pageIndicator) pageIndicator.innerText = `पेज ${currentPageIndex + 1} / ${documentPages.length}`;
-        if (prevPageBtn) prevPageBtn.disabled = (currentPageIndex === 0);
-        if (nextPageBtn) nextPageBtn.disabled = (currentPageIndex === documentPages.length - 1);
-    } else {
-        if (pageNavBar) pageNavBar.classList.add('hidden');
-    }
+    if (pageNavBar) pageNavBar.classList.add('hidden');
+    if (stampPaperHeader) stampPaperHeader.classList.add('hidden');
 }
 
 // Re-paginate on window resize
