@@ -1,6 +1,6 @@
 // State Variables
 let activeTab = 'image'; // 'image' or 'audio'
-let selectedImageFile = null;
+let selectedImageFiles = []; // Array of File objects (supports multi-page deeds)
 let selectedAudioFile = null;
 let mediaRecorder = null;
 let audioChunks = [];
@@ -27,6 +27,11 @@ const dropZone = document.getElementById('drop-zone');
 const cameraInput = document.getElementById('camera-input');
 const fileInput = document.getElementById('file-input');
 const imagePreviewContainer = document.getElementById('image-preview-container');
+const pageCountBadge = document.getElementById('page-count-badge');
+const imagesGrid = document.getElementById('images-grid');
+const clearAllImagesBtn = document.getElementById('clear-all-images');
+const cameraInputAdd = document.getElementById('camera-input-add');
+const fileInputAdd = document.getElementById('file-input-add');
 const imagePreview = document.getElementById('image-preview');
 const removeImageBtn = document.getElementById('remove-image');
 
@@ -106,8 +111,8 @@ function setupEventListeners() {
     // 2. Camera Direct Hardware Capture Listener
     if (cameraInput) {
         cameraInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleImageSelection(e.target.files[0]);
+            if (e.target.files && e.target.files.length > 0) {
+                handleImageSelection(Array.from(e.target.files));
             }
         });
     }
@@ -118,8 +123,8 @@ function setupEventListeners() {
             fileInput.click();
         });
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleImageSelection(e.target.files[0]);
+            if (e.target.files && e.target.files.length > 0) {
+                handleImageSelection(Array.from(e.target.files));
             }
         });
         dropZone.addEventListener('dragover', (e) => {
@@ -132,12 +137,33 @@ function setupEventListeners() {
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/40', 'scale-[1.01]');
-            if (e.dataTransfer.files.length > 0) {
-                handleImageSelection(e.dataTransfer.files[0]);
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleImageSelection(Array.from(e.dataTransfer.files));
             }
         });
     }
 
+    // Additional Multi-page Camera & Gallery Listeners
+    if (cameraInputAdd) {
+        cameraInputAdd.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleImageSelection(Array.from(e.target.files));
+            }
+        });
+    }
+    if (fileInputAdd) {
+        fileInputAdd.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleImageSelection(Array.from(e.target.files));
+            }
+        });
+    }
+    if (clearAllImagesBtn) {
+        clearAllImagesBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearImageSelection();
+        });
+    }
     if (removeImageBtn) {
         removeImageBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -244,15 +270,19 @@ function setupEventListeners() {
 
     if (processBtn) {
         processBtn.addEventListener('click', () => {
-            if (activeTab === 'image' && !selectedImageFile) {
-                showToast('error', 'कृपया पहले फ़ोटो खींचें या फाइल अपलोड करें।');
-                return;
+            if (activeTab === 'image') {
+                if (selectedImageFiles.length === 0) {
+                    showToast('error', 'कृपया पहले फ़ोटो खींचें या गैलरी से 1 या अधिक पेज जोड़ें।');
+                    return;
+                }
+                processWithAI('image');
+            } else if (activeTab === 'audio') {
+                if (!selectedAudioFile) {
+                    showToast('error', 'कृपया पहले बोलकर रिकॉर्ड करें या ऑडियो फ़ाइल चुनें।');
+                    return;
+                }
+                processWithAI('audio');
             }
-            if (activeTab === 'audio' && !selectedAudioFile) {
-                showToast('error', 'कृपया पहले बोलकर रिकॉर्ड करें या ऑडियो चुनें।');
-                return;
-            }
-            processWithAI(activeTab);
         });
     }
 
@@ -450,55 +480,135 @@ function switchTab(tab) {
     }
 }
 
-// Handle Image Selection & Auto-start Smart Typing
-async function handleImageSelection(file) {
-    if (!file.type.startsWith('image/')) {
-        showToast('error', 'कृपया केवल इमेज फाइल ही अपलोड करें।');
+// Render thumbnails for multi-page deeds
+function renderImageThumbnails() {
+    if (!imagesGrid) return;
+    imagesGrid.innerHTML = '';
+    
+    selectedImageFiles.forEach((file, index) => {
+        const thumbCard = document.createElement('div');
+        thumbCard.className = 'relative group rounded-xl overflow-hidden border border-emerald-200 bg-white shadow-xs';
+        
+        const previewUrl = URL.createObjectURL(file);
+        
+        thumbCard.innerHTML = `
+            <div class="relative h-28 bg-slate-100 flex items-center justify-center overflow-hidden">
+                <img src="${previewUrl}" alt="पेज ${index + 1}" class="w-full h-full object-cover">
+                <div class="absolute top-1.5 left-1.5 bg-emerald-900/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 shadow-xs">
+                    पेज ${index + 1}
+                </div>
+                <button type="button" class="remove-page-btn absolute top-1.5 right-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full h-6 w-6 flex items-center justify-center transition shadow-sm cursor-pointer" title="इस पेज को हटाएं" data-index="${index}">
+                    <i class="fa-solid fa-xmark text-xs pointer-events-none"></i>
+                </button>
+            </div>
+            <div class="p-1.5 bg-emerald-50/50 flex justify-between items-center text-[10px] text-emerald-900 truncate">
+                <span class="font-medium truncate max-w-[120px]">${file.name || `Page_${index + 1}.jpg`}</span>
+                <span class="text-slate-400 text-[9px] font-mono">${(file.size / 1024).toFixed(0)} KB</span>
+            </div>
+        `;
+        
+        const removeBtn = thumbCard.querySelector('.remove-page-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeImagePage(index);
+            });
+        }
+        
+        imagesGrid.appendChild(thumbCard);
+    });
+
+    if (pageCountBadge) {
+        pageCountBadge.innerText = `${selectedImageFiles.length} पेज चुने गए`;
+    }
+}
+
+function removeImagePage(index) {
+    if (index >= 0 && index < selectedImageFiles.length) {
+        selectedImageFiles.splice(index, 1);
+        if (selectedImageFiles.length === 0) {
+            clearImageSelection();
+        } else {
+            renderImageThumbnails();
+            showToast('info', `पेज हटाया गया। कुल ${selectedImageFiles.length} पेज शेष हैं।`);
+        }
+    }
+}
+
+// Handle Image Selection & Preview (User must click 'दस्तावेज़ तैयार करें' to run AI)
+async function handleImageSelection(filesInput) {
+    const files = Array.isArray(filesInput) ? filesInput : [filesInput];
+    const validImages = files.filter(f => f && ((f.type && f.type.startsWith('image/')) || (f.name && /\.(jpg|jpeg|png|webp|bmp|heic|tiff)$/i.test(f.name))));
+
+    if (validImages.length === 0) {
+        showToast('error', 'कृपया केवल इमेज फाइल (JPG, PNG, WebP) ही अपलोड करें।');
         return;
     }
 
-    // Fast client-side compression to avoid 50s network delay
-    const optimizedFile = await compressImageClientSide(file);
-    selectedImageFile = optimizedFile;
+    showToast('info', `${validImages.length} पेज जोड़े जा रहे हैं...`);
+
+    for (const f of validImages) {
+        const optimizedFile = await compressImageClientSide(f);
+        selectedImageFiles.push(optimizedFile);
+    }
+    
+    // Clear audio if image selected
     selectedAudioFile = null;
+    if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        imagePreview.src = e.target.result;
-        imagePreviewContainer.classList.remove('hidden');
-        dropZone.classList.add('hidden');
-    };
-    reader.readAsDataURL(optimizedFile);
+    // Display multi-page preview container and hide drop-zone
+    if (selectedImageFiles.length > 0) {
+        if (dropZone) dropZone.classList.add('hidden');
+        if (imagePreviewContainer) imagePreviewContainer.classList.remove('hidden');
+        renderImageThumbnails();
+        showToast('success', `${selectedImageFiles.length} पेज तैयार! अब "दस्तावेज़ तैयार करें" बटन दबाएँ।`);
+    }
 
-    // Instant Smart Typing
-    processWithAI('image');
+    // Reset file inputs so the same photo/file can be re-selected if necessary
+    if (cameraInput) cameraInput.value = '';
+    if (fileInput) fileInput.value = '';
+    if (cameraInputAdd) cameraInputAdd.value = '';
+    if (fileInputAdd) fileInputAdd.value = '';
+
+    // NOTICE: processWithAI is NOT auto-called here.
+    // The user will click `[दस्तावेज़ तैयार करें (Smart Typing)]` when satisfied with their images.
 }
 
 function clearImageSelection() {
-    selectedImageFile = null;
+    selectedImageFiles = [];
     if (cameraInput) cameraInput.value = '';
     if (fileInput) fileInput.value = '';
-    imagePreview.src = '#';
-    imagePreviewContainer.classList.add('hidden');
-    dropZone.classList.remove('hidden');
+    if (cameraInputAdd) cameraInputAdd.value = '';
+    if (fileInputAdd) fileInputAdd.value = '';
+    if (imagesGrid) imagesGrid.innerHTML = '';
+    if (pageCountBadge) pageCountBadge.innerText = '0 पेज चुने गए';
+    if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
+    if (dropZone) dropZone.classList.remove('hidden');
+    if (imagePreview) imagePreview.src = '#';
 }
 
-// Handle Audio Selection & Auto-start Smart Typing
+// Handle Audio Selection & Preview (User must click 'दस्तावेज़ तैयार करें' to run AI)
 function handleAudioSelection(file) {
     selectedAudioFile = file;
-    selectedImageFile = null;
-    audioPreview.src = URL.createObjectURL(file);
-    audioPreviewContainer.classList.remove('hidden');
+    // Clear image selection if audio selected
+    selectedImageFiles = [];
+    clearImageSelection();
 
-    // Instant Smart Typing
-    processWithAI('audio');
+    if (audioPreview) audioPreview.src = URL.createObjectURL(file);
+    if (audioPreviewContainer) audioPreviewContainer.classList.remove('hidden');
+    if (recordStatus) recordStatus.innerText = 'ऑडियो तैयार है! नीचे "दस्तावेज़ तैयार करें" बटन दबाएँ।';
+
+    showToast('success', 'ऑडियो रिकॉर्डिंग तैयार है! अब "दस्तावेज़ तैयार करें" बटन दबाएँ।');
+    // NOTICE: processWithAI is NOT auto-called here.
+    // The user will click `[दस्तावेज़ तैयार करें (Smart Typing)]` when satisfied.
 }
 
 function clearAudioSelection() {
     selectedAudioFile = null;
-    audioInput.value = '';
-    audioPreview.src = '';
-    audioPreviewContainer.classList.add('hidden');
+    if (audioInput) audioInput.value = '';
+    if (audioPreview) audioPreview.src = '';
+    if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
+    if (recordStatus) recordStatus.innerText = 'माइक चालू करने के लिए बटन दबाएं';
 }
 
 // Voice Recording Logic with Zoom In-Out Animation
@@ -583,7 +693,7 @@ function stopRecording() {
     if (recordRing) recordRing.classList.add('hidden');
     if (recordRing2) recordRing2.classList.add('hidden');
     if (recordIcon) recordIcon.className = 'fa-solid fa-microphone text-2xl';
-    if (recordStatus) recordStatus.innerText = 'रिकॉर्डिंग समाप्त। Smart Typing शुरू हो रही है...';
+    if (recordStatus) recordStatus.innerText = 'रिकॉर्डिंग पूरी हो गई! अब नीचे "दस्तावेज़ तैयार करें" बटन दबाएं।';
 }
 
 // Process Document through FastAPI
@@ -591,12 +701,22 @@ async function processWithAI(mode) {
     const formData = new FormData();
     let url = '';
 
-    if (mode === 'image' || selectedImageFile) {
-        if (!selectedImageFile) return;
-        formData.append('file', selectedImageFile);
+    if (mode === 'image' || (selectedImageFiles && selectedImageFiles.length > 0)) {
+        if (!selectedImageFiles || selectedImageFiles.length === 0) {
+            showToast('error', 'कृपया पहले फ़ोटो खींचें या 1 या अधिक पेज जोड़ें।');
+            return;
+        }
+        selectedImageFiles.forEach((file) => {
+            formData.append('files', file);
+        });
+        // Also append 'file' for backwards compatibility
+        formData.append('file', selectedImageFiles[0]);
         url = '/api/process-image';
     } else {
-        if (!selectedAudioFile) return;
+        if (!selectedAudioFile) {
+            showToast('error', 'कृपया पहले बोलकर रिकॉर्ड करें या ऑडियो फ़ाइल चुनें।');
+            return;
+        }
         formData.append('file', selectedAudioFile);
         url = '/api/process-audio';
     }
