@@ -108,8 +108,17 @@ function connectSync(email) {
                     }
                 } else if (message.event === 'open_in_word') {
                     const docId = message.doc_id;
-                    incomingTextPreview.value = `📄 नया दस्तावेज़ (ID: ${docId}) प्राप्त हुआ!\n\nफ़ाइल डाउनलोड हो रही है...`;
-                    insertManualBtn.removeAttribute('disabled');
+                    const docText = message.text || '';
+                    if (docText) {
+                        incomingTextPreview.value = docText;
+                        insertManualBtn.removeAttribute('disabled');
+                        if (autoInsertToggle && autoInsertToggle.checked) {
+                            insertTextIntoWord(docText);
+                        }
+                    } else {
+                        incomingTextPreview.value = `📄 नया दस्तावेज़ (ID: ${docId}) प्राप्त हुआ!\n\nफ़ाइल डाउनलोड हो रही है...`;
+                        insertManualBtn.removeAttribute('disabled');
+                    }
                     // Automatically trigger download of pristine .docx
                     window.location.href = `/d/${docId}`;
                 }
