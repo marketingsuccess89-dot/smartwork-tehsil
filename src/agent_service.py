@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import io
 from PIL import Image, ImageOps, ImageEnhance
@@ -192,7 +193,7 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
     
     parts.append(prompt)
 
-    models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-lite-latest"]
+    models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
     last_err = None
     for model_name in models:
         try:
@@ -204,7 +205,11 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
                     response_schema=TranscriptionResult
                 )
             )
-            data = json.loads(response.text)
+            clean_text = (response.text or "").strip()
+            if clean_text.startswith("```"):
+                clean_text = re.sub(r"^```(?:json)?\s*", "", clean_text)
+                clean_text = re.sub(r"\s*```$", "", clean_text).strip()
+            data = json.loads(clean_text)
             return TranscriptionResult(**data)
         except Exception as e:
             last_err = e
@@ -252,7 +257,7 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     Ensure your response strictly matches the required JSON schema.
     """
     
-    models = ["gemini-3.7-flash", "gemini-flash-lite-latest", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
+    models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
     last_err = None
     for model_name in models:
         try:
@@ -267,7 +272,11 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
                     response_schema=TranscriptionResult
                 )
             )
-            data = json.loads(response.text)
+            clean_text = (response.text or "").strip()
+            if clean_text.startswith("```"):
+                clean_text = re.sub(r"^```(?:json)?\s*", "", clean_text)
+                clean_text = re.sub(r"\s*```$", "", clean_text).strip()
+            data = json.loads(clean_text)
             return TranscriptionResult(**data)
         except Exception as e:
             last_err = e
