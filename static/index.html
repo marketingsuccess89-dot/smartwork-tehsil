@@ -152,27 +152,36 @@
                 left: 0 !important;
                 width: 100% !important;
                 margin: 0 !important;
-                padding: 25.4mm 25.4mm 25.4mm 25.4mm !important; /* Authentic 1.0-inch Normal margins */
+                padding: 0 !important;
+                background: #ffffff !important;
+            }
+            .print-page-sheet {
+                page-break-after: always !important;
+                break-after: page !important;
+                padding: 0 25.4mm !important; /* Only left/right; top/bottom handled by @page */
                 box-sizing: border-box !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
                 background: #ffffff !important;
                 color: #000000 !important;
                 font-family: 'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif !important;
-                font-size: 12pt !important;
-                line-height: 1.6 !important;
+                font-size: 11.5pt !important;
+                line-height: 1.35 !important;
+            }
+            .print-page-sheet:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
             }
             @page {
                 size: A4 portrait;
-                margin: 0 !important; /* Suppresses browser auto headers (time, date, title) and footer (URL) */
+                margin: 0 !important; /* Suppresses browser auto headers (URL, localhost) and footer (date, time) */
             }
             .stamp-print-spacer {
                 height: 2.7in !important;
                 width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
-            }
-            .print-page-break {
-                page-break-after: always !important;
-                break-after: page !important;
             }
             h1.print-title {
                 text-align: center !important;
@@ -723,7 +732,13 @@
         </div>
     </div>
 
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-[#06281e] text-white text-xs font-semibold py-3 px-5 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition duration-300 z-50 flex items-center space-x-2.5 border border-emerald-900 pointer-events-none">
+        <span id="toast-icon"><i class="fa-solid fa-circle-check text-emerald-400"></i></span>
+        <span id="toast-message"></span>
+    </div>
+
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260904_v32"></script>
+    <script src="/static/app.js?v=20260904_v33"></script>
 </body>
 </html>
