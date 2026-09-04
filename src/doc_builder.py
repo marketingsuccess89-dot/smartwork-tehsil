@@ -74,6 +74,9 @@ def add_styled_paragraph(doc, text: str, style_type='body', alignment=None):
         p_format.space_after = Pt(6)
         p_format.line_spacing = 1.15
 
+    # Clean up <br> tags into newlines for Word formatting
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+
     # Parse **bold** text
     parts = re.split(r'(\*\*.*?\*\*)', text)
     for part in parts:
@@ -209,6 +212,7 @@ def unwrap_paragraphs(text: str) -> str:
     lines = text.split('\n')
     unwrapped = []
     current_p = []
+    in_closing = False
 
     for line in lines:
         stripped = line.strip()
@@ -223,19 +227,37 @@ def unwrap_paragraphs(text: str) -> str:
         is_bullet = stripped.startswith('* ') or stripped.startswith('- ')
         is_table = stripped.startswith('|')
         is_page_break = bool(re.match(r'^\s*-{3,}\s*$', stripped))
-        is_new_clause = bool(re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', stripped))
-        # Universal label line: e.g. "नाम :", "विषय :", "पता :", "कक्षा :", "दिनांक :"
-        is_label_line = bool(re.match(r'^[^:\n]{2,30}\s*:\s*.+$', stripped))
-        # Universal formal opening / closing / court headers
-        is_formal_break = bool(re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|To:|From:|Subject:|Dear|Respected|Sincerely|Regards|Date:)', stripped, re.IGNORECASE))
+        if is_page_break:
+            in_closing = False
 
-        if is_heading or is_bullet or is_table or is_page_break or is_new_clause or is_label_line or is_formal_break:
+        is_new_clause = bool(re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', stripped))
+        # Universal label line: e.g. "नाम :", "विषय :", "पता :", "कक्षा :", "दिनांक :", "आवेदक / प्रार्थी:"
+        is_label_line = bool(re.match(r'^[^:\n]{2,35}\s*:\s*.*$', stripped))
+
+        # Precision closing detection: sentences ending in verbs are NOT closing blocks
+        is_sentence = bool(re.search(r'(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$', stripped))
+        is_closing_start = False
+        if not is_sentence and len(stripped) < 45:
+            if re.match(r'^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b', stripped, re.IGNORECASE):
+                is_closing_start = True
+            elif re.match(r'^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)', stripped, re.IGNORECASE) and not re.search(r'(?:सादर|निवेदन|प्रार्थना|करता|करती)', stripped):
+                is_closing_start = True
+
+        if is_closing_start:
+            in_closing = True
+        elif in_closing and (is_sentence or len(stripped) > 60 or is_new_clause or is_heading):
+            in_closing = False
+
+        # Universal formal opening / court headers (excluding body sentences starting with applicant name)
+        is_formal_break = bool(re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|संलग्नक|नाम|पिता|पता|कक्षा|अनुक्रमांक|मो०|मोबाइल|To:|From:|Subject:|Dear|Respected|Date:)', stripped, re.IGNORECASE)) or is_closing_start
+
+        if in_closing or is_heading or is_bullet or is_table or is_page_break or is_new_clause or is_label_line or is_formal_break:
             if current_p:
                 unwrapped.append(' '.join(current_p))
                 current_p = []
             unwrapped.append(stripped)
         else:
-            if current_p and not (current_p[-1].startswith('#') or current_p[-1].startswith('|') or re.match(r'^\s*-{3,}\s*$', current_p[-1]) or re.match(r'^[^:\n]{2,30}\s*:\s*.+$', current_p[-1]) or re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)', current_p[-1], re.IGNORECASE)):
+            if current_p and not (current_p[-1].startswith('#') or current_p[-1].startswith('|') or re.match(r'^\s*-{3,}\s*$', current_p[-1]) or re.match(r'^[^:\n]{2,35}\s*:\s*.*$', current_p[-1]) or re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|आवेदक|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)', current_p[-1], re.IGNORECASE)):
                 current_p.append(stripped)
             else:
                 if current_p:
@@ -367,7 +389,7 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
 
             d_left, d_right = "", ""
             consumed_l2 = False
-            if next_l2 and 'दिनांक' in next_l2:
+            if consumed_l1 and next_l2 and 'दिनांक' in next_l2:
                 d_parts = re.split(r'(?=दिनांक)', next_l2)
                 d_parts = [p.strip() for p in d_parts if p.strip()]
                 if len(d_parts) >= 2:
@@ -402,8 +424,18 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
             i += 1
             continue
 
-        if re.match(r'^(द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर शपथकर्ता|हस्ताक्षर आवेदक|हस्ताक्षर प्रार्थी|हस्ताक्षर|भवदीय|प्रार्थी|निवेदक|विनीत|आवेदक|शपथकर्ता|शपथी|आपका आज्ञाकारी|आज्ञाकारी शिष्य|आज्ञाकारी शिष्या|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully|Yours truly)', stripped, re.IGNORECASE):
+        is_sentence = bool(re.search(r'(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$', stripped))
+        is_closing_start = False
+        if not is_sentence and len(stripped) < 45:
+            if re.match(r'^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully|Yours truly)\b', stripped, re.IGNORECASE):
+                is_closing_start = True
+            elif re.match(r'^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)', stripped, re.IGNORECASE) and not re.search(r'(?:सादर|निवेदन|प्रार्थना|करता|करती)', stripped):
+                is_closing_start = True
+
+        if is_closing_start:
             in_closing_block = True
+        elif in_closing_block and (is_sentence or len(stripped) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', stripped) or stripped.startswith('#')):
+            in_closing_block = False
 
         align = WD_ALIGN_PARAGRAPH.RIGHT if in_closing_block else WD_ALIGN_PARAGRAPH.JUSTIFY
         add_styled_paragraph(doc, stripped, style_type='body', alignment=align)
