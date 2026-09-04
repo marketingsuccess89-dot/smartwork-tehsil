@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
-from src.agent_service import extract_text_from_image, extract_text_from_images, transcribe_audio_dictation
+from src.agent_service import extract_text_from_image, extract_text_from_images, transcribe_audio_dictation, get_model_status
 from src.doc_builder import create_docx
 
 app = FastAPI(title="Tehsil AI Document Operator MVP")
@@ -773,13 +773,20 @@ async def view_shared_doc(doc_id: str):
 """
     return HTMLResponse(page_html)
 
+# Model status and failover monitor
+@app.get("/api/model-status")
+async def model_status():
+    """Returns active Gemini model, primary/secondary ranking, and failover state."""
+    return get_model_status()
+
 # Health check endpoint for Render keep-alive bot and uptime monitoring
 @app.get("/api/health")
 async def health_check():
     return {
         "status": "ok",
         "service": "smartwork-tehsil",
-        "timestamp": time.time()
+        "timestamp": time.time(),
+        "ai_model": get_model_status()
     }
 
 import threading
