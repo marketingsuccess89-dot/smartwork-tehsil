@@ -152,7 +152,8 @@
                 left: 0 !important;
                 width: 100% !important;
                 margin: 0 !important;
-                padding: 0 !important;
+                padding: 25.4mm 25.4mm 25.4mm 25.4mm !important; /* Authentic 1.0-inch Normal margins */
+                box-sizing: border-box !important;
                 background: #ffffff !important;
                 color: #000000 !important;
                 font-family: 'Noto Sans Devanagari', 'Nirmala UI', system-ui, -apple-system, sans-serif !important;
@@ -161,7 +162,7 @@
             }
             @page {
                 size: A4 portrait;
-                margin: 25.4mm 25.4mm 25.4mm 25.4mm; /* Standard 1.0-inch Normal margins */
+                margin: 0 !important; /* Suppresses browser auto headers (time, date, title) and footer (URL) */
             }
             .stamp-print-spacer {
                 height: 2.7in !important;
@@ -175,11 +176,11 @@
             }
             h1.print-title {
                 text-align: center !important;
-                font-size: 16pt !important;
+                font-size: 18pt !important;
                 font-weight: bold !important;
                 color: #06281e !important;
                 margin-top: 0 !important;
-                margin-bottom: 12pt !important;
+                margin-bottom: 14pt !important;
                 page-break-after: avoid !important;
                 break-after: avoid !important;
             }
@@ -723,6 +724,6 @@
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260904_v31"></script>
+    <script src="/static/app.js?v=20260904_v32"></script>
 </body>
 </html>
