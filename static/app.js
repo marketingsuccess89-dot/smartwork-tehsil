@@ -1464,6 +1464,9 @@ function renderBlockHtml(block) {
     if (block.type === 'left_info') {
         return `<p class="my-0.5 leading-normal text-left text-slate-900 font-medium">${formatInline(block.raw)}</p>`;
     }
+    if (block.type === 'break') {
+        return '<div class="my-4 border-t-2 border-dashed border-emerald-300 relative flex items-center justify-center print:hidden"><span class="bg-white px-3 text-[10px] text-emerald-800 font-bold uppercase tracking-wider">नया पेज (Next Page / New Document)</span></div>';
+    }
     return `<p class="my-1 leading-tight text-justify text-slate-900">${formatInline(block.raw)}</p>`;
 }
 
@@ -1560,18 +1563,38 @@ function paginateDocument(rawText) {
         i++;
     }
 
-    let renderedBlocks = [];
-    if (isStampPaper) {
-        renderedBlocks.push('<div class="stamp-space-box w-full mb-5 py-6 border-2 border-dashed border-emerald-300 rounded-xl bg-emerald-50/50 text-center text-emerald-800 font-bold text-xs select-none flex items-center justify-center space-x-2"><i class="fa-solid fa-stamp text-emerald-600 text-sm"></i><span>📜 स्टाम्प पेपर प्रिंट एरिया (3.0" Space Reserved)</span></div>');
-    }
+    // Group blocks into individual pages separated by 'break' (---)
+    const pages = [];
+    let currentPageBlocks = [];
 
     for (let b = 0; b < blocks.length; b++) {
-        renderedBlocks.push(renderBlockHtml(blocks[b]));
+        if (blocks[b].type === 'break') {
+            if (currentPageBlocks.length > 0) {
+                pages.push(currentPageBlocks);
+                currentPageBlocks = [];
+            }
+        } else {
+            currentPageBlocks.push(blocks[b]);
+        }
+    }
+    if (currentPageBlocks.length > 0 || pages.length === 0) {
+        pages.push(currentPageBlocks);
     }
 
-    const fullA4Html = renderedBlocks.join('');
-    documentPages = [fullA4Html];
-    currentPageIndex = 0;
+    documentPages = pages.map((pageBlks, pageIdx) => {
+        let pageHtml = [];
+        if (pageIdx === 0 && isStampPaper) {
+            pageHtml.push('<div class="stamp-space-box w-full mb-5 py-6 border-2 border-dashed border-emerald-300 rounded-xl bg-emerald-50/50 text-center text-emerald-800 font-bold text-xs select-none flex items-center justify-center space-x-2"><i class="fa-solid fa-stamp text-emerald-600 text-sm"></i><span>📜 स्टाम्प पेपर प्रिंट एरिया (3.0" Space Reserved)</span></div>');
+        }
+        for (let blk of pageBlks) {
+            pageHtml.push(renderBlockHtml(blk));
+        }
+        return pageHtml.join('');
+    });
+
+    if (currentPageIndex >= documentPages.length) {
+        currentPageIndex = 0;
+    }
 }
 
 // Render the A4 Print Preview with natural reading flow
@@ -1586,13 +1609,41 @@ function renderCurrentPage() {
 
     if (previewPlaceholder) previewPlaceholder.classList.add('hidden');
     if (previewContent) {
-        previewContent.innerHTML = documentPages[0] || '';
+        previewContent.innerHTML = documentPages[currentPageIndex] || '';
         previewContent.style.fontSize = `${currentFontSize}px`;
         previewContent.classList.remove('hidden');
     }
 
-    if (pageNavBar) pageNavBar.classList.add('hidden');
-    if (stampPaperHeader) stampPaperHeader.classList.add('hidden');
+    // Page navigation bar for multi-page / multi-document drafts
+    if (pageNavBar) {
+        if (documentPages.length > 1) {
+            pageNavBar.classList.remove('hidden');
+            if (pageIndicator) {
+                pageIndicator.innerText = `पेज ${currentPageIndex + 1} / ${documentPages.length}`;
+            }
+            if (prevPageBtn) {
+                prevPageBtn.disabled = (currentPageIndex === 0);
+                prevPageBtn.style.opacity = (currentPageIndex === 0) ? '0.4' : '1';
+                prevPageBtn.style.cursor = (currentPageIndex === 0) ? 'not-allowed' : 'pointer';
+            }
+            if (nextPageBtn) {
+                nextPageBtn.disabled = (currentPageIndex === documentPages.length - 1);
+                nextPageBtn.style.opacity = (currentPageIndex === documentPages.length - 1) ? '0.4' : '1';
+                nextPageBtn.style.cursor = (currentPageIndex === documentPages.length - 1) ? 'not-allowed' : 'pointer';
+            }
+        } else {
+            pageNavBar.classList.add('hidden');
+        }
+    }
+
+    if (stampPaperHeader) {
+        const isStampPaper = Boolean(stampPaperToggle && stampPaperToggle.checked);
+        if (isStampPaper && currentPageIndex === 0) {
+            stampPaperHeader.classList.remove('hidden');
+        } else {
+            stampPaperHeader.classList.add('hidden');
+        }
+    }
 }
 
 // Re-paginate on window resize
@@ -1623,6 +1674,10 @@ function convertTextToWordHtml(rawText) {
     for (let line of lines) {
         let stripped = line.trim();
         if (!stripped) continue;
+        if (stripped.match(/^-{3,}$/)) {
+            fullHtml += '<br clear="all" style="page-break-before:always; mso-break-type:section-break">';
+            continue;
+        }
         if (stripped.startsWith('# ')) {
             fullHtml += `<h1>${formatInline(stripped.substring(2))}</h1>`;
         } else if (stripped.startsWith('## ')) {
