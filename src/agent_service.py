@@ -88,11 +88,27 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
     page_context = ""
     if num_pages > 1:
         page_context = f"""
-    IMPORTANT MULTI-PAGE DOCUMENT RULE (बहु-पृष्ठीय दस्तावेज़ निर्देश):
-    - You have been provided {num_pages} consecutive photos (Page 1 through Page {num_pages}) of the SAME legal document/deed in exact chronological order.
-    - Transcribe and combine ALL {num_pages} pages into ONE single, continuous, unified legal Markdown document.
-    - DO NOT restart or duplicate titles/headers on subsequent pages. Flow the terms, conditions, and numbered clauses continuously from page to page.
-    - At the very end of the final page, format the signature and witness blocks.
+    IMPORTANT: MULTI-IMAGE INTELLIGENT DOCUMENT & BOUNDARY RECOGNITION (बहु-फ़ोटो एवं दस्तावेज़ पहचान नियम):
+    You have been provided {num_pages} uploaded document photos in sequence.
+    Carefully inspect each photo's visual layout, formal headers, and textual flow to detect whether they belong to the SAME continuous document or are MULTIPLE DIFFERENT letters/applications:
+
+    CASE 1: CONTINUATION OF THE SAME DOCUMENT (एक ही दस्तावेज़ / डीड के क्रमिक पेज):
+    - Indicators: A legal agreement or deed (e.g. बैनामा, किरायानामा, इकरारनामा, शपथ पत्र) where Page 2 continues clauses from Page 1, mid-sentence flow across pages, continuous clause numbering (e.g. 1..5 on Page 1, 6..10 on Page 2), or page numbers ('पेज 1', 'पेज 2', 'Page 2 of 3'), with final signatures only on the last page.
+    - Formatting: Flow the terms, conditions, and numbered clauses continuously in chronological order into ONE unified document. DO NOT repeat or duplicate the main title/header on subsequent pages. Format signatures only at the end of the final page.
+
+    CASE 2: MULTIPLE SEPARATE INDEPENDENT DOCUMENTS / LETTERS (अलग-अलग स्वतंत्र पत्र / प्रार्थना पत्र):
+    - Indicators: A user uploads 2, 3, or 4 different letters or applications at the same time (e.g. School leave letter + Police complaint + Electricity application, or independent affidavits for different persons). Each has its own distinct formal opening ('सेवा में, ...', 'न्यायालय श्रीमान...', '# शपथ पत्र', '# प्रार्थना पत्र', new subject 'विषय: ...', new date, new recipient, or complete individual closing signatures).
+    - Formatting:
+      * NEVER merge or glue separate letters together! Each letter MUST be kept completely distinct.
+      * Whenever a NEW separate letter/document begins, you MUST insert a Markdown page-break line:
+        ---
+        (Three hyphens on their own line with a blank line before and after).
+      * After '---', format the next letter completely starting with its own Title, 'सेवा में, ...', Subject, Body paragraphs, and closing signatures.
+
+    CASE 3: MIXED (e.g. Document 1 has 2 pages, followed by a separate 1-page letter):
+      * Flow the 2 pages of Document 1 continuously.
+      * When Document 1 finishes with its signatures, insert '---'.
+      * Then start Document 2 on a fresh new page.
     """
 
     prompt = f"""
