@@ -121,6 +121,16 @@ def render_markdown_table(doc, table_lines):
     num_cols = max(len(r) for r in raw_rows)
     num_rows = len(raw_rows)
 
+    # If this is a dummy 2-column table used only to push a single person's details to the right
+    # (i.e. column 0 is completely empty across all rows), output clean right-aligned paragraphs
+    # rather than creating an unwanted table in MS Word!
+    if num_cols == 2 and all((len(r) < 1 or not r[0].strip()) for r in raw_rows):
+        for r in raw_rows:
+            txt = r[1].strip() if len(r) > 1 else ""
+            if txt:
+                add_styled_paragraph(doc, txt, style_type='body', alignment=WD_ALIGN_PARAGRAPH.RIGHT)
+        return
+
     sig_keywords = (
         'हस्ताक्षर', 'साक्षी', 'गवाह', 'प्रथम पक्ष', 'द्वितीय पक्ष', 'क्रेता', 'विक्रेता',
         'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'मुवक्किल', 'अधिवक्ता',
@@ -379,8 +389,13 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
             if consumed_l2: i += 1
             continue
 
-        # 10. Single closing / signature block detection (e.g. द्वारा अधिवक्ता, भवदीय, आपका आज्ञाकारी)
-        if re.match(r'^(द्वारा अधिवक्ता|हस्ताक्षर शपथकर्ता|हस्ताक्षर आवेदक|हस्ताक्षर प्रार्थी|हस्ताक्षर|भवदीय|आपका आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता)', stripped):
+        # 10. Single closing / signature / applicant block detection (e.g. भवदीय, प्रार्थी, शपथकर्ता)
+        if re.match(r'^(दिनांक|स्थान|Date:|Place:)', stripped, re.IGNORECASE):
+            add_styled_paragraph(doc, stripped, style_type='body', alignment=WD_ALIGN_PARAGRAPH.LEFT)
+            i += 1
+            continue
+
+        if re.match(r'^(द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर शपथकर्ता|हस्ताक्षर आवेदक|हस्ताक्षर प्रार्थी|हस्ताक्षर|भवदीय|प्रार्थी|निवेदक|विनीत|आवेदक|शपथकर्ता|शपथी|आपका आज्ञाकारी|आज्ञाकारी शिष्य|आज्ञाकारी शिष्या|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully|Yours truly)', stripped, re.IGNORECASE):
             in_closing_block = True
 
         align = WD_ALIGN_PARAGRAPH.RIGHT if in_closing_block else WD_ALIGN_PARAGRAPH.JUSTIFY
