@@ -1,13 +1,15 @@
 import os
 import re
 import json
+import uuid
+import time
 from dotenv import load_dotenv
 
 # Force load environment variables from .env file overriding system vars
 load_dotenv(override=True)
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -40,22 +42,31 @@ class DocxRequest(BaseModel):
     text: str
     stamp_paper: bool = False
 
+class SendToWordRequest(BaseModel):
+    text: str
+    stamp_paper: bool = False
+    station_id: str
+    pin: str = ""
+
 # Active WebSocket Sessions for Desktop/MS Word Sync
-# Key: user_id (e.g. Gmail), Value: WebSocket connection
-active_connections: dict[str, WebSocket] = {}
+# Key: user_id (e.g. Gmail), Value: {"ws": WebSocket, "pin": str}
+active_connections: dict[str, dict] = {}
 
 @app.websocket("/ws/desktop/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str):
+async def websocket_endpoint(websocket: WebSocket, user_id: str, pin: str = ""):
     """
-    Handles WebSocket connections from the MS Word Add-in / Desktop clients.
+    Handles WebSocket connections from Desktop Agent with optional PIN authentication.
     """
     await websocket.accept()
-    # Decode user_id in case it is URL-encoded (like emails)
     from urllib.parse import unquote
     clean_user_id = unquote(user_id).strip().lower()
+    clean_pin = pin.strip()
     
-    active_connections[clean_user_id] = websocket
-    print(f"Desktop client connected: {clean_user_id}")
+    active_connections[clean_user_id] = {
+        "ws": websocket,
+        "pin": clean_pin
+    }
+    print(f"Desktop client connected: {clean_user_id} (PIN configured: {bool(clean_pin)})")
     
     # Send welcome status
     await websocket.send_json({
@@ -66,9 +77,8 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
     
     try:
         while True:
-            # Keep connection open, receive any client messages/heartbeats
+            # Keep connection open, receive heartbeats
             data = await websocket.receive_text()
-            # Respond to ping/heartbeats
             if data == "ping":
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
@@ -80,17 +90,85 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 async def get_connection_status(user_id: str):
     """
     Checks if there is an active desktop/MS Word WebSocket connection for a user.
-    Called by the mobile device to verify connection state.
     """
     clean_user_id = user_id.strip().lower()
     is_connected = clean_user_id in active_connections
     return {"user_id": clean_user_id, "connected": is_connected}
 
+@app.post("/api/send-to-word")
+async def send_to_word(req: SendToWordRequest):
+    """
+    Securely sends a formatted deed directly to the user's Desktop MS Word.
+    Protected by PIN / Password verification.
+    """
+    clean_station_id = req.station_id.strip().lower()
+    clean_pin = req.pin.strip()
+
+    if not clean_station_id:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "connected": False,
+            "message": "कृपया स्टेशन ID / Gmail दर्ज करें।"
+        })
+
+    if clean_station_id not in active_connections:
+        return JSONResponse(status_code=404, content={
+            "success": False,
+            "connected": False,
+            "message": "कंप्यूटर पर Desktop Agent कनेक्ट नहीं है! कृपया पहले कंप्यूटर पर ऐप चालू करें।"
+        })
+
+    conn_info = active_connections[clean_station_id]
+    stored_pin = conn_info.get("pin", "")
+
+    # Verify PIN if configured on Desktop Agent
+    if stored_pin and clean_pin != stored_pin:
+        return JSONResponse(status_code=401, content={
+            "success": False,
+            "connected": True,
+            "message": "सुरक्षा पिन / पासवर्ड गलत है! कृपया सही पिन दर्ज करें।"
+        })
+
+    # Store document for clean DOCX stream download
+    doc_id = str(uuid.uuid4())[:8]
+    shared_documents[doc_id] = {
+        "text": req.text,
+        "stamp_paper": req.stamp_paper,
+        "created_at": time.time()
+    }
+
+    ws = conn_info["ws"]
+    try:
+        await ws.send_json({
+            "event": "open_in_word",
+            "doc_id": doc_id,
+            "stamp_paper": req.stamp_paper
+        })
+        return {
+            "success": True,
+            "connected": True,
+            "doc_id": doc_id,
+            "message": "दस्तावेज़ सफलतापूर्वक कंप्यूटर पर भेजा गया! MS Word में नई फ़ाइल खुल रही है..."
+        }
+    except Exception as ws_err:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "connected": False,
+            "message": f"डेटा भेजने में त्रुटि: {str(ws_err)}"
+        })
+
+@app.get("/download/agent")
+async def download_desktop_agent():
+    """Direct 1-click download of the Desktop Background Agent for PC."""
+    agent_file = "SmartTyping_Agent.exe" if os.path.exists("SmartTyping_Agent.exe") else "desktop_agent.py"
+    if not os.path.exists(agent_file):
+        raise HTTPException(status_code=404, detail="एजेंट फ़ाइल उपलब्ध नहीं है।")
+    return FileResponse(agent_file, filename=os.path.basename(agent_file))
+
 @app.post("/api/process-image")
 async def process_image(file: UploadFile = File(...), user_id: str = Form(None)):
     """
-    Receives an image file, runs Gemini Vision OCR, and broadcasts the result 
-    to the user's active MS Word desktop connection.
+    Receives an image file and runs Gemini Vision OCR.
     """
     # Allow standard image MIME types, application/octet-stream, or common image extensions
     is_img = (
@@ -105,21 +183,6 @@ async def process_image(file: UploadFile = File(...), user_id: str = Form(None))
         contents = await file.read()
         mime_type = file.content_type if (file.content_type and file.content_type.startswith("image/")) else "image/jpeg"
         result = extract_text_from_image(contents, mime_type=mime_type)
-        
-        # Sync to Desktop MS Word if user_id is provided and active
-        if user_id:
-            clean_user_id = user_id.strip().lower()
-            if clean_user_id in active_connections:
-                websocket = active_connections[clean_user_id]
-                try:
-                    await websocket.send_json({
-                        "event": "transcription_ready",
-                        "text": result.transcribed_text
-                    })
-                    print(f"Synced image text to desktop for: {clean_user_id}")
-                except Exception as ws_err:
-                    print(f"Failed to send websocket message to {clean_user_id}: {ws_err}")
-                    
         return result
     except ValueError as ve:
         import traceback
@@ -133,8 +196,7 @@ async def process_image(file: UploadFile = File(...), user_id: str = Form(None))
 @app.post("/api/process-audio")
 async def process_audio(file: UploadFile = File(...), user_id: str = Form(None)):
     """
-    Receives dictation audio, transcribes/formats it via Gemini, and broadcasts 
-    the result to the user's active MS Word desktop connection.
+    Receives dictation audio and transcribes/formats it via Gemini.
     """
     # Accept standard audio formats, generic octet-stream, or common file extensions
     is_audio = (
@@ -149,21 +211,6 @@ async def process_audio(file: UploadFile = File(...), user_id: str = Form(None))
         contents = await file.read()
         mime_type = file.content_type if file.content_type.startswith("audio/") else "audio/wav"
         result = transcribe_audio_dictation(contents, mime_type=mime_type)
-        
-        # Sync to Desktop MS Word if user_id is provided and active
-        if user_id:
-            clean_user_id = user_id.strip().lower()
-            if clean_user_id in active_connections:
-                websocket = active_connections[clean_user_id]
-                try:
-                    await websocket.send_json({
-                        "event": "transcription_ready",
-                        "text": result.transcribed_text
-                    })
-                    print(f"Synced audio text to desktop for: {clean_user_id}")
-                except Exception as ws_err:
-                    print(f"Failed to send websocket message to {clean_user_id}: {ws_err}")
-                    
         return result
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
