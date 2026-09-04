@@ -129,12 +129,18 @@ async def send_to_word(req: SendToWordRequest):
             "message": "सुरक्षा पिन / पासवर्ड गलत है! कृपया सही पिन दर्ज करें।"
         })
 
+    # Evict expired documents (> 48 hours) to prevent memory leak
+    now = time.time()
+    expired = [k for k, v in shared_documents.items() if now - v.get('created_at', now) > 172800]
+    for k in expired:
+        shared_documents.pop(k, None)
+
     # Store document for clean DOCX stream download
     doc_id = str(uuid.uuid4())[:8]
     shared_documents[doc_id] = {
         "text": req.text,
         "stamp_paper": req.stamp_paper,
-        "created_at": time.time()
+        "created_at": now
     }
 
     ws = conn_info["ws"]
@@ -253,9 +259,6 @@ async def download_docx_form(text: str = Form(...), stamp_paper: bool = Form(Fal
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate Word document: {str(e)}")
 
-import uuid
-import time
-
 shared_documents = {}
 
 @app.post("/api/create-share-link")
@@ -324,7 +327,7 @@ async def view_shared_doc(doc_id: str):
         content_parts.append('<div class="stamp-spacer" style="height: 2.7in; width: 100%;"></div>')
 
     i = 0
-    while i < lines.length if hasattr(lines, 'length') else i < len(lines):
+    while i < len(lines):
         line = lines[i].strip()
         if not line:
             i += 1
