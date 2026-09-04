@@ -892,13 +892,14 @@ async function shareOnWhatsApp() {
         // Close modal if open
         closeModal('modal-share');
 
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
         if (isMobile) {
             showToast('success', 'WhatsApp खोला जा रहा है...');
-            // Direct launch into WhatsApp / WhatsApp Business app
-            window.location.href = `whatsapp://send?text=${encodeURIComponent(whatsappMessage)}`;
+            // Universal HTTPS link directly opens WhatsApp app on mobile without popup block
+            window.location.href = whatsappUrl;
         } else {
             showToast('info', 'WhatsApp Web खोला जा रहा है...');
-            window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+            window.open(whatsappUrl, '_blank');
         }
     } catch (err) {
         console.error('WhatsApp share error:', err);
@@ -916,7 +917,6 @@ function triggerNativePrint() {
 
     const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
     const unwrappedText = unwrapParagraphs(text);
-    const lines = unwrappedText.split('\n');
 
     let printMount = document.getElementById('print-mount-point');
     if (!printMount) {
@@ -926,161 +926,181 @@ function triggerNativePrint() {
     }
     printMount.innerHTML = '';
 
-    // 1. If Stamp Paper mode: add 2.7-inch blank space on Page 1 (No dashed borders, no emoji)
-    if (isStamp) {
-        const spacer = document.createElement('div');
-        spacer.className = 'stamp-print-spacer';
-        printMount.appendChild(spacer);
-    }
+    const h1Matches = unwrappedText.match(/^#\s+[^\n]+/gm) || [];
+    const sevaMatches = unwrappedText.match(/^सेवा में/gm) || [];
+    const rawSections = unwrappedText.split(/\n\s*-{3,}\s*\n/).filter(p => p.trim());
+    const isMultiDoc = rawSections.length > 1 && (h1Matches.length > 1 || sevaMatches.length > 1);
 
-    let i = 0;
-    while (i < lines.length) {
-        const line = lines[i].trim();
-        if (!line) {
-            i++;
-            continue;
+    const rawPages = isMultiDoc ? rawSections : [unwrappedText.trim()];
+    if (rawPages.length === 0) rawPages.push(unwrappedText);
+
+    rawPages.forEach((pageText, pageIdx) => {
+        const pageSheet = document.createElement('div');
+        pageSheet.className = 'print-page-sheet';
+
+        // 1. If Stamp Paper mode: add 2.7-inch blank space on Page 1 (No dashed borders, no emoji)
+        if (isStamp && pageIdx === 0) {
+            const spacer = document.createElement('div');
+            spacer.className = 'stamp-print-spacer';
+            pageSheet.appendChild(spacer);
         }
 
-        // Section Break (---)
-        if (/^-{3,}$/.test(line)) {
-            const pageBreak = document.createElement('div');
-            pageBreak.className = 'print-page-break';
-            printMount.appendChild(pageBreak);
-            i++;
-            continue;
-        }
-
-        // Markdown Table
-        if (line.startsWith('|') && line.endsWith('|')) {
-            const tableLines = [];
-            while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-                tableLines.push(lines[i].trim());
+        const lines = pageText.split('\n');
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i].trim();
+            if (!line || /^-{3,}$/.test(line)) {
                 i++;
+                continue;
             }
-            
-            const tableRows = [];
-            for (let tLine of tableLines) {
-                if (!tLine.match(/^[\|\s\-:]+$/)) {
-                    let cells = tLine.split('|').slice(1, -1).map(c => c.trim());
-                    tableRows.push(cells);
+
+            // Markdown Table
+            if (line.startsWith('|') && line.endsWith('|')) {
+                const tableLines = [];
+                while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+                    tableLines.push(lines[i].trim());
+                    i++;
                 }
-            }
+                
+                const tableRows = [];
+                for (let tLine of tableLines) {
+                    if (!tLine.match(/^[\|\s\-:]+$/)) {
+                        let cells = tLine.split('|').slice(1, -1).map(c => c.trim());
+                        tableRows.push(cells);
+                    }
+                }
 
-            if (tableRows.length > 0) {
-                const cols = Math.max(...tableRows.map(r => r.length));
+                if (tableRows.length > 0) {
+                    const cols = Math.max(...tableRows.map(r => r.length));
 
-                // If dummy 2-column table with empty left column (| | भवदीय |), render as clean right-aligned text without table
-                if (cols === 2 && tableRows.every(r => !r[0] || r[0].trim() === '')) {
-                    const blockDiv = document.createElement('div');
-                    blockDiv.style.textAlign = 'right';
-                    blockDiv.style.margin = '8pt 0';
+                    // If dummy 2-column table with empty left column (| | भवदीय |), render as clean right-aligned text without table
+                    if (cols === 2 && tableRows.every(r => !r[0] || r[0].trim() === '')) {
+                        const blockDiv = document.createElement('div');
+                        blockDiv.style.textAlign = 'right';
+                        blockDiv.style.margin = '8pt 0';
+                        for (let r = 0; r < tableRows.length; r++) {
+                            const cellVal = tableRows[r][1] || '';
+                            if (cellVal) {
+                                const p = document.createElement('p');
+                                p.style.margin = '2pt 0';
+                                p.style.textAlign = 'right';
+                                p.style.lineHeight = '1.3';
+                                p.innerHTML = formatInline(cellVal);
+                                blockDiv.appendChild(p);
+                            }
+                        }
+                        pageSheet.appendChild(blockDiv);
+                        continue;
+                    }
+
+                    let isSigTable = tableRows.some(row => 
+                        row.some(cell => {
+                            const cl = cell.toLowerCase();
+                            return ['हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह', 'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता', 'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'निवेदक', 'भवदीय', 'signature', 'witness', 'party', 'landlord', 'tenant', 'deponent', 'applicant'].some(kw => cl.includes(kw));
+                        })
+                    );
+                    if (cols === 2 && !isSigTable && tableRows.length <= 4) {
+                        isSigTable = true;
+                    }
+
+                    const tbl = document.createElement('table');
+                    tbl.className = 'print-table';
+
+                    if (!isSigTable) {
+                        tbl.style.border = '1.5pt solid #06281e';
+                    }
+
                     for (let r = 0; r < tableRows.length; r++) {
-                        const cellVal = tableRows[r][1] || '';
-                        if (cellVal) {
-                            const p = document.createElement('p');
-                            p.style.margin = '2pt 0';
-                            p.style.textAlign = 'right';
-                            p.style.lineHeight = '1.3';
-                            p.innerHTML = formatInline(cellVal);
-                            blockDiv.appendChild(p);
-                        }
-                    }
-                    printMount.appendChild(blockDiv);
-                    continue;
-                }
-
-                let isSigTable = tableRows.some(row => 
-                    row.some(cell => {
-                        const cl = cell.toLowerCase();
-                        return ['हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह', 'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता', 'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'निवेदक', 'भवदीय', 'signature', 'witness', 'party', 'landlord', 'tenant', 'deponent', 'applicant'].some(kw => cl.includes(kw));
-                    })
-                );
-                if (cols === 2 && !isSigTable && tableRows.length <= 4) {
-                    isSigTable = true;
-                }
-
-                const tbl = document.createElement('table');
-                tbl.className = 'print-table';
-
-                if (!isSigTable) {
-                    tbl.style.border = '1.5pt solid #06281e';
-                }
-
-                for (let r = 0; r < tableRows.length; r++) {
-                    const tr = document.createElement('tr');
-                    const isHeader = (r === 0 && !isSigTable);
-                    if (isHeader) {
-                        tr.style.backgroundColor = '#f0fdf4';
-                        tr.style.fontWeight = 'bold';
-                    }
-
-                    for (let c = 0; c < cols; c++) {
-                        const cellVal = tableRows[r][c] || '';
-                        const td = document.createElement(isHeader ? 'th' : 'td');
-                        
-                        if (!isSigTable) {
-                            td.style.border = '1pt solid #cbd5e1';
+                        const tr = document.createElement('tr');
+                        const isHeader = (r === 0 && !isSigTable);
+                        if (isHeader) {
+                            tr.style.backgroundColor = '#f0fdf4';
+                            tr.style.fontWeight = 'bold';
                         }
 
-                        if (isSigTable && cols === 2) {
-                            td.style.textAlign = (c === 0) ? 'left' : 'right';
-                            td.style.width = '50%';
-                        } else if (isSigTable) {
-                            td.style.textAlign = 'center';
-                        } else {
-                            td.style.textAlign = isHeader ? 'center' : 'left';
-                        }
+                        for (let c = 0; c < cols; c++) {
+                            const cellVal = tableRows[r][c] || '';
+                            const td = document.createElement(isHeader ? 'th' : 'td');
+                            
+                            if (!isSigTable) {
+                                td.style.border = '1pt solid #cbd5e1';
+                            }
 
-                        td.innerHTML = formatInline(cellVal);
-                        tr.appendChild(td);
+                            if (isSigTable && cols === 2) {
+                                td.style.textAlign = (c === 0) ? 'left' : 'right';
+                                td.style.width = '50%';
+                            } else if (isSigTable) {
+                                td.style.textAlign = 'center';
+                            } else {
+                                td.style.textAlign = isHeader ? 'center' : 'left';
+                            }
+
+                            td.innerHTML = formatInline(cellVal);
+                            tr.appendChild(td);
+                        }
+                        tbl.appendChild(tr);
                     }
-                    tbl.appendChild(tr);
+                    pageSheet.appendChild(tbl);
                 }
-                printMount.appendChild(tbl);
+                continue;
             }
-            continue;
-        }
 
-        // Title (# Title)
-        if (line.startsWith('# ')) {
-            const h1 = document.createElement('h1');
-            h1.className = 'print-title';
-            h1.innerHTML = formatInline(line.substring(2).trim());
-            printMount.appendChild(h1);
+            // Title (# Title)
+            if (line.startsWith('# ')) {
+                const h1 = document.createElement('h1');
+                h1.className = 'print-title';
+                h1.innerHTML = formatInline(line.substring(2).trim());
+                pageSheet.appendChild(h1);
+                i++;
+                continue;
+            }
+
+            // Section Heading (## Heading)
+            if (line.startsWith('## ')) {
+                const h2 = document.createElement('h2');
+                h2.className = 'print-heading';
+                h2.innerHTML = formatInline(line.substring(3).trim());
+                pageSheet.appendChild(h2);
+                i++;
+                continue;
+            }
+
+            // Sub-Heading (### Sub-Heading)
+            if (line.startsWith('### ')) {
+                const h3 = document.createElement('h3');
+                h3.style.fontSize = '12pt';
+                h3.style.fontWeight = 'bold';
+                h3.style.color = '#06281e';
+                h3.style.margin = '8pt 0 3pt 0';
+                h3.innerHTML = formatInline(line.substring(4).trim());
+                pageSheet.appendChild(h3);
+                i++;
+                continue;
+            }
+
+            // Numbered Clause (e.g. 1. or (1) or (क))
+            const numMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            if (numMatch) {
+                const num = numMatch[1] || numMatch[2];
+                const content = numMatch[3];
+                const clauseDiv = document.createElement('div');
+                clauseDiv.className = 'print-clause';
+                clauseDiv.innerHTML = `<strong>${num}.</strong> ${formatInline(content)}`;
+                pageSheet.appendChild(clauseDiv);
+                i++;
+                continue;
+            }
+
+            // Standard Paragraph
+            const p = document.createElement('p');
+            p.className = 'print-p';
+            p.innerHTML = formatInline(line);
+            pageSheet.appendChild(p);
             i++;
-            continue;
         }
 
-        // Section Heading (## Heading)
-        if (line.startsWith('## ')) {
-            const h2 = document.createElement('h2');
-            h2.className = 'print-heading';
-            h2.innerHTML = formatInline(line.substring(3).trim());
-            printMount.appendChild(h2);
-            i++;
-            continue;
-        }
-
-        // Numbered Clause (e.g. 1. or (1) or (क))
-        const numMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
-        if (numMatch) {
-            const num = numMatch[1] || numMatch[2];
-            const content = numMatch[3];
-            const clauseDiv = document.createElement('div');
-            clauseDiv.className = 'print-clause';
-            clauseDiv.innerHTML = `<strong>${num}.</strong> ${formatInline(content)}`;
-            printMount.appendChild(clauseDiv);
-            i++;
-            continue;
-        }
-
-        // Standard Paragraph
-        const p = document.createElement('p');
-        p.className = 'print-p';
-        p.innerHTML = formatInline(line);
-        printMount.appendChild(p);
-        i++;
-    }
+        printMount.appendChild(pageSheet);
+    });
 
     // Close modal if open so it doesn't block the screen
     closeModal('modal-share');
@@ -1364,6 +1384,7 @@ function unwrapParagraphs(text) {
     const lines = text.split('\n');
     const unwrapped = [];
     let currentP = [];
+    let inClosing = false;
 
     for (let line of lines) {
         let stripped = line.trim();
@@ -1379,22 +1400,44 @@ function unwrapParagraphs(text) {
         const isHeading = stripped.startsWith('#');
         const isBullet = stripped.startsWith('* ') || stripped.startsWith('- ');
         const isTable = stripped.startsWith('|');
-        const isNewClause = /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(stripped);
-        const isLabelLine = /^[^:\n]{2,30}\s*:\s*.+$/.test(stripped);
-        const isFormalBreak = /^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|To:|From:|Subject:|Dear|Respected|Sincerely|Regards|Date:)/i.test(stripped);
+        const isPageBreak = /^\s*-{3,}\s*$/.test(stripped);
+        if (isPageBreak) inClosing = false;
 
-        if (isHeading || isBullet || isTable || isNewClause || isLabelLine || isFormalBreak) {
+        const isNewClause = /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(stripped);
+        const isLabelLine = /^[^:\n]{2,35}\s*:\s*.*$/.test(stripped);
+
+        // Precision closing detection: sentences ending in verbs/punctuation are NOT closing blocks
+        const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(stripped);
+        let isClosingStart = false;
+        if (!isSentence && stripped.length < 45) {
+            if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(stripped)) {
+                isClosingStart = true;
+            } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(stripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(stripped)) {
+                isClosingStart = true;
+            }
+        }
+
+        if (isClosingStart) {
+            inClosing = true;
+        } else if (inClosing && (isSentence || stripped.length > 60 || isNewClause || isHeading)) {
+            inClosing = false;
+        }
+
+        const isFormalBreak = /^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|संलग्नक|नाम|पिता|पता|कक्षा|अनुक्रमांक|मो०|मोबाइल|To:|From:|Subject:|Dear|Respected|Date:)/i.test(stripped) || isClosingStart;
+
+        if (inClosing || isHeading || isBullet || isTable || isPageBreak || isNewClause || isLabelLine || isFormalBreak) {
             if (currentP.length > 0) {
                 unwrapped.push(currentP.join(' '));
                 currentP = [];
             }
-            currentP.push(stripped);
+            unwrapped.push(stripped);
         } else {
             if (currentP.length > 0 && 
                 !currentP[currentP.length - 1].startsWith('#') && 
                 !currentP[currentP.length - 1].startsWith('|') && 
-                !/^[^:\n]{2,30}\s*:\s*.+$/.test(currentP[currentP.length - 1]) &&
-                !/^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)/i.test(currentP[currentP.length - 1])) {
+                !/^\s*-{3,}\s*$/.test(currentP[currentP.length - 1]) &&
+                !/^[^:\n]{2,35}\s*:\s*.*$/.test(currentP[currentP.length - 1]) &&
+                !/^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|आवेदक|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)/i.test(currentP[currentP.length - 1])) {
                 currentP.push(stripped);
             } else {
                 if (currentP.length > 0) {
@@ -1420,6 +1463,9 @@ function renderBlockHtml(block) {
     }
     if (block.type === 'heading') {
         return `<h2 class="font-bold text-slate-900 mt-2 mb-1 text-xs sm:text-sm">${formatInline(block.raw)}</h2>`;
+    }
+    if (block.type === 'subheading') {
+        return `<h3 class="font-bold text-slate-900 mt-1.5 mb-0.5 text-xs sm:text-sm" style="color: #06281e;">${formatInline(block.raw)}</h3>`;
     }
     if (block.type === 'clause') {
         return `<div class="flex items-start my-1.5 space-x-1.5 text-justify leading-tight">
@@ -1537,6 +1583,14 @@ function paginateDocument(rawText) {
             continue;
         }
 
+        // Sub-Heading
+        if (line.startsWith('### ')) {
+            blocks.push({ type: 'subheading', raw: line.substring(4).trim() });
+            inClosingBlock = false;
+            i++;
+            continue;
+        }
+
         // Numbered Clause
         let numMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
         if (numMatch) {
@@ -1556,8 +1610,20 @@ function paginateDocument(rawText) {
         }
 
         // Check single closing / signature / applicant block lines
-        if (/^(द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर शपथकर्ता|हस्ताक्षर आवेदक|हस्ताक्षर प्रार्थी|हस्ताक्षर|भवदीय|प्रार्थी|निवेदक|विनीत|आवेदक|शपथकर्ता|शपथी|आपका आज्ञाकारी|आज्ञाकारी शिष्य|आज्ञाकारी शिष्या|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently)/i.test(line)) {
+        const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(line);
+        let isClosingStart = false;
+        if (!isSentence && line.length < 45) {
+            if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(line)) {
+                isClosingStart = true;
+            } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(line) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(line)) {
+                isClosingStart = true;
+            }
+        }
+
+        if (isClosingStart) {
             inClosingBlock = true;
+        } else if (inClosingBlock && (isSentence || line.length > 60 || numMatch || line.startsWith('#'))) {
+            inClosingBlock = false;
         }
 
         if (inClosingBlock) {
@@ -1678,32 +1744,84 @@ function convertTextToWordHtml(rawText) {
     const unwrapped = unwrapParagraphs(rawText);
     const lines = unwrapped.split('\n');
     let fullHtml = '';
+    let inTable = false;
+    let inClosing = false;
+
+    function closeTable() {
+        if (inTable) {
+            fullHtml += '</tbody></table>';
+            inTable = false;
+        }
+    }
 
     for (let line of lines) {
         let stripped = line.trim();
         if (!stripped) continue;
         if (stripped.match(/^-{3,}$/)) {
+            closeTable();
+            inClosing = false;
             fullHtml += '<br clear="all" style="page-break-before:always; mso-break-type:section-break">';
             continue;
         }
+
+        if (stripped.startsWith('|') && stripped.endsWith('|')) {
+            if (!inTable) {
+                fullHtml += '<table border="0" cellspacing="0" cellpadding="4" style="width:100%; border-collapse:collapse; margin-top:12pt; margin-bottom:12pt;"><tbody>';
+                inTable = true;
+            }
+            if (!stripped.match(/^[\|\s\-:]+$/)) {
+                let cells = stripped.split('|').slice(1, -1).map(c => c.trim());
+                fullHtml += '<tr>';
+                for (let c = 0; c < cells.length; c++) {
+                    let align = (cells.length === 2 && c === 1) ? 'right' : 'left';
+                    fullHtml += `<td style="vertical-align:top; text-align:${align}; padding:4pt 6pt;">${formatInline(cells[c])}</td>`;
+                }
+                fullHtml += '</tr>';
+            }
+            continue;
+        }
+
+        closeTable();
+
         if (stripped.startsWith('# ')) {
+            inClosing = false;
             fullHtml += `<h1>${formatInline(stripped.substring(2))}</h1>`;
         } else if (stripped.startsWith('## ')) {
+            inClosing = false;
             fullHtml += `<h2>${formatInline(stripped.substring(3))}</h2>`;
-        } else if (stripped.startsWith('|') && stripped.endsWith('|')) {
-            let cells = stripped.split('|').slice(1, -1).map(c => c.trim());
-            if (!stripped.match(/^[\|\s\-:]+$/)) {
-                fullHtml += `<tr>${cells.map(c => `<td>${formatInline(c)}</td>`).join('')}</tr>`;
-            }
+        } else if (stripped.startsWith('### ')) {
+            inClosing = false;
+            fullHtml += `<h3>${formatInline(stripped.substring(4))}</h3>`;
         } else {
-            let numMatch = stripped.match(/^(\d+|[०-९]+)[\.\)]\s+(.*)$/);
+            let numMatch = stripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
             if (numMatch) {
-                fullHtml += `<p><strong>${numMatch[1]}.</strong> ${formatInline(numMatch[2])}</p>`;
+                inClosing = false;
+                let num = numMatch[1] || numMatch[2];
+                fullHtml += `<p><strong>${num}.</strong> ${formatInline(numMatch[3])}</p>`;
             } else {
-                fullHtml += `<p>${formatInline(stripped)}</p>`;
+                const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(stripped);
+                let isClosingStart = false;
+                if (!isSentence && stripped.length < 45) {
+                    if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(stripped)) {
+                        isClosingStart = true;
+                    } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(stripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(stripped)) {
+                        isClosingStart = true;
+                    }
+                }
+
+                if (isClosingStart) {
+                    inClosing = true;
+                } else if (inClosing && (isSentence || stripped.length > 60)) {
+                    inClosing = false;
+                }
+
+                let pAlign = inClosing ? 'right' : 'justify';
+                fullHtml += `<p style="text-align:${pAlign};">${formatInline(stripped)}</p>`;
             }
         }
     }
+
+    closeTable();
 
     return `<!DOCTYPE html>
 <html>
