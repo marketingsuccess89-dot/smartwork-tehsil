@@ -449,12 +449,12 @@ async def view_shared_doc(doc_id: str):
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
+        body {{
             font-family: 'Noto Sans Devanagari', 'Nirmala UI', system-ui, sans-serif;
             background: #f1f5f9;
             color: #0f172a;
-        }
-        .a4-viewer-paper {
+        }}
+        .a4-viewer-paper {{
             background: #ffffff;
             width: 100%;
             max-width: 760px;
@@ -466,25 +466,25 @@ async def view_shared_doc(doc_id: str):
             box-sizing: border-box;
             font-size: 15px; /* 12pt equivalent */
             line-height: 1.65;
-        }
-        @media (max-width: 640px) {
-            .a4-viewer-paper {
+        }}
+        @media (max-width: 640px) {{
+            .a4-viewer-paper {{
                 margin: 10px auto;
                 padding: 24px 20px;
                 font-size: 13.5px;
-            }
-        }
-        @media print {
-            html, body {
+            }}
+        }}
+        @media print {{
+            html, body {{
                 background: #ffffff !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 width: 100% !important;
-            }
-            .no-print {
+            }}
+            .no-print {{
                 display: none !important;
-            }
-            .a4-viewer-paper {
+            }}
+            .a4-viewer-paper {{
                 box-shadow: none !important;
                 border: none !important;
                 margin: 0 !important;
@@ -494,21 +494,21 @@ async def view_shared_doc(doc_id: str):
                 font-size: 12pt !important;
                 line-height: 1.6 !important;
                 box-sizing: border-box !important;
-            }
-            @page {
+            }}
+            @page {{
                 size: A4 portrait;
                 margin: 0 !important; /* Removes browser default headers (date/time/title) and footer (URL) */
-            }
-        }
+            }}
+        }}
     </style>
     <script>
         // Completely clears page title during print so browser NEVER prints "तहसील विलेख दस्तावेज़" or URL
-        window.addEventListener('beforeprint', function() {
+        window.addEventListener('beforeprint', function() {{
             document.title = '';
-        });
-        window.addEventListener('afterprint', function() {
+        }});
+        window.addEventListener('afterprint', function() {{
             document.title = 'तहसील विलेख दस्तावेज़';
-        });
+        }});
     </script>
 </head>
 <body class="min-h-screen flex flex-col items-center">
