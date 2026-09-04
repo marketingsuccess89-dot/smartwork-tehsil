@@ -90,18 +90,18 @@ def add_styled_paragraph(doc, text: str, style_type='body', alignment=None):
         run.bold = is_bold
 
         if style_type == 'title':
-            run.font.size = Pt(16)
+            run.font.size = Pt(18)
             run.font.bold = True
             run.font.color.rgb = RGBColor(6, 40, 30) # Rich Deep Emerald
         elif style_type == 'heading':
-            run.font.size = Pt(13)
+            run.font.size = Pt(14)
             run.font.bold = True
             run.font.color.rgb = RGBColor(10, 25, 20)
         elif style_type == 'subheading':
-            run.font.size = Pt(12)
+            run.font.size = Pt(13)
             run.font.bold = True
         else:
-            run.font.size = Pt(11.5)
+            run.font.size = Pt(12)
 
     return p
 
@@ -132,12 +132,17 @@ def render_markdown_table(doc, table_lines):
         return
 
     sig_keywords = (
-        'हस्ताक्षर', 'साक्षी', 'गवाह', 'प्रथम पक्ष', 'द्वितीय पक्ष', 'क्रेता', 'विक्रेता',
-        'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'मुवक्किल', 'अधिवक्ता',
+        'हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह',
+        'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता',
+        'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'मुवक्किल', 'अधिवक्ता', 'निवेदक', 'भवदीय',
         'signature', 'witness', 'first party', 'second party', 'landlord', 'tenant',
         'buyer', 'seller', 'deponent', 'applicant', 'sincerely', 'regards'
     )
     is_sig_table = any(any(kw in cell.lower() for kw in sig_keywords) for row in raw_rows for cell in row)
+    # If 2 columns and short (e.g. party names/signatures), default to borderless
+    if num_cols == 2 and not is_sig_table and num_rows <= 4:
+        is_sig_table = True
+
     table = doc.add_table(rows=num_rows, cols=num_cols)
     set_table_styling(table, is_signature=is_sig_table)
 
@@ -324,7 +329,7 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
                 txt = part[2:-2] if is_bold else part
                 run = p.add_run(txt)
                 run.font.name = FONT_NAME
-                run.font.size = Pt(11)
+                run.font.size = Pt(12)
                 run.bold = is_bold
             i += 1
             continue
