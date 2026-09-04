@@ -967,6 +967,28 @@ function triggerNativePrint() {
             }
 
             if (tableRows.length > 0) {
+                const cols = Math.max(...tableRows.map(r => r.length));
+
+                // If dummy 2-column table with empty left column (| | भवदीय |), render as clean right-aligned text without table
+                if (cols === 2 && tableRows.every(r => !r[0] || r[0].trim() === '')) {
+                    const blockDiv = document.createElement('div');
+                    blockDiv.style.textAlign = 'right';
+                    blockDiv.style.margin = '8pt 0';
+                    for (let r = 0; r < tableRows.length; r++) {
+                        const cellVal = tableRows[r][1] || '';
+                        if (cellVal) {
+                            const p = document.createElement('p');
+                            p.style.margin = '2pt 0';
+                            p.style.textAlign = 'right';
+                            p.style.lineHeight = '1.3';
+                            p.innerHTML = formatInline(cellVal);
+                            blockDiv.appendChild(p);
+                        }
+                    }
+                    printMount.appendChild(blockDiv);
+                    continue;
+                }
+
                 const isSigTable = tableRows.some(row => 
                     row.some(cell => {
                         const cl = cell.toLowerCase();
@@ -974,7 +996,6 @@ function triggerNativePrint() {
                     })
                 );
 
-                const cols = Math.max(...tableRows.map(r => r.length));
                 const tbl = document.createElement('table');
                 tbl.className = 'print-table';
 
@@ -1408,18 +1429,40 @@ function renderBlockHtml(block) {
         }
         if (tableRows.length === 0) return '';
         const cols = Math.max(...tableRows.map(r => r.length));
+
+        // If dummy 2-column table with empty left column (| | भवदीय |), render as clean right-aligned text without table
+        if (cols === 2 && tableRows.every(r => !r[0] || r[0].trim() === '')) {
+            let html = '<div class="my-2.5 text-right w-full space-y-0.5">';
+            for (let r = 0; r < tableRows.length; r++) {
+                let cellVal = tableRows[r][1] || '';
+                if (cellVal) {
+                    html += `<p class="leading-normal text-right text-slate-900 font-medium">${formatInline(cellVal)}</p>`;
+                }
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // True 2-party side-by-side or data table: keep Left on left (w-1/2) and Right on right (w-1/2), never mix!
         let html = '<div class="my-2.5 w-full"><table class="w-full border-collapse">';
         for (let r = 0; r < tableRows.length; r++) {
             html += '<tr>';
             for (let c = 0; c < cols; c++) {
                 let cellVal = tableRows[r][c] || '';
+                let widthClass = (cols === 2) ? 'w-1/2' : '';
                 let alignClass = (cols === 2 && c === 1) ? 'text-right' : 'text-left';
-                html += `<td class="p-1.5 align-top ${alignClass} text-slate-900">${formatInline(cellVal)}</td>`;
+                html += `<td class="p-1.5 align-top ${widthClass} ${alignClass} text-slate-900 font-medium">${formatInline(cellVal)}</td>`;
             }
             html += '</tr>';
         }
         html += '</table></div>';
         return html;
+    }
+    if (block.type === 'closing') {
+        return `<p class="my-0.5 leading-normal text-right text-slate-900 font-medium">${formatInline(block.raw)}</p>`;
+    }
+    if (block.type === 'left_info') {
+        return `<p class="my-0.5 leading-normal text-left text-slate-900 font-medium">${formatInline(block.raw)}</p>`;
     }
     return `<p class="my-1 leading-tight text-justify text-slate-900">${formatInline(block.raw)}</p>`;
 }
@@ -1440,6 +1483,7 @@ function paginateDocument(rawText) {
     // Parse into distinct semantic blocks
     const blocks = [];
     let i = 0;
+    let inClosingBlock = false;
     while (i < lines.length) {
         let line = lines[i].trim();
         if (!line) {
@@ -1450,6 +1494,7 @@ function paginateDocument(rawText) {
         // Section Break
         if (/^-{3,}$/.test(line)) {
             blocks.push({ type: 'break' });
+            inClosingBlock = false;
             i++;
             continue;
         }
@@ -1468,6 +1513,7 @@ function paginateDocument(rawText) {
         // Title
         if (line.startsWith('# ')) {
             blocks.push({ type: 'title', raw: line.substring(2).trim() });
+            inClosingBlock = false;
             i++;
             continue;
         }
@@ -1475,6 +1521,7 @@ function paginateDocument(rawText) {
         // Section Heading
         if (line.startsWith('## ')) {
             blocks.push({ type: 'heading', raw: line.substring(3).trim() });
+            inClosingBlock = false;
             i++;
             continue;
         }
@@ -1484,6 +1531,26 @@ function paginateDocument(rawText) {
         if (numMatch) {
             const num = numMatch[1] || numMatch[2];
             blocks.push({ type: 'clause', num: num, raw: numMatch[3] });
+            inClosingBlock = false;
+            i++;
+            continue;
+        }
+
+        // Date and place line stays on left
+        if (/^(दिनांक|स्थान|Date:|Place:)/i.test(line)) {
+            inClosingBlock = false;
+            blocks.push({ type: 'left_info', raw: line });
+            i++;
+            continue;
+        }
+
+        // Check single closing / signature / applicant block lines
+        if (/^(द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर शपथकर्ता|हस्ताक्षर आवेदक|हस्ताक्षर प्रार्थी|हस्ताक्षर|भवदीय|प्रार्थी|निवेदक|विनीत|आवेदक|शपथकर्ता|शपथी|आपका आज्ञाकारी|आज्ञाकारी शिष्य|आज्ञाकारी शिष्या|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently)/i.test(line)) {
+            inClosingBlock = true;
+        }
+
+        if (inClosingBlock) {
+            blocks.push({ type: 'closing', raw: line });
             i++;
             continue;
         }
