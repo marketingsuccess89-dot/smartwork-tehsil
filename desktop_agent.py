@@ -25,16 +25,31 @@ except ImportError:
     win32com = None
     winsound = None
 
-CONFIG_FILE = "station_config.json"
+def get_config_file():
+    """Returns a writable config path, falling back to user home directory if needed."""
+    local_cfg = os.path.abspath("station_config.json")
+    try:
+        if os.path.exists(local_cfg):
+            if os.access(local_cfg, os.W_OK):
+                return local_cfg
+        else:
+            with open(local_cfg, "a", encoding="utf-8") as f:
+                pass
+            return local_cfg
+    except Exception:
+        pass
+    return os.path.join(os.path.expanduser("~"), ".smart_typing_station_config.json")
+
 DEFAULT_SERVER = "thesmartwork.onrender.com"
 DEFAULT_WS_SCHEME = "wss"
 DEFAULT_HTTP_SCHEME = "https"
 
 def load_config():
     """Loads saved station ID and PIN."""
-    if os.path.exists(CONFIG_FILE):
+    cfg_path = get_config_file()
+    if os.path.exists(cfg_path):
         try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            with open(cfg_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             pass
@@ -42,8 +57,12 @@ def load_config():
 
 def save_config(config):
     """Saves station ID and PIN locally."""
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+    cfg_path = get_config_file()
+    try:
+        with open(cfg_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[WARN] कॉन्फ़िगरेशन सहेजने में त्रुटि: {e}")
 
 def prompt_user_credentials():
     """Prompts operator for Station ID and PIN via GUI or Console."""
