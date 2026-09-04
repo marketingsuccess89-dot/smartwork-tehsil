@@ -989,12 +989,15 @@ function triggerNativePrint() {
                     continue;
                 }
 
-                const isSigTable = tableRows.some(row => 
+                let isSigTable = tableRows.some(row => 
                     row.some(cell => {
                         const cl = cell.toLowerCase();
-                        return ['हस्ताक्षर', 'साक्षी', 'गवाह', 'प्रथम पक्ष', 'द्वितीय पक्ष', 'क्रेता', 'विक्रेता', 'शपथकर्ता', 'आवेदक', 'signature', 'witness', 'party', 'landlord', 'tenant', 'deponent'].some(kw => cl.includes(kw));
+                        return ['हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह', 'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता', 'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'निवेदक', 'भवदीय', 'signature', 'witness', 'party', 'landlord', 'tenant', 'deponent', 'applicant'].some(kw => cl.includes(kw));
                     })
                 );
+                if (cols === 2 && !isSigTable && tableRows.length <= 4) {
+                    isSigTable = true;
+                }
 
                 const tbl = document.createElement('table');
                 tbl.className = 'print-table';
@@ -1084,7 +1087,12 @@ function triggerNativePrint() {
 
     // Trigger Browser Native Print Dialog
     setTimeout(() => {
+        const origTitle = document.title;
+        document.title = '';
         window.print();
+        setTimeout(() => {
+            document.title = origTitle;
+        }, 1000);
     }, 150);
 }
 
@@ -1408,7 +1416,7 @@ function unwrapParagraphs(text) {
 // Convert a single block into formatted HTML
 function renderBlockHtml(block) {
     if (block.type === 'title') {
-        return `<h1 class="font-bold text-center text-slate-950 mb-2 pb-1 border-b border-slate-300 tracking-wide text-xs sm:text-sm leading-tight">${formatInline(block.raw)}</h1>`;
+        return `<h1 class="font-bold text-center text-slate-950 mb-3 pb-1 border-b border-slate-300 tracking-wide text-sm sm:text-base leading-snug">${formatInline(block.raw)}</h1>`;
     }
     if (block.type === 'heading') {
         return `<h2 class="font-bold text-slate-900 mt-2 mb-1 text-xs sm:text-sm">${formatInline(block.raw)}</h2>`;
