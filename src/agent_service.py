@@ -123,8 +123,10 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
        - **Preserve Sentence Meaning Exactly (वाक्य का अर्थ चाहे अजीब हो, वैसा ही लिखें)**:
          * NEVER rephrase, rewrite, paraphrase, summarize, or alter strange, illogical, or informal sentences.
          * Whatever conditions or statements are written, transcribe them EXACTLY as written without trying to "make more sense" of them.
-       - **Common Words (सामान्य शब्दावली)**:
-         * Standard generic words (e.g. 'किरायानामा', 'इकरारनामा', 'प्रतिदिन', 'हस्ताक्षर', 'सहमति') should be formatted cleanly with standard devanagari orthography if there was a minor handwriting slip.
+       - **Standard Hindi Legal & General Orthography (कानूनी व सामान्य शब्दों की शुद्ध मानक वर्तनी)**:
+         * Standard generic and legal words (e.g. 'किरायानामा', 'इकरारनामा', 'बैनामा', 'शपथ पत्र', 'प्रथम पक्ष', 'द्वितीय पक्ष', 'हस्ताक्षर', 'साक्षी', 'गवाह', 'यह कि', 'प्रभावी', 'प्रतिमाह', 'अवधि', 'धरोहर', 'सूचना', 'निवासी', 'उभय पक्ष', 'स्वीकृत', 'प्रार्थना पत्र') MUST be transcribed with 100% correct standard Devanagari Hindi spelling and matras!
+         * NEVER output broken phonetic slips like 'करियानामा', 'दवतीय', 'परथम', 'हसताक्षर', 'साक्क्षी', or 'यह का'. Always write them cleanly and correctly as 'किरायानामा', 'द्वितीय पक्ष', 'प्रथम पक्ष', 'हस्ताक्षर', 'साक्षी', 'यह कि'.
+         * (Remember: ONLY personal names of individuals, their father's names, castes, and villages must preserve their specific spelling as written).
        - **Strikethrough (काटा हुआ)**:
          * If any word is crossed out with a pen line, ignore the crossed-out text and transcribe the intended correction.
 
