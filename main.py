@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
-from src.agent_service import extract_text_from_image, transcribe_audio_dictation
+from src.agent_service import extract_text_from_image, extract_text_from_images, transcribe_audio_dictation
 from src.doc_builder import create_docx
 
 app = FastAPI(title="Tehsil AI Document Operator MVP")
@@ -172,23 +172,40 @@ async def download_desktop_agent():
     return FileResponse(agent_file, filename=os.path.basename(agent_file))
 
 @app.post("/api/process-image")
-async def process_image(file: UploadFile = File(...), user_id: str = Form(None)):
+async def process_image(
+    files: list[UploadFile] = File(None),
+    file: UploadFile = File(None),
+    user_id: str = Form(None)
+):
     """
-    Receives an image file and runs Gemini Vision OCR.
+    Receives single or multiple document page images and runs Gemini Vision OCR.
     """
-    # Allow standard image MIME types, application/octet-stream, or common image extensions
-    is_img = (
-        (file.content_type and file.content_type.startswith("image/"))
-        or file.content_type == "application/octet-stream"
-        or (file.filename and file.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.bmp', '.heic', '.tiff')))
-    )
-    if not is_img:
-        raise HTTPException(status_code=400, detail="Uploaded file must be an image.")
+    target_files = []
+    if files:
+        target_files.extend(files)
+    if file and file not in target_files:
+        target_files.append(file)
         
+    if not target_files:
+        raise HTTPException(status_code=400, detail="कोई फ़ोटो प्राप्त नहीं हुई। कृपया कम से कम एक फ़ोटो चुनें।")
+
+    bytes_list = []
+    for f in target_files:
+        is_img = (
+            (f.content_type and f.content_type.startswith("image/"))
+            or f.content_type == "application/octet-stream"
+            or (f.filename and f.filename.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.bmp', '.heic', '.tiff')))
+        )
+        if is_img:
+            contents = await f.read()
+            if len(contents) > 0:
+                bytes_list.append(contents)
+
+    if not bytes_list:
+        raise HTTPException(status_code=400, detail="वैध इमेज फ़ाइल नहीं मिली।")
+
     try:
-        contents = await file.read()
-        mime_type = file.content_type if (file.content_type and file.content_type.startswith("image/")) else "image/jpeg"
-        result = extract_text_from_image(contents, mime_type=mime_type)
+        result = extract_text_from_images(bytes_list)
         return result
     except ValueError as ve:
         import traceback
@@ -197,7 +214,7 @@ async def process_image(file: UploadFile = File(...), user_id: str = Form(None))
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to process image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process images: {str(e)}")
 
 @app.post("/api/process-audio")
 async def process_audio(file: UploadFile = File(...), user_id: str = Form(None)):
