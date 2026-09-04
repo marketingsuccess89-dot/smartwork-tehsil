@@ -52,6 +52,10 @@ class SendToWordRequest(BaseModel):
 # Key: user_id (e.g. Gmail), Value: {"ws": WebSocket, "pin": str}
 active_connections: dict[str, dict] = {}
 
+# Active shared documents for 1-click downloads and Word sync
+# Key: doc_id, Value: {"text": str, "stamp_paper": bool, "created_at": float}
+shared_documents: dict[str, dict] = {}
+
 @app.websocket("/ws/desktop/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str, pin: str = ""):
     """
@@ -131,7 +135,7 @@ async def send_to_word(req: SendToWordRequest):
 
     # Evict expired documents (> 48 hours) to prevent memory leak
     now = time.time()
-    expired = [k for k, v in shared_documents.items() if now - v.get('created_at', now) > 172800]
+    expired = [k for k, v in list(shared_documents.items()) if now - v.get('created_at', now) > 172800]
     for k in expired:
         shared_documents.pop(k, None)
 
@@ -148,7 +152,8 @@ async def send_to_word(req: SendToWordRequest):
         await ws.send_json({
             "event": "open_in_word",
             "doc_id": doc_id,
-            "stamp_paper": req.stamp_paper
+            "stamp_paper": req.stamp_paper,
+            "text": req.text
         })
         return {
             "success": True,
@@ -281,14 +286,12 @@ async def download_docx_form(text: str = Form(...), stamp_paper: bool = Form(Fal
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate Word document: {str(e)}")
 
-shared_documents = {}
-
 @app.post("/api/create-share-link")
 async def create_share_link(req: DocxRequest):
     """Creates an instant 1-click download link for WhatsApp sharing."""
     # Evict expired documents (> 48 hours) to prevent memory leak
     now = time.time()
-    expired = [k for k, v in shared_documents.items() if now - v.get('created_at', now) > 172800]
+    expired = [k for k, v in list(shared_documents.items()) if now - v.get('created_at', now) > 172800]
     for k in expired:
         shared_documents.pop(k, None)
 
@@ -342,102 +345,233 @@ async def view_shared_doc(doc_id: str):
     from src.doc_builder import unwrap_paragraphs
 
     unwrapped = unwrap_paragraphs(raw_text)
-    lines = unwrapped.split('\n')
 
-    content_parts = []
-    if stamp_paper:
-        content_parts.append('<div class="stamp-spacer" style="height: 2.7in; width: 100%;"></div>')
+    # Smart Multi-Document vs Single Document Detection:
+    # If the text has multiple H1 titles (# Title) or multiple separate recipient blocks (सेवा में),
+    # it represents distinct letters/applications (e.g. 3 distinct letters). In that case, split by '---'
+    # so each letter starts on its own fresh A4 sheet.
+    # Otherwise, if it's a single topic/deed (e.g. Sale Deed, Partition Deed, Partnership Deed, Agreement),
+    # keep it as ONE continuous document so it flows naturally without leaving huge empty gaps on pages.
+    h1_count = len(re.findall(r'(?m)^#\s+[^\n]+', unwrapped))
+    seva_count = len(re.findall(r'(?m)^सेवा में', unwrapped))
+    raw_sections = [p.strip() for p in re.split(r'\n\s*-{3,}\s*\n', '\n' + unwrapped.strip() + '\n') if p.strip()]
 
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if not line:
-            i += 1
-            continue
+    is_multi_doc = len(raw_sections) > 1 and (h1_count > 1 or seva_count > 1)
 
-        if re.match(r'^-{3,}$', line):
-            content_parts.append('<div class="print-page-break" style="page-break-after: always; break-after: page;"></div>')
-            i += 1
-            continue
+    if is_multi_doc:
+        page_texts = raw_sections
+    else:
+        page_texts = [unwrapped.strip()]
 
-        # Markdown Table
-        if line.startswith('|') and line.endswith('|'):
-            tbl_lines = []
-            while i < len(lines) and lines[i].strip().startswith('|') and lines[i].strip().endswith('|'):
-                tbl_lines.append(lines[i].strip())
+    total_pages = len(page_texts)
+    rendered_pages = []
+
+    for page_idx, p_text in enumerate(page_texts):
+        p_lines = p_text.split('\n')
+        content_parts = []
+
+        if page_idx == 0:
+            content_parts.append('<div id="stamp-spacer-box" class="hidden w-full h-[2.7in] mb-4 border-2 border-dashed border-emerald-300 rounded-xl bg-emerald-50/50 flex items-center justify-center text-emerald-800 font-bold text-xs select-none">📜 स्टाम्प पेपर प्रिंट एरिया (3.0" Space Reserved)</div>')
+
+        if total_pages > 1:
+            content_parts.append(f'<div class="no-print flex items-center justify-between pb-2 mb-4 border-b border-slate-200 text-xs font-semibold text-emerald-800"><span>📄 पृष्ठ {page_idx + 1} / {total_pages}</span><span class="text-slate-400 font-normal">A4 साइज़ (1.0" मार्जिन)</span></div>')
+
+        i = 0
+        in_recipient = False
+        closing_lines = []
+        in_closing = False
+
+        def flush_closing():
+            nonlocal closing_lines, in_closing
+            if closing_lines:
+                c_html = ['<div class="doc-closing-block" style="margin-top: 14px; text-align: right; page-break-inside: avoid; break-inside: avoid;">']
+                for c_idx, cl in enumerate(closing_lines):
+                    c_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(cl))
+                    is_title_line = (c_idx == 0 or 'हस्ताक्षर' in cl or 'आवेदक' in cl or 'प्रार्थी' in cl or 'भवदीय' in cl or 'शिष्य' in cl)
+                    weight = 'font-weight: bold;' if is_title_line else ''
+                    c_html.append(f'<p style="margin: 2px 0; font-size: 14px; line-height: 1.35; {weight}">{c_esc}</p>')
+                c_html.append('</div>')
+                content_parts.append(''.join(c_html))
+                closing_lines = []
+                in_closing = False
+
+        while i < len(p_lines):
+            line = p_lines[i].strip()
+            if not line or re.match(r'^-{3,}$', line):
                 i += 1
+                continue
 
-            rows = []
-            for tl in tbl_lines:
-                if not re.match(r'^[\|\s\-:]+$', tl):
-                    cells = [c.strip() for c in tl.split('|')[1:-1]]
-                    rows.append(cells)
+            # If the current line is a table, heading, or divider, flush any previous closing block immediately
+            if line.startswith('|') or line.startswith('#') or re.match(r'^-{3,}$', line):
+                flush_closing()
 
-            if rows:
-                sig_kws = [
-                    'हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह',
-                    'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता',
-                    'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'निवेदक', 'भवदीय', 'signature', 'witness',
-                    'party', 'landlord', 'tenant', 'deponent', 'applicant'
-                ]
-                is_sig = any(any(kw in cell.lower() for kw in sig_kws) for r in rows for cell in r)
-                cols = max(len(r) for r in rows)
-                if cols == 2 and not is_sig and len(rows) <= 4:
-                    is_sig = True
-                border_style = 'border: none;' if is_sig else 'border: 1.5px solid #06281e;'
-                t_html = [f'<table style="width: 100%; border-collapse: collapse; margin: 16px 0; {border_style} page-break-inside: avoid; break-inside: avoid;">']
-                for r_idx, r in enumerate(rows):
-                    is_h = (r_idx == 0 and not is_sig)
-                    bg = 'background-color: #f0fdf4; font-weight: bold;' if is_h else ''
-                    t_html.append(f'<tr style="{bg}">')
-                    for c_idx in range(cols):
-                        c_val = r[c_idx] if c_idx < len(r) else ''
-                        c_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(c_val))
-                        cell_border = 'border: 1px solid #cbd5e1;' if not is_sig else ''
-                        align = 'text-align: left;'
-                        w_style = ''
-                        if is_sig and cols == 2:
-                            align = 'text-align: left;' if c_idx == 0 else 'text-align: right;'
-                            w_style = 'width: 50%;'
-                        elif is_sig:
-                            align = 'text-align: center;'
-                        elif is_h:
-                            align = 'text-align: center;'
-                        t_html.append(f'<td style="padding: 6px 8px; vertical-align: top; font-size: 14.5px; {cell_border} {align} {w_style}">{c_esc}</td>')
-                    t_html.append('</tr>')
-                t_html.append('</table>')
-                content_parts.append(''.join(t_html))
-            continue
+            # Check if this line starts or continues the closing / signature / applicant block
+            # Closing labels are short (e.g. "हस्ताक्षर:", "भवदीय,", "आवेदक / प्रार्थी:", "प्रार्थी:")
+            # Never full sentences like "प्रार्थी/निगरानीकर्ता सादर निवेदन करता है कि:"
+            is_sentence = bool(re.search(r'(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$', line))
+            is_closing_start = False
 
-        # Title (# Title)
-        if line.startswith('# '):
-            t_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line[2:].strip()))
-            content_parts.append(f'<h1 style="text-align: center; font-size: 24px; font-weight: bold; color: #06281e; margin: 0 0 18px 0; page-break-after: avoid; break-after: avoid;">{t_esc}</h1>')
+            if not is_sentence and len(line) < 45:
+                # Always-closing keywords
+                if re.match(r'^(?:हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b', line, re.IGNORECASE):
+                    is_closing_start = True
+                # Conditional keywords — only short closing labels
+                elif re.match(r'^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)', line) and not re.search(r'(?:सादर|निवेदन|प्रार्थना|करता|करती)', line):
+                    is_closing_start = True
+
+            if in_closing:
+                # Close the closing block if line is too long, or a clause, or a new section
+                if is_sentence or len(line) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', line) or len(closing_lines) >= 6:
+                    flush_closing()
+                else:
+                    closing_lines.append(line)
+                    i += 1
+                    continue
+
+            if is_closing_start:
+                in_closing = True
+                closing_lines.append(line)
+                i += 1
+                continue
+
+            # Markdown Table
+            if line.startswith('|') and line.endswith('|'):
+                tbl_lines = []
+                while i < len(p_lines) and p_lines[i].strip().startswith('|') and p_lines[i].strip().endswith('|'):
+                    tbl_lines.append(p_lines[i].strip())
+                    i += 1
+
+                rows = []
+                for tl in tbl_lines:
+                    if not re.match(r'^[\|\s\-:]+$', tl):
+                        cells = [c.strip() for c in tl.split('|')[1:-1]]
+                        rows.append(cells)
+
+                if rows:
+                    sig_kws = [
+                        'हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह',
+                        'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता',
+                        'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'निवेदक', 'भवदीय', 'signature', 'witness',
+                        'party', 'landlord', 'tenant', 'deponent', 'applicant', 'पहचानकर्ता', 'अधिवक्ता', 'नोटरी'
+                    ]
+                    is_sig = any(any(kw in cell.lower() for kw in sig_kws) for r in rows for cell in r)
+                    cols = max(len(r) for r in rows)
+                    if cols == 2 and not is_sig and len(rows) <= 4:
+                        is_sig = True
+                    border_style = 'border: none;' if is_sig else 'border: 1.5px solid #06281e;'
+                    t_html = [f'<table style="width: 100%; border-collapse: collapse; margin: 12px 0; {border_style} page-break-inside: avoid; break-inside: avoid;">']
+                    for r_idx, r in enumerate(rows):
+                        is_h = (r_idx == 0 and not is_sig)
+                        bg = 'background-color: #f0fdf4; font-weight: bold;' if is_h else ''
+                        t_html.append(f'<tr style="{bg}">')
+                        for c_idx in range(cols):
+                            c_val = r[c_idx] if c_idx < len(r) else ''
+                            c_esc = html_lib.escape(c_val)
+                            # Support <br> inside table cells
+                            c_esc = re.sub(r'&lt;br\s*/?&gt;', '<br>', c_esc, flags=re.IGNORECASE)
+                            c_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', c_esc)
+                            cell_border = 'border: 1px solid #cbd5e1;' if not is_sig else ''
+                            align = 'text-align: left;'
+                            w_style = ''
+                            if is_sig and cols == 2:
+                                align = 'text-align: left;' if c_idx == 0 else 'text-align: right;'
+                                w_style = 'width: 50%;'
+                            elif is_sig:
+                                align = 'text-align: center;'
+                            elif is_h:
+                                align = 'text-align: center;'
+                            t_html.append(f'<td style="padding: 5px 8px; vertical-align: top; font-size: 14px; {cell_border} {align} {w_style}">{c_esc}</td>')
+                        t_html.append('</tr>')
+                    t_html.append('</table>')
+                    content_parts.append(''.join(t_html))
+                continue
+
+            # Title (# Title)
+            if line.startswith('# '):
+                t_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line[2:].strip()))
+                content_parts.append(f'<h1 style="text-align: center; font-size: 22px; font-weight: bold; color: #06281e; margin: 0 0 14px 0; page-break-after: avoid; break-after: avoid;">{t_esc}</h1>')
+                i += 1
+                continue
+
+            # Heading (## Heading)
+            if line.startswith('## '):
+                h_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line[3:].strip()))
+                content_parts.append(f'<h2 style="font-size: 15px; font-weight: bold; color: #0a1914; margin: 10px 0 4px 0; page-break-after: avoid; break-after: avoid;">{h_esc}</h2>')
+                i += 1
+                continue
+
+            # Sub-Heading (### Sub-Heading)
+            if line.startswith('### '):
+                h3_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line[4:].strip()))
+                content_parts.append(f'<h3 style="font-size: 14.5px; font-weight: bold; color: #06281e; margin: 8px 0 3px 0; page-break-after: avoid; break-after: avoid;">{h3_esc}</h3>')
+                i += 1
+                continue
+
+            # Numbered Clause
+            num_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', line)
+            if num_match:
+                num = num_match.group(1) or num_match.group(2)
+                c_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(num_match.group(3)))
+                content_parts.append(f'<div style="text-align: justify; margin-bottom: 6px; font-size: 14.5px; line-height: 1.5; page-break-inside: avoid; break-inside: avoid;"><strong>{num}.</strong> {c_text}</div>')
+                i += 1
+                continue
+
+            # Recipient block (सेवा में, / To:)
+            if line.startswith('सेवा में') or line.startswith('To:'):
+                in_recipient = True
+                p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
+                content_parts.append(f'<p style="margin: 0 0 2px 0; font-weight: 600; font-size: 14.5px; line-height: 1.4;">{p_esc}</p>')
+                i += 1
+                continue
+
+            if in_recipient:
+                if line.startswith('विषय:') or line.startswith('Subject:') or re.match(r'^(?:महोदय|महोदया|मान्यवर|श्रीमान)', line):
+                    in_recipient = False
+                else:
+                    p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
+                    content_parts.append(f'<p style="margin: 0 0 2px 0; padding-left: 16px; font-size: 14px; line-height: 1.35;">{p_esc}</p>')
+                    i += 1
+                    continue
+
+            # Subject line (विषय:)
+            if line.startswith('विषय:') or line.startswith('Subject:'):
+                p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
+                content_parts.append(f'<p style="margin: 8px 0 6px 0; font-weight: bold; font-size: 14.5px; line-height: 1.4;">{p_esc}</p>')
+                i += 1
+                continue
+
+            # Salutation (महोदय, / मान्यवर,)
+            if re.match(r'^(?:महोदय|महोदया|मान्यवर|श्रीमान|Respected|Dear)\b', line):
+                p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
+                content_parts.append(f'<p style="margin: 8px 0 4px 0; font-weight: 600; font-size: 14.5px; line-height: 1.4;">{p_esc}</p>')
+                i += 1
+                continue
+
+            # Date / Place line
+            if re.match(r'^(?:दिनांक|स्थान|Date:|Place:)', line, re.IGNORECASE):
+                p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
+                content_parts.append(f'<p style="margin: 8px 0 3px 0; font-size: 14px; line-height: 1.4;">{p_esc}</p>')
+                i += 1
+                continue
+
+            # Standard Paragraph
+            p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
+            content_parts.append(f'<p style="text-align: justify; margin-bottom: 6px; font-size: 14.5px; line-height: 1.5; page-break-inside: avoid; break-inside: avoid;">{p_esc}</p>')
             i += 1
-            continue
 
-        # Heading (## Heading)
-        if line.startswith('## '):
-            h_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line[3:].strip()))
-            content_parts.append(f'<h2 style="font-size: 16px; font-weight: bold; color: #0a1914; margin: 14px 0 6px 0; page-break-after: avoid; break-after: avoid;">{h_esc}</h2>')
-            i += 1
-            continue
+        # Flush any remaining closing lines at the end of the page
+        flush_closing()
 
-        # Numbered Clause
-        num_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', line)
-        if num_match:
-            num = num_match.group(1) or num_match.group(2)
-            c_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(num_match.group(3)))
-            content_parts.append(f'<div style="text-align: justify; margin-bottom: 8px; font-size: 15px; line-height: 1.6; page-break-inside: avoid; break-inside: avoid;"><strong>{num}.</strong> {c_text}</div>')
-            i += 1
-            continue
+        page_body = '\n'.join(content_parts)
+        rendered_pages.append(f'''<div class="doc-page-wrapper">
+<table class="print-table">
+  <thead><tr><td class="print-margin-cell"></td></tr></thead>
+  <tfoot><tr><td class="print-margin-cell"></td></tr></tfoot>
+  <tbody><tr><td class="page-content-cell">{page_body}</td></tr></tbody>
+</table>
+</div>''')
 
-        # Paragraph
-        p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
-        content_parts.append(f'<p style="text-align: justify; margin-bottom: 8px; font-size: 15px; line-height: 1.6; page-break-inside: avoid; break-inside: avoid;">{p_esc}</p>')
-        i += 1
-
-    body_html = '\n'.join(content_parts)
+    all_pages_html = '\n'.join(rendered_pages)
 
     page_html = f"""<!DOCTYPE html>
 <html lang="hi">
@@ -454,26 +588,46 @@ async def view_shared_doc(doc_id: str):
             background: #f1f5f9;
             color: #0f172a;
         }}
-        .a4-viewer-paper {{
+        /* Screen View: Clean A4 Paper Simulation */
+        .doc-page-wrapper {{
             background: #ffffff;
             width: 100%;
             max-width: 760px;
             min-height: 1050px;
             margin: 20px auto;
-            padding: 48px 52px;
+            padding: 44px 50px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             border-radius: 6px;
             box-sizing: border-box;
-            font-size: 15px; /* 12pt equivalent */
-            line-height: 1.65;
+            font-size: 14.5px;
+            line-height: 1.5;
         }}
+        /* On screen: print-table acts as transparent block */
+        .print-table {{
+            display: block;
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+        }}
+        .print-table > thead, .print-table > tfoot {{
+            display: none;
+        }}
+        .print-table > tbody, .print-table > tbody > tr, .print-table > tbody > tr > td {{
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: none;
+        }}
+
         @media (max-width: 640px) {{
-            .a4-viewer-paper {{
+            .doc-page-wrapper {{
                 margin: 10px auto;
                 padding: 24px 20px;
                 font-size: 13.5px;
             }}
         }}
+
+        /* Print Media Styles */
         @media print {{
             html, body {{
                 background: #ffffff !important;
@@ -484,23 +638,86 @@ async def view_shared_doc(doc_id: str):
             .no-print {{
                 display: none !important;
             }}
-            .a4-viewer-paper {{
-                box-shadow: none !important;
-                border: none !important;
-                margin: 0 !important;
-                padding: 25.4mm 25.4mm 25.4mm 25.4mm !important; /* Authentic 1.0-inch Normal margins */
-                max-width: 100% !important;
-                width: 100% !important;
-                font-size: 12pt !important;
-                line-height: 1.6 !important;
-                box-sizing: border-box !important;
-            }}
+            /* Margin 0 suppresses browser auto header (URL, localhost) and footer (date, time) */
             @page {{
                 size: A4 portrait;
-                margin: 0 !important; /* Removes browser default headers (date/time/title) and footer (URL) */
+                margin: 0 !important;
+            }}
+            .doc-page-wrapper {{
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                min-height: 0 !important;
+                page-break-after: always !important;
+                break-after: page !important;
+            }}
+            .doc-page-wrapper:last-child {{
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }}
+            /* Print Table with thead/tfoot to provide consistent page margins across page breaks */
+            .print-table {{
+                display: table !important;
+                width: 100% !important;
+                border-collapse: collapse !important;
+                border: none !important;
+            }}
+            .print-table > thead {{
+                display: table-header-group !important;
+            }}
+            .print-table > tfoot {{
+                display: table-footer-group !important;
+            }}
+            .print-table > tbody {{
+                display: table-row-group !important;
+            }}
+            .print-table > tbody > tr {{
+                display: table-row !important;
+            }}
+            .print-table > tbody > tr > td.page-content-cell {{
+                display: table-cell !important;
+                padding: 0 25.4mm !important; /* Authentic 1.0 inch left/right margin */
+                vertical-align: top !important;
+                border: none !important;
+            }}
+            .print-margin-cell {{
+                height: 20mm !important; /* Top and bottom margin repeated on every printed sheet */
+                padding: 0 !important;
+                border: none !important;
+                line-height: 0 !important;
+                font-size: 0 !important;
+            }}
+            .page-content-cell h1 {{
+                font-size: 16pt !important;
+                margin: 0 0 10pt 0 !important;
+                line-height: 1.25 !important;
+            }}
+            .page-content-cell h2 {{
+                font-size: 13pt !important;
+                margin: 8pt 0 4pt 0 !important;
+                line-height: 1.25 !important;
+            }}
+            .page-content-cell p {{
+                font-size: 11.5pt !important;
+                line-height: 1.35 !important;
+                margin-bottom: 4pt !important;
+            }}
+            .page-content-cell .doc-closing-block {{
+                margin-top: 10pt !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }}
+            .page-content-cell .doc-closing-block p {{
+                margin-bottom: 1.5pt !important;
+                line-height: 1.25 !important;
+                font-size: 11.5pt !important;
             }}
         }}
-    </style>
+        </style>
     <script>
         // Completely clears page title during print so browser NEVER prints "तहसील विलेख दस्तावेज़" or URL
         window.addEventListener('beforeprint', function() {{
@@ -509,6 +726,19 @@ async def view_shared_doc(doc_id: str):
         window.addEventListener('afterprint', function() {{
             document.title = 'तहसील विलेख दस्तावेज़';
         }});
+        function toggleStampSpace() {{
+            const box = document.getElementById('stamp-spacer-box');
+            const txt = document.getElementById('stamp-toggle-text');
+            if (box) {{
+                if (box.classList.contains('hidden')) {{
+                    box.classList.remove('hidden');
+                    txt.innerText = 'स्टाम्प स्पेस हटाएं';
+                }} else {{
+                    box.classList.add('hidden');
+                    txt.innerText = 'स्टाम्प स्पेस जोड़ें';
+                }}
+            }}
+        }}
     </script>
 </head>
 <body class="min-h-screen flex flex-col items-center">
@@ -519,6 +749,10 @@ async def view_shared_doc(doc_id: str):
             <span>तहसील विलेख दस्तावेज़</span>
         </div>
         <div class="flex items-center space-x-2">
+            <button onclick="toggleStampSpace()" id="stamp-toggle-btn" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-200 font-semibold py-2 px-3 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-sm cursor-pointer">
+                <i class="fa-solid fa-stamp"></i>
+                <span id="stamp-toggle-text">स्टाम्प स्पेस जोड़ें</span>
+            </button>
             <a href="/d/{doc_id}" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-sm">
                 <i class="fa-solid fa-file-word"></i>
                 <span>Word (.DOCX) डाउनलोड</span>
@@ -530,11 +764,9 @@ async def view_shared_doc(doc_id: str):
         </div>
     </header>
 
-    <!-- A4 Paper Document -->
-    <main class="w-full px-2 sm:px-4 flex justify-center pb-12">
-        <article class="a4-viewer-paper">
-            {body_html}
-        </article>
+    <!-- A4 Paper Document Sheets -->
+    <main class="w-full px-2 sm:px-4 flex flex-col items-center justify-center pb-12 space-y-6">
+        {all_pages_html}
     </main>
 </body>
 </html>
