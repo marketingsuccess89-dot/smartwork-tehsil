@@ -68,20 +68,37 @@ def get_genai_client():
         _cached_client = genai.Client(api_key=api_key)
     return _cached_client
 
-def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> TranscriptionResult:
+def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResult:
     """
-    Sends document image to Gemini Vision to perform verbatim OCR with legal standardization rules.
-    Optimized with google.genai and zero thinking budget for sub-8-second turnaround.
+    Sends 1 or multiple document page images to Gemini Vision to perform verbatim OCR 
+    with legal standardization rules, transcribing multi-page deeds seamlessly in order.
     """
-    # Fast compress, contrast-enhance, and resize the image to optimize OCR and upload speed
-    processed_image_bytes = compress_image(image_bytes)
-    target_mime_type = "image/jpeg"
-    
+    if not image_bytes_list:
+        raise ValueError("कम से कम एक पेज की फ़ोटो आवश्यक है।")
+
+    # Fast compress, contrast-enhance, and resize each page image
+    parts = []
+    for idx, img_b in enumerate(image_bytes_list):
+        compressed_b = compress_image(img_b)
+        parts.append(types.Part.from_bytes(data=compressed_b, mime_type="image/jpeg"))
+
     client = get_genai_client()
     
-    prompt = """
+    num_pages = len(image_bytes_list)
+    page_context = ""
+    if num_pages > 1:
+        page_context = f"""
+    IMPORTANT MULTI-PAGE DOCUMENT RULE (बहु-पृष्ठीय दस्तावेज़ निर्देश):
+    - You have been provided {num_pages} consecutive photos (Page 1 through Page {num_pages}) of the SAME legal document/deed in exact chronological order.
+    - Transcribe and combine ALL {num_pages} pages into ONE single, continuous, unified legal Markdown document.
+    - DO NOT restart or duplicate titles/headers on subsequent pages. Flow the terms, conditions, and numbered clauses continuously from page to page.
+    - At the very end of the final page, format the signature and witness blocks.
+    """
+
+    prompt = f"""
     You are an expert universal OCR and legal/official document typing assistant for Indian Tehsil, Court, School, and Government offices.
-    Analyze the provided document image and transcribe it with high intelligence into professional, print-ready Markdown format.
+    Analyze the provided document image(s) and transcribe them with high intelligence into professional, print-ready Markdown format.
+    {page_context}
 
     1. **100% Strict Verbatim Words & Proper Noun Preservation (नाम व वाक्य की मूल भावना अक्षुण्ण रखें)**:
        - **Personal Names, Father's Names, Castes, Villages, Towns, IDs (नामों की स्पेलिंग कभी न बदलें)**:
@@ -96,14 +113,14 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
          * If any word is crossed out with a pen line, ignore the crossed-out text and transcribe the intended correction.
 
     2. **Pre-Printed Government Stamp Paper Rule (स्टाम्प पेपर के सरकारी हेडर को कभी न लिखें)**:
-       - If the document is written on an official Indian Stamp Paper (₹10, ₹50, ₹100, ₹500 Non-Judicial paper with State/Government emblem):
+       - If the document (specifically Page 1) is written on an official Indian Stamp Paper (₹10, ₹50, ₹100, ₹500 Non-Judicial paper with State/Government emblem):
          * Set `stamp_paper_detected = True`.
          * DO NOT transcribe the pre-printed government stamp header (e.g. "भारत सरकार", "GOVERNMENT OF INDIA", National Emblem / Lion Capital, "NON JUDICIAL / गैर न्यायिक", "₹100", Serial No., Vendor Name/Seal/Barcode, or "Notary Stamp below").
          * Physical stamp papers already contain these factory-printed. Typists insert the physical stamp paper into the printer, and typing MUST start strictly from the actual legal content (e.g. '# शपथ पत्र (Affidavit)', or Court/Authority heading 'समक्ष: श्रीमान...').
        - If it is on normal notebook, register, or plain blank paper, set `stamp_paper_detected = False`.
 
     3. **Intelligent Document Format Recognition (दस्तावेज़ के प्रकार अनुसार सही फ़ॉर्मैटिंग)**:
-       - Understand the exact nature of the document from the image:
+       - Understand the exact nature of the document from the image(s):
          * Formal Application / Letter (e.g. School leave letter, Police complaint, Municipal application):
            Format recipient ('सेवा में, ...'), Subject ('विषय: ...'), Salutation ('महोदय / महोदया, ...'), Body paragraphs, and closing ('भवदीय / प्रार्थी / आपका आज्ञाकारी') in their natural, standard Indian official letter layout.
          * Legal Agreement / Deed (विलेख / अनुबंध):
@@ -148,16 +165,15 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
     Ensure your response strictly matches the required JSON schema.
     """
     
-    models = ["gemini-3.7-flash", "gemini-flash-lite-latest", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"]
+    parts.append(prompt)
+
+    models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-lite-latest"]
     last_err = None
     for model_name in models:
         try:
             response = client.models.generate_content(
                 model=model_name,
-                contents=[
-                    types.Part.from_bytes(data=processed_image_bytes, mime_type=target_mime_type),
-                    prompt
-                ],
+                contents=parts,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=TranscriptionResult
@@ -170,6 +186,10 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
             print(f"Model {model_name} failed: {e}. Trying fallback...")
             continue
     raise last_err
+
+def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> TranscriptionResult:
+    """Backward-compatible wrapper for single image OCR."""
+    return extract_text_from_images([image_bytes])
 
 def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav") -> TranscriptionResult:
     """
