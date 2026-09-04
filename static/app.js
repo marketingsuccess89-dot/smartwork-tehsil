@@ -13,6 +13,7 @@ let currentFontSize = (typeof window !== 'undefined' && window.innerWidth < 640)
 
 // Sync Variables
 let mobileUserEmail = '';
+let mobileUserPin = '';
 let checkSyncStatusInterval = null;
 let isDesktopConnected = false;
 
@@ -44,6 +45,7 @@ const mobileSyncBadge = document.getElementById('mobile-sync-badge');
 const mobileLoginSection = document.getElementById('mobile-login-section');
 const mobileActiveSection = document.getElementById('mobile-active-section');
 const mobileUserEmailInput = document.getElementById('mobile-user-email');
+const mobileUserPinInput = document.getElementById('mobile-user-pin');
 const mobileLoginBtn = document.getElementById('mobile-login-btn');
 const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
 
@@ -87,10 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     updateCounters();
     
-    // Load previously linked sync email
+    // Load previously linked sync email and PIN
     const savedMobileEmail = localStorage.getItem('tehsil_mobile_email');
+    const savedMobilePin = localStorage.getItem('tehsil_mobile_pin') || '';
     if (savedMobileEmail) {
-        linkMobileEmail(savedMobileEmail);
+        linkMobileEmail(savedMobileEmail, savedMobilePin);
     }
 });
 
@@ -160,13 +163,20 @@ function setupEventListeners() {
     // 5. Desktop Sync Handlers
     if (mobileLoginBtn) {
         mobileLoginBtn.addEventListener('click', () => {
-            const email = mobileUserEmailInput.value.trim().toLowerCase();
+            const email = mobileUserEmailInput ? mobileUserEmailInput.value.trim().toLowerCase() : '';
+            const pin = mobileUserPinInput ? mobileUserPinInput.value.trim() : '';
             if (!email || !email.includes('@')) {
                 showToast('error', 'कृपया एक वैध ईमेल आईडी दर्ज करें।');
                 return;
             }
+            if (!pin) {
+                showToast('error', 'कृपया 4-अंकों का सुरक्षा पिन दर्ज करें।');
+                return;
+            }
             localStorage.setItem('tehsil_mobile_email', email);
-            linkMobileEmail(email);
+            localStorage.setItem('tehsil_mobile_pin', pin);
+            linkMobileEmail(email, pin);
+            showToast('success', 'कंप्यूटर सिंक सफलतापूर्वक लिंक हुआ!');
         });
     }
     if (mobileLogoutBtn) {
@@ -308,6 +318,38 @@ function setupEventListeners() {
         whatsappCopyBtn.addEventListener('click', () => {
             copyToClipboard();
             showToast('success', 'टेक्स्ट कॉपी हो गया! अब WhatsApp में पेस्ट करें।');
+        });
+    }
+
+    // 10. Direct Send to MS Word Button Handler
+    const sendToWordBtn = document.getElementById('send-to-word-btn');
+    if (sendToWordBtn) {
+        sendToWordBtn.addEventListener('click', handleSendToWord);
+    }
+
+    // 11. Modal Station Setup & Send Button Handler
+    const modalSaveAndSendBtn = document.getElementById('modal-save-and-send-btn');
+    if (modalSaveAndSendBtn) {
+        modalSaveAndSendBtn.addEventListener('click', () => {
+            const modalEmail = document.getElementById('modal-input-email');
+            const modalPin = document.getElementById('modal-input-pin');
+            const email = modalEmail ? modalEmail.value.trim().toLowerCase() : '';
+            const pin = modalPin ? modalPin.value.trim() : '';
+
+            if (!email || !email.includes('@')) {
+                showToast('error', 'कृपया एक वैध Gmail दर्ज करें।');
+                return;
+            }
+            if (!pin) {
+                showToast('error', 'कृपया सुरक्षा पिन दर्ज करें।');
+                return;
+            }
+
+            localStorage.setItem('tehsil_mobile_email', email);
+            localStorage.setItem('tehsil_mobile_pin', pin);
+            linkMobileEmail(email, pin);
+            closeModal('modal-station-setup');
+            handleSendToWord();
         });
     }
 }
@@ -1037,8 +1079,9 @@ function closeHistorySidebar() {
 }
 
 // Desktop Sync Handlers
-function linkMobileEmail(email) {
+function linkMobileEmail(email, pin) {
     mobileUserEmail = email;
+    mobileUserPin = pin || localStorage.getItem('tehsil_mobile_pin') || '';
     const display = document.getElementById('mobile-email-display');
     if (display) display.innerText = email;
     
@@ -1053,11 +1096,14 @@ function linkMobileEmail(email) {
 
 function unlinkMobileEmail() {
     mobileUserEmail = '';
+    mobileUserPin = '';
     localStorage.removeItem('tehsil_mobile_email');
+    localStorage.removeItem('tehsil_mobile_pin');
     
     if (mobileLoginSection) mobileLoginSection.classList.remove('hidden');
     if (mobileActiveSection) mobileActiveSection.classList.add('hidden');
     if (mobileUserEmailInput) mobileUserEmailInput.value = '';
+    if (mobileUserPinInput) mobileUserPinInput.value = '';
     
     if (checkSyncStatusInterval) {
         clearInterval(checkSyncStatusInterval);
@@ -1066,6 +1112,61 @@ function unlinkMobileEmail() {
     
     isDesktopConnected = false;
     updateMobileSyncBadge(false);
+}
+
+// Explicit On-Demand Send to Desktop MS Word
+async function handleSendToWord() {
+    const text = documentEditor ? documentEditor.value.trim() : '';
+    if (!text) {
+        showToast('error', 'भेजने के लिए पहले दस्तावेज़ तैयार करें।');
+        return;
+    }
+
+    if (!mobileUserEmail || !mobileUserPin) {
+        const modalEmail = document.getElementById('modal-input-email');
+        const modalPin = document.getElementById('modal-input-pin');
+        if (modalEmail && mobileUserEmail) modalEmail.value = mobileUserEmail;
+        if (modalPin && mobileUserPin) modalPin.value = mobileUserPin;
+        openModal('modal-station-setup');
+        return;
+    }
+
+    const sendToWordBtn = document.getElementById('send-to-word-btn');
+    if (sendToWordBtn) sendToWordBtn.setAttribute('disabled', 'true');
+    showToast('info', 'MS Word में भेजा जा रहा है...');
+
+    try {
+        const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
+        const res = await fetch('/api/send-to-word', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: text,
+                stamp_paper: isStamp,
+                station_id: mobileUserEmail,
+                pin: mobileUserPin
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            showToast('success', data.message || 'दस्तावेज़ भेजा गया! कंप्यूटर के MS Word में खुल रहा है...');
+        } else {
+            showToast('error', data.message || 'भेजने में विफल।');
+            if (res.status === 401 || res.status === 404) {
+                const modalEmail = document.getElementById('modal-input-email');
+                const modalPin = document.getElementById('modal-input-pin');
+                if (modalEmail) modalEmail.value = mobileUserEmail;
+                if (modalPin) modalPin.value = mobileUserPin;
+                openModal('modal-station-setup');
+            }
+        }
+    } catch (err) {
+        console.error('Send to Word error:', err);
+        showToast('error', 'कनेक्शन त्रुटि: कंप्यूटर तक नहीं पहुँच सका।');
+    } finally {
+        if (sendToWordBtn) sendToWordBtn.removeAttribute('disabled');
+    }
 }
 
 async function checkDesktopSyncStatus() {
