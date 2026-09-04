@@ -352,6 +352,17 @@ function setupEventListeners() {
             handleSendToWord();
         });
     }
+
+    // 12. Smart PC Agent Download Trigger (Prevents useless .exe downloads on mobile)
+    document.querySelectorAll('.pc-agent-download-trigger').forEach(el => {
+        el.addEventListener('click', (e) => {
+            const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            if (isMobile) {
+                e.preventDefault();
+                openModal('modal-pc-agent-info');
+            }
+        });
+    });
 }
 
 // Live Word & Character Counter
