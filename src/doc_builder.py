@@ -217,19 +217,20 @@ def unwrap_paragraphs(text: str) -> str:
         is_heading = stripped.startswith('#')
         is_bullet = stripped.startswith('* ') or stripped.startswith('- ')
         is_table = stripped.startswith('|')
+        is_page_break = bool(re.match(r'^\s*-{3,}\s*$', stripped))
         is_new_clause = bool(re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', stripped))
         # Universal label line: e.g. "नाम :", "विषय :", "पता :", "कक्षा :", "दिनांक :"
         is_label_line = bool(re.match(r'^[^:\n]{2,30}\s*:\s*.+$', stripped))
         # Universal formal opening / closing / court headers
         is_formal_break = bool(re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|To:|From:|Subject:|Dear|Respected|Sincerely|Regards|Date:)', stripped, re.IGNORECASE))
 
-        if is_heading or is_bullet or is_table or is_new_clause or is_label_line or is_formal_break:
+        if is_heading or is_bullet or is_table or is_page_break or is_new_clause or is_label_line or is_formal_break:
             if current_p:
                 unwrapped.append(' '.join(current_p))
                 current_p = []
-            current_p.append(stripped)
+            unwrapped.append(stripped)
         else:
-            if current_p and not (current_p[-1].startswith('#') or current_p[-1].startswith('|') or re.match(r'^[^:\n]{2,30}\s*:\s*.+$', current_p[-1]) or re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)', current_p[-1], re.IGNORECASE)):
+            if current_p and not (current_p[-1].startswith('#') or current_p[-1].startswith('|') or re.match(r'^\s*-{3,}\s*$', current_p[-1]) or re.match(r'^[^:\n]{2,30}\s*:\s*.+$', current_p[-1]) or re.match(r'^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|भवदीय|प्रार्थी|निवेदक|शपथी|हस्ताक्षर|न्यायालय|मुकदमा|बनाम|To:|From:|Subject:|Dear|Respected|Sincerely)', current_p[-1], re.IGNORECASE)):
                 current_p.append(stripped)
             else:
                 if current_p:
@@ -249,12 +250,12 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
     """
     doc = Document()
 
-    # Configure first page margins (Narrow Margins: 0.5 in)
+    # Configure first page margins (Standard Normal Margins: 1.0 in / 2.54 cm)
     section = doc.sections[0]
-    section.top_margin = Inches(3.0 if stamp_paper else 0.5)
-    section.bottom_margin = Inches(0.5)
-    section.left_margin = Inches(0.5)
-    section.right_margin = Inches(0.5)
+    section.top_margin = Inches(3.0 if stamp_paper else 1.0)
+    section.bottom_margin = Inches(1.0)
+    section.left_margin = Inches(1.0)
+    section.right_margin = Inches(1.0)
 
     text = unwrap_paragraphs(text)
     lines = text.split('\n')
@@ -267,10 +268,11 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
         # 1. Section break / Multi-page stamp layout (---)
         if re.match(r'^\s*-{3,}\s*$', stripped):
             new_section = doc.add_section()
-            new_section.top_margin = Inches(0.5)
-            new_section.bottom_margin = Inches(0.5)
-            new_section.left_margin = Inches(0.5)
-            new_section.right_margin = Inches(0.5)
+            new_section.top_margin = Inches(1.0)
+            new_section.bottom_margin = Inches(1.0)
+            new_section.left_margin = Inches(1.0)
+            new_section.right_margin = Inches(1.0)
+            in_closing_block = False
             i += 1
             continue
 
