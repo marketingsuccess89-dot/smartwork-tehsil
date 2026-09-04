@@ -2,6 +2,7 @@ import os
 import re
 import json
 import io
+import time
 from PIL import Image, ImageOps, ImageEnhance
 # Allow processing very large DSLR and high-megapixel camera photos without DecompressionBombError
 Image.MAX_IMAGE_PIXELS = None
@@ -59,9 +60,77 @@ def compress_image(image_bytes: bytes, max_size: int = 1400, quality: int = 80) 
 
 _cached_client = None
 
+PRIMARY_MODEL = "gemini-3.6-flash"
+SECONDARY_MODEL = "gemini-3.5-flash"
+EMERGENCY_MODELS = ["gemini-3.7-flash", "gemini-2.5-flash", "gemini-flash-latest"]
+
+RATE_LIMIT_COOLDOWN = 60.0  # 60 seconds cooldown window matching Google API quota window
+
+# Model cooldown state: {model_name: timestamp_when_cooldown_ends}
+_model_cooldowns: dict[str, float] = {
+    PRIMARY_MODEL: 0.0,
+    SECONDARY_MODEL: 0.0
+}
+
+def is_rate_limit_error(e: Exception) -> bool:
+    """Checks whether an exception corresponds to a 429 / Quota / Rate Limit error."""
+    err_str = str(e).lower()
+    err_type = type(e).__name__.lower()
+    return any(marker in err_str or marker in err_type for marker in [
+        "429", "resource_exhausted", "resourceexhausted", "quota", "rate limit", "rate_limit", "too many requests"
+    ])
+
+def record_model_rate_limit(model_name: str):
+    """Activates cooldown for a model that exceeded its rate limit."""
+    _model_cooldowns[model_name] = time.time() + RATE_LIMIT_COOLDOWN
+    print(f"[ModelManager] [WARNING] Rate limit exceeded on '{model_name}'. Switching to backup model for {RATE_LIMIT_COOLDOWN}s.")
+
+def get_prioritized_models() -> list[str]:
+    """
+    Returns dynamically ordered models:
+    - If PRIMARY_MODEL is in cooldown, SECONDARY_MODEL is tried first.
+    - As soon as cooldown expires, PRIMARY_MODEL automatically resumes as default (#1).
+    """
+    now = time.time()
+    primary_in_cooldown = now < _model_cooldowns.get(PRIMARY_MODEL, 0.0)
+    
+    if primary_in_cooldown:
+        remaining = int(_model_cooldowns[PRIMARY_MODEL] - now)
+        print(f"[ModelManager] Primary '{PRIMARY_MODEL}' is cooling down ({remaining}s remaining). Routing to Secondary '{SECONDARY_MODEL}'.")
+        order = [SECONDARY_MODEL] + [m for m in EMERGENCY_MODELS if m != SECONDARY_MODEL] + [PRIMARY_MODEL]
+    else:
+        order = [PRIMARY_MODEL, SECONDARY_MODEL] + [m for m in EMERGENCY_MODELS if m not in (PRIMARY_MODEL, SECONDARY_MODEL)]
+    
+    return order
+
+def get_model_status() -> dict:
+    """Returns real-time status of model priorities and cooldown timers."""
+    now = time.time()
+    primary_remaining = max(0, int(_model_cooldowns.get(PRIMARY_MODEL, 0.0) - now))
+    secondary_remaining = max(0, int(_model_cooldowns.get(SECONDARY_MODEL, 0.0) - now))
+    active_default = SECONDARY_MODEL if primary_remaining > 0 else PRIMARY_MODEL
+    return {
+        "active_primary": active_default,
+        "default_primary": PRIMARY_MODEL,
+        "secondary_backup": SECONDARY_MODEL,
+        "primary_cooldown_remaining_sec": primary_remaining,
+        "secondary_cooldown_remaining_sec": secondary_remaining,
+        "is_fallback_active": primary_remaining > 0
+    }
+
 def get_genai_client():
     global _cached_client
     if _cached_client is None:
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        env_file = os.path.join(project_root, ".env")
+        if os.path.exists(env_file):
+            try:
+                from dotenv import dotenv_values
+                env_vals = dotenv_values(env_file)
+                if env_vals.get("GEMINI_API_KEY"):
+                    os.environ["GEMINI_API_KEY"] = env_vals["GEMINI_API_KEY"]
+            except Exception:
+                pass
         load_dotenv(override=True)
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
@@ -193,10 +262,11 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
     
     parts.append(prompt)
 
-    models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
+    models = get_prioritized_models()
     last_err = None
     for model_name in models:
         try:
+            print(f"[Gemini Vision] Requesting model: {model_name}...")
             response = client.models.generate_content(
                 model=model_name,
                 contents=parts,
@@ -213,6 +283,8 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
             return TranscriptionResult(**data)
         except Exception as e:
             last_err = e
+            if is_rate_limit_error(e):
+                record_model_rate_limit(model_name)
             print(f"Model {model_name} failed: {e}. Trying fallback...")
             continue
     raise last_err
@@ -257,10 +329,11 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     Ensure your response strictly matches the required JSON schema.
     """
     
-    models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
+    models = get_prioritized_models()
     last_err = None
     for model_name in models:
         try:
+            print(f"[Gemini Audio] Requesting model: {model_name}...")
             response = client.models.generate_content(
                 model=model_name,
                 contents=[
@@ -280,6 +353,8 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
             return TranscriptionResult(**data)
         except Exception as e:
             last_err = e
+            if is_rate_limit_error(e):
+                record_model_rate_limit(model_name)
             print(f"Model {model_name} failed: {e}. Trying fallback...")
             continue
     raise last_err
