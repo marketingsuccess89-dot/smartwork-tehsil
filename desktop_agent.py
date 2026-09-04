@@ -207,12 +207,14 @@ def open_docx_in_word(file_path):
             print(f"[SUCCESS] OS डिफ़ॉल्ट प्रोग्राम में खुला: {abs_path}")
             return True
     except Exception as e:
-        print(f"[ERROR] MS Word खोलने में विफल: {e}")
+        print(f"[WARN] COM API विफल ({e}), डिफ़ॉल्ट प्रोग्राम से खोल रहे हैं...")
         try:
             os.startfile(abs_path)
-        except Exception:
-            pass
-        return False
+            print(f"[SUCCESS] OS डिफ़ॉल्ट प्रोग्राम में खुला: {abs_path}")
+            return True
+        except Exception as err2:
+            print(f"[ERROR] फ़ाइल खोलने में असमर्थ: {err2}")
+            return False
 
 async def agent_main():
     cfg = load_config()
@@ -241,8 +243,15 @@ async def agent_main():
     encoded_pin = urllib.parse.quote(pin)
 
     # Determine protocols
-    ws_scheme = "ws" if "localhost" in server_host or "127.0.0.1" in server_host else "wss"
-    http_scheme = "http" if "localhost" in server_host or "127.0.0.1" in server_host else "https"
+    is_local = (
+        "localhost" in server_host 
+        or "127.0.0.1" in server_host 
+        or server_host.startswith("192.168.")
+        or server_host.startswith("10.")
+        or (":" in server_host and not server_host.startswith("https"))
+    )
+    ws_scheme = "ws" if is_local else "wss"
+    http_scheme = "http" if is_local else "https"
 
     ws_url = f"{ws_scheme}://{server_host}/ws/desktop/{encoded_id}?pin={encoded_pin}"
 
@@ -281,7 +290,7 @@ async def agent_main():
                             # Download the pristine DOCX file from server
                             download_url = f"{http_scheme}://{server_host}/d/{doc_id}"
                             temp_dir = tempfile.gettempdir()
-                            temp_file_path = os.path.join(temp_dir, f"Smart_Typing_{doc_id}.docx")
+                            temp_file_path = os.path.join(temp_dir, f"Smart_Typing_{doc_id}_{int(time.time())}.docx")
 
                             print(f"[DOWNLOAD] डाउनलोड हो रहा है: {download_url} ...")
                             req = urllib.request.Request(
