@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -165,11 +165,16 @@ async def send_to_word(req: SendToWordRequest):
 
 @app.get("/download/agent")
 async def download_desktop_agent():
-    """Direct 1-click download of the Desktop Background Agent for PC."""
-    agent_file = "SmartTyping_Agent.exe" if os.path.exists("SmartTyping_Agent.exe") else "desktop_agent.py"
-    if not os.path.exists(agent_file):
-        raise HTTPException(status_code=404, detail="एजेंट फ़ाइल उपलब्ध नहीं है।")
-    return FileResponse(agent_file, filename=os.path.basename(agent_file))
+    """Direct 1-click download of the Desktop Background Agent for PC (.exe)."""
+    if os.path.exists("SmartTyping_Agent.exe"):
+        return FileResponse(
+            "SmartTyping_Agent.exe",
+            filename="SmartTyping_Agent.exe",
+            media_type="application/vnd.microsoft.portable-executable"
+        )
+    # High-speed direct CDN download from official GitHub Release (100% .exe)
+    release_url = "https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe"
+    return RedirectResponse(url=release_url, status_code=302)
 
 @app.post("/api/process-image")
 async def process_image(
