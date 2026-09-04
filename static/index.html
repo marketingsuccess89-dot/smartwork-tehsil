@@ -240,10 +240,9 @@
             
             <!-- Right: Download PC Agent & History Buttons -->
             <div class="flex items-center space-x-2 flex-shrink-0">
-                <a href="/download/agent" download class="pop-btn bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-emerald-600/50 transition flex items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप डाउनलोड करें">
+                <a href="/download/agent" download class="pc-agent-download-trigger hidden md:inline-flex pop-btn bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-emerald-600/50 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
                     <i class="fa-solid fa-download text-emerald-300 text-xs"></i>
-                    <span class="hidden sm:inline">डाउनलोड PC एजेंट</span>
-                    <span class="sm:hidden">PC एजेंट</span>
+                    <span>डाउनलोड PC एजेंट (.exe)</span>
                 </a>
                 <button id="toggle-history" class="pop-btn bg-emerald-900/70 hover:bg-emerald-800 text-emerald-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-emerald-700/60 transition flex items-center space-x-1.5 shadow-sm">
                     <i class="fa-solid fa-clock-rotate-left text-emerald-400 text-xs"></i>
@@ -281,9 +280,9 @@
                         </div>
                     </div>
                     <div class="flex justify-between items-center pt-1">
-                        <a href="/download/agent" download class="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center space-x-1">
-                            <i class="fa-solid fa-cloud-arrow-down text-xs"></i>
-                            <span>PC एजेंट डाउनलोड (.exe)</span>
+                        <a href="/download/agent" download class="pc-agent-download-trigger text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center space-x-1" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
+                            <i class="fa-solid fa-laptop text-xs text-emerald-600"></i>
+                            <span>PC एजेंट (.exe) <span class="text-[10px] text-slate-400 font-normal hidden sm:inline">(Windows के लिए)</span></span>
                         </a>
                         <button id="mobile-login-btn" class="pop-btn bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-1.5 px-4 rounded-xl text-xs transition shadow-sm shadow-emerald-700/20">
                             लिंक करें
@@ -648,16 +647,58 @@
                     <span>सेव करें और MS Word में भेजें</span>
                 </button>
                 <div class="pt-1 text-center">
-                    <a href="/download/agent" download class="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold inline-flex items-center space-x-1">
-                        <i class="fa-solid fa-cloud-arrow-down text-xs"></i>
-                        <span>कंप्यूटर के लिए Agent (.exe) डाउनलोड करें</span>
+                    <a href="/download/agent" download class="pc-agent-download-trigger text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold inline-flex items-center space-x-1">
+                        <i class="fa-solid fa-laptop text-xs"></i>
+                        <span>कंप्यूटर के लिए Agent (.exe)</span>
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- PC Agent Mobile Info Modal (Friendly guidance when mobile users tap PC Agent) -->
+    <div id="modal-pc-agent-info" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-emerald-950/60 backdrop-blur-sm" onclick="closeModal('modal-pc-agent-info')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-emerald-100 animate-pop-in">
+            <div class="p-4 border-b border-emerald-100/80 flex justify-between items-center bg-emerald-50/60">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-emerald-100 text-emerald-700 p-2 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-laptop text-base text-emerald-700"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-emerald-950">केवल कंप्यूटर / PC के लिए</h3>
+                        <p class="text-[10px] text-emerald-700 font-medium">Windows MS Word ऑटोमेशन</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-pc-agent-info')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-3.5 text-center">
+                <div class="text-3xl text-emerald-600 mb-1">
+                    <i class="fa-solid fa-desktop animate-bounce"></i>
+                </div>
+                <div class="text-xs text-slate-700 leading-relaxed font-medium text-left bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <p class="text-emerald-900 font-bold flex items-center">
+                        <i class="fa-solid fa-circle-info text-emerald-600 mr-1.5"></i>
+                        मोबाइल में इसे डाउनलोड करने की आवश्यकता नहीं है!
+                    </p>
+                    <p class="text-[11px] text-slate-600">
+                        यह <code>.exe</code> ऐप केवल आपके <strong>Windows कंप्यूटर / लैपटॉप</strong> के लिए है ताकि मोबाइल से भेजा गया दस्तावेज़ सीधे आपके कंप्यूटर के <strong>MS Word</strong> में अपने आप खुल सके।
+                    </p>
+                    <p class="text-[11px] text-slate-600">
+                        📱 <strong>मोबाइल पर क्या करें?</strong><br>
+                        मोबाइल पर आपको कोई ऐप नहीं चाहिए — आप सीधे इसी वेबसाइट से फ़ोटो लें और <strong>"MS Word में भेजें"</strong> दबाएँ!
+                    </p>
+                </div>
+                <button onclick="closeModal('modal-pc-agent-info')" class="pop-btn w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition">
+                    ठीक है, समझ गया
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260904_v26"></script>
+    <script src="/static/app.js?v=20260904_v27"></script>
 </body>
 </html>
