@@ -374,10 +374,18 @@ async def view_shared_doc(doc_id: str):
                     rows.append(cells)
 
             if rows:
-                is_sig = any(any(kw in cell.lower() for kw in ['हस्ताक्षर', 'साक्षी', 'गवाह', 'प्रथम पक्ष', 'द्वितीय पक्ष', 'क्रेता', 'विक्रेता', 'शपथकर्ता', 'आवेदक', 'signature', 'witness', 'party', 'landlord', 'tenant']) for r in rows for cell in r)
+                sig_kws = [
+                    'हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह',
+                    'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता',
+                    'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'निवेदक', 'भवदीय', 'signature', 'witness',
+                    'party', 'landlord', 'tenant', 'deponent', 'applicant'
+                ]
+                is_sig = any(any(kw in cell.lower() for kw in sig_kws) for r in rows for cell in r)
                 cols = max(len(r) for r in rows)
+                if cols == 2 and not is_sig and len(rows) <= 4:
+                    is_sig = True
                 border_style = 'border: none;' if is_sig else 'border: 1.5px solid #06281e;'
-                t_html = [f'<table style="width: 100%; border-collapse: collapse; margin: 14px 0; {border_style} page-break-inside: avoid; break-inside: avoid;">']
+                t_html = [f'<table style="width: 100%; border-collapse: collapse; margin: 16px 0; {border_style} page-break-inside: avoid; break-inside: avoid;">']
                 for r_idx, r in enumerate(rows):
                     is_h = (r_idx == 0 and not is_sig)
                     bg = 'background-color: #f0fdf4; font-weight: bold;' if is_h else ''
@@ -395,7 +403,7 @@ async def view_shared_doc(doc_id: str):
                             align = 'text-align: center;'
                         elif is_h:
                             align = 'text-align: center;'
-                        t_html.append(f'<td style="padding: 6px 8px; vertical-align: top; {cell_border} {align} {w_style}">{c_esc}</td>')
+                        t_html.append(f'<td style="padding: 6px 8px; vertical-align: top; font-size: 14.5px; {cell_border} {align} {w_style}">{c_esc}</td>')
                     t_html.append('</tr>')
                 t_html.append('</table>')
                 content_parts.append(''.join(t_html))
@@ -404,14 +412,14 @@ async def view_shared_doc(doc_id: str):
         # Title (# Title)
         if line.startswith('# '):
             t_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line[2:].strip()))
-            content_parts.append(f'<h1 style="text-align: center; font-size: 18px; font-weight: bold; color: #06281e; margin: 0 0 14px 0; page-break-after: avoid; break-after: avoid;">{t_esc}</h1>')
+            content_parts.append(f'<h1 style="text-align: center; font-size: 24px; font-weight: bold; color: #06281e; margin: 0 0 18px 0; page-break-after: avoid; break-after: avoid;">{t_esc}</h1>')
             i += 1
             continue
 
         # Heading (## Heading)
         if line.startswith('## '):
             h_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line[3:].strip()))
-            content_parts.append(f'<h2 style="font-size: 14px; font-weight: bold; color: #0a1914; margin: 12px 0 6px 0; page-break-after: avoid; break-after: avoid;">{h_esc}</h2>')
+            content_parts.append(f'<h2 style="font-size: 16px; font-weight: bold; color: #0a1914; margin: 14px 0 6px 0; page-break-after: avoid; break-after: avoid;">{h_esc}</h2>')
             i += 1
             continue
 
@@ -420,13 +428,13 @@ async def view_shared_doc(doc_id: str):
         if num_match:
             num = num_match.group(1) or num_match.group(2)
             c_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(num_match.group(3)))
-            content_parts.append(f'<div style="text-align: justify; margin-bottom: 8px; line-height: 1.6; page-break-inside: avoid; break-inside: avoid;"><strong>{num}.</strong> {c_text}</div>')
+            content_parts.append(f'<div style="text-align: justify; margin-bottom: 8px; font-size: 15px; line-height: 1.6; page-break-inside: avoid; break-inside: avoid;"><strong>{num}.</strong> {c_text}</div>')
             i += 1
             continue
 
         # Paragraph
         p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
-        content_parts.append(f'<p style="text-align: justify; margin-bottom: 8px; line-height: 1.6; page-break-inside: avoid; break-inside: avoid;">{p_esc}</p>')
+        content_parts.append(f'<p style="text-align: justify; margin-bottom: 8px; font-size: 15px; line-height: 1.6; page-break-inside: avoid; break-inside: avoid;">{p_esc}</p>')
         i += 1
 
     body_html = '\n'.join(content_parts)
@@ -436,52 +444,72 @@ async def view_shared_doc(doc_id: str):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>तहसील विलेख दस्तावेज़ | Smart Typing</title>
+    <title>तहसील विलेख दस्तावेज़</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {{
+        body {
             font-family: 'Noto Sans Devanagari', 'Nirmala UI', system-ui, sans-serif;
             background: #f1f5f9;
             color: #0f172a;
-        }}
-        .a4-viewer-paper {{
+        }
+        .a4-viewer-paper {
             background: #ffffff;
             width: 100%;
             max-width: 760px;
             min-height: 1050px;
             margin: 20px auto;
-            padding: 40px 48px;
+            padding: 48px 52px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             border-radius: 6px;
             box-sizing: border-box;
-            font-size: 13px;
+            font-size: 15px; /* 12pt equivalent */
             line-height: 1.65;
-        }}
-        @media (max-width: 640px) {{
-            .a4-viewer-paper {{
+        }
+        @media (max-width: 640px) {
+            .a4-viewer-paper {
                 margin: 10px auto;
-                padding: 22px 18px;
-                font-size: 12px;
-            }}
-        }}
-        @media print {{
-            body {{ background: #ffffff !important; margin: 0 !important; }}
-            .no-print {{ display: none !important; }}
-            .a4-viewer-paper {{
-                box-shadow: none !important;
+                padding: 24px 20px;
+                font-size: 13.5px;
+            }
+        }
+        @media print {
+            html, body {
+                background: #ffffff !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                width: 100% !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .a4-viewer-paper {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                padding: 25.4mm 25.4mm 25.4mm 25.4mm !important; /* Authentic 1.0-inch Normal margins */
                 max-width: 100% !important;
                 width: 100% !important;
-            }}
-            @page {{
+                font-size: 12pt !important;
+                line-height: 1.6 !important;
+                box-sizing: border-box !important;
+            }
+            @page {
                 size: A4 portrait;
-                margin: 12mm 15mm 12mm 15mm;
-            }}
-        }}
+                margin: 0 !important; /* Removes browser default headers (date/time/title) and footer (URL) */
+            }
+        }
     </style>
+    <script>
+        // Completely clears page title during print so browser NEVER prints "तहसील विलेख दस्तावेज़" or URL
+        window.addEventListener('beforeprint', function() {
+            document.title = '';
+        });
+        window.addEventListener('afterprint', function() {
+            document.title = 'तहसील विलेख दस्तावेज़';
+        });
+    </script>
 </head>
 <body class="min-h-screen flex flex-col items-center">
     <!-- Top Floating Sticky Action Bar -->
