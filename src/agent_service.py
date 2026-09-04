@@ -132,11 +132,10 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
             - Preserve Crime/Case citations: 'मुकदमा अपराध क्रमांक / वाद सं०: ...', 'थाना: ...', 'धारा: ...'.
             - Preserve Cause Title: '[प्रार्थी / अभियुक्त] बनाम [शासन / अनावेदक]'.
             - Main Petition Title: '# [प्रार्थना पत्र अंतर्गत धारा ... वास्ते जमानत / हाजिरी माफी / वकालतनामा]'.
-            - Numbered legal grounds ('1.', '2.', '3.') and Prayer ('# प्रार्थना' or 'प्रार्थना:-').
-            - Advocate signature & Bar Council details at bottom right:
-              | | द्वारा अधिवक्ता: |
-              | :--- | ---: |
-              | | [हस्ताक्षर / नाम / एडवोकेट / नामांकन क्रमांक / चेंबर नं.] |
+            - Advocate signature & Bar Council details at bottom right (clean text lines, NOT a table):
+              द्वारा अधिवक्ता:
+              [हस्ताक्षर / नाम / एडवोकेट]
+              [नामांकन क्रमांक / चेंबर नं. / मोबाइल]
          * Advocate Legal Notices (विधिक नोटिस - e.g. धारा 138 चेक बाउंस, संपत्ति बेदखली):
             - Preserve Advocate/Firm Letterhead at top with Chamber, Court, and Contact details.
             - Format Date and Mode of Dispatch ('रजिस्टर्ड डाक / स्पीड पोस्ट A.D.').
@@ -150,17 +149,25 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
        - DO NOT break sentences into short half-lines just because a notebook line ended physically.
        - Write each paragraph or numbered clause as ONE continuous flowing block so that in MS Word and A4 paper it fills the entire width naturally.
 
-    5. **Smart Signatures & Layout (हस्ताक्षर स्पेसिंग)**:
-       - If there are TWO parties/signatures side-by-side (left and right), format them as a clean 2-column Markdown table:
-         | [Left Party / Signature] | [Right Party / Signature] |
-         | :--- | ---: |
-         | [Details] | [Details] |
-        - If there is only ONE person signing (e.g. Applicant / Deponent in an application, Student in school letter, Employee in corporate letter):
-          * For Hindi applications, affidavits, and school letters: Keep the sign-off and credentials neatly aligned to the right:
-            | | [भवदीय / आज्ञाकारी शिष्य / शपथकर्ता] |
-            | :--- | ---: |
-            | | [नाम / पद / कक्षा / अनुक्रमांक] |
-          * For standard English corporate letters: Keep the entire sign-off block ('Sincerely,', Name, Title, Contact) uniformly left-aligned (standard corporate full-block format).
+    5. **Signatures & Sign-off Layout (हस्ताक्षर व परिचय नियम)**:
+       - **TWO PARTIES SIDE-BY-SIDE (दो पक्षों के हस्ताक्षर - Left और Right अलग-अलग रहें, कभी मिक्स न हों)**:
+         * If there are two parties signing side-by-side (e.g. In deeds/agreements: Landlord & Tenant, Buyer & Seller, First Party & Second Party, or Witness 1 & Witness 2):
+           Format them strictly as a clean 2-column Markdown table so that Left and Right parties remain completely separated with clear space between them and NEVER mix or overlap:
+           | [Left Party / प्रथम पक्ष] | [Right Party / द्वितीय पक्ष] |
+           | :--- | ---: |
+           | हस्ताक्षर: ____________ | हस्ताक्षर: ____________ |
+           | नाम: [नाम] | नाम: [नाम] |
+           | [अन्य विवरण] | [अन्य विवरण] |
+       - **SINGLE SIGNATORY / APPLICANT INTRODUCTION (एकल हस्ताक्षर / प्रार्थी / भवदीय / शपथकर्ता परिचय)**:
+         * When there is only ONE applicant, deponent, student, or person introducing themselves / signing at the bottom (e.g. In Applications, School Letters, Affidavits, Petitions):
+           DO NOT CREATE ANY TABLE FOR A SINGLE PERSON! (एकल हस्ताक्षर या परिचय के लिए टेबल कभी न बनाएं)।
+           Write the sign-off and personal introduction directly as clean, normal text lines (without any pipe '|' symbols):
+           भवदीय / प्रार्थी / शपथकर्ता,
+           [नाम]
+           [पिता का नाम / पद]
+           [पता / मोबाइल नंबर]
+       - **Standard English Corporate Letters**:
+         Write the sign-off block ('Sincerely,', Name, Title, Contact) as clean text lines without tables.
 
     Ensure your response strictly matches the required JSON schema.
     """
@@ -209,14 +216,13 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     2. **Convert Spoken Formatting Commands into Markdown (निर्देशों को फ़ॉर्मैटिंग में बदलें)**:
        - If the speaker says: "Title at top: [Title]" or "ऊपर हेडिंग डालो [शीर्षक]" -> '# [Title]'
        - If the speaker says: "Point number one / पहला पॉइंट" -> '1. [Text]'
-       - If the speaker dictates side-by-side signatures (e.g. "At the bottom, make two signature columns: on the left Landlord..., on the right Tenant..."):
-         Format as a clean 2-column Markdown table:
-         | [Left Party / Title] | [Right Party / Title] |
-         | :--- | ---: |
-         | [Left Name] | [Right Name] |
-       - If the speaker dictates a single signature at the end, align it to the right:
-         | | [हस्ताक्षर / नाम / पद] |
-         | :--- | ---: |
+        - If the speaker dictates side-by-side signatures for TWO parties (e.g. "प्रथम पक्ष बाएँ, द्वितीय पक्ष दाएँ"):
+          Format as a clean 2-column Markdown table so Left and Right parties remain strictly separated:
+          | [Left Party / Title] | [Right Party / Title] |
+          | :--- | ---: |
+          | [Left Name] | [Right Name] |
+        - If the speaker dictates a single signature / applicant details at the end (e.g. प्रार्थी, भवदीय, शपथकर्ता):
+          Write it directly as plain text lines, DO NOT create a table ('|') for a single person!
 
     3. **Stutter, Slip of Tongue & Self-Corrections (हकलाना व सुधार)**:
        - When the speaker corrects themselves (e.g. "9000... no wait, make that 9500", or "नाम अमित... नहीं नहीं, सुमित लिखो"), transcribe ONLY the final intended correction ("9500" / "सुमित").
