@@ -3,6 +3,8 @@ import re
 import json
 import uuid
 import time
+import threading
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 # Force load environment variables from .env file overriding system vars
@@ -12,19 +14,48 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, W
 from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel
 import uvicorn
+import requests
 
 from src.agent_service import extract_text_from_image, extract_text_from_images, transcribe_audio_dictation, get_model_status
 from src.doc_builder import create_docx
 
-app = FastAPI(title="Tehsil AI Document Operator MVP")
+def keep_alive_worker():
+    """
+    Background daemon that pings Render's public URL every 9 minutes (540s)
+    to reset Render's 15-minute free-tier sleep timer, ensuring 24/7 uptime.
+    """
+    time.sleep(30)  # Initial boot buffer
+    app_url = os.getenv("RENDER_EXTERNAL_URL", "https://thesmartwork.onrender.com").rstrip("/")
+    ping_url = f"{app_url}/api/health"
+    print(f"[KeepAlive] 24/7 Watchdog daemon started. Target: {ping_url}")
+    while True:
+        try:
+            time.sleep(540)  # Ping every 9 minutes (well before 15-min sleep cutoff)
+            res = requests.get(ping_url, timeout=25)
+            print(f"[KeepAlive] Ping to {ping_url} -> Status {res.status_code}")
+        except Exception as e:
+            print(f"[KeepAlive] Heartbeat ping notice: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup tasks
+    cleanup_expired_docs()
+    if os.getenv("RENDER") or os.getenv("RENDER_EXTERNAL_URL"):
+        t = threading.Thread(target=keep_alive_worker, daemon=True)
+        t.start()
+        print("[KeepAlive] 24/7 Render Keep-Alive background thread active.")
+    yield
+
+app = FastAPI(title="Tehsil AI Document Operator MVP", lifespan=lifespan)
 
 # Enable CORS for development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -58,6 +89,27 @@ shared_documents: dict[str, dict] = {}
 
 DOC_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch", "doc_cache")
 os.makedirs(DOC_CACHE_DIR, exist_ok=True)
+CACHE_TTL_SECONDS = 172800  # 48 hours
+
+def cleanup_expired_docs():
+    """Removes expired documents (> 48 hours) from memory and deletes cache files from disk."""
+    now = time.time()
+    expired_mem = [k for k, v in list(shared_documents.items()) if now - v.get('created_at', now) > CACHE_TTL_SECONDS]
+    for k in expired_mem:
+        shared_documents.pop(k, None)
+
+    try:
+        if os.path.exists(DOC_CACHE_DIR):
+            for fname in os.listdir(DOC_CACHE_DIR):
+                if fname.endswith(".json"):
+                    fpath = os.path.join(DOC_CACHE_DIR, fname)
+                    try:
+                        if now - os.path.getmtime(fpath) > CACHE_TTL_SECONDS:
+                            os.remove(fpath)
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"[DocCache] Cleanup warning: {e}")
 
 def save_doc_to_cache(doc_id: str, data: dict):
     """Saves document data in memory and to disk so restarts/reloads never lose view links."""
@@ -70,14 +122,31 @@ def save_doc_to_cache(doc_id: str, data: dict):
         print(f"Failed to cache document {doc_id}: {e}")
 
 def get_doc_from_cache(doc_id: str) -> dict | None:
-    """Retrieves document data from memory or disk cache."""
+    """Retrieves document data from memory or disk cache, strictly enforcing 48-hour expiration."""
+    now = time.time()
+    
+    # Check in-memory first
     if doc_id in shared_documents:
-        return shared_documents[doc_id]
+        data = shared_documents[doc_id]
+        if now - data.get('created_at', now) > CACHE_TTL_SECONDS:
+            shared_documents.pop(doc_id, None)
+            cache_file = os.path.join(DOC_CACHE_DIR, f"{doc_id}.json")
+            if os.path.exists(cache_file):
+                try: os.remove(cache_file)
+                except Exception: pass
+            return None
+        return data
+
+    # Check disk cache
     cache_file = os.path.join(DOC_CACHE_DIR, f"{doc_id}.json")
     if os.path.exists(cache_file):
         try:
             with open(cache_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                created_at = data.get('created_at', now)
+                if now - created_at > CACHE_TTL_SECONDS:
+                    os.remove(cache_file)
+                    return None
                 shared_documents[doc_id] = data
                 return data
         except Exception:
@@ -174,11 +243,9 @@ async def send_to_word(req: SendToWordRequest):
             "message": "सुरक्षा पिन / पासवर्ड गलत है! कृपया सही पिन दर्ज करें।"
         })
 
-    # Evict expired documents (> 48 hours) to prevent memory leak
+    # Evict expired documents (> 48 hours) from memory and disk to prevent memory/disk leaks
+    cleanup_expired_docs()
     now = time.time()
-    expired = [k for k, v in list(shared_documents.items()) if now - v.get('created_at', now) > 172800]
-    for k in expired:
-        shared_documents.pop(k, None)
 
     # Store document for clean DOCX stream download with disk cache persistence
     doc_id = str(uuid.uuid4())[:8]
@@ -287,7 +354,7 @@ async def auto_sync_to_word(user_id: str | None, text: str, stamp_paper: bool = 
         try:
             ws = s["ws"]
             await ws.send_json(payload_open)
-            await ws.send_json(ready_payload)
+            await ws.send_json(payload_ready)
             print(f"[AutoSync] Document {doc_id} successfully auto-sent to MS Word for user: {clean_user_id}")
         except Exception:
             dead_sessions.append(s)
@@ -312,7 +379,7 @@ async def process_image(
     target_files = []
     if files:
         target_files.extend(files)
-    if file and file not in target_files:
+    elif file:
         target_files.append(file)
         
     if not target_files:
@@ -334,7 +401,7 @@ async def process_image(
         raise HTTPException(status_code=400, detail="वैध इमेज फ़ाइल नहीं मिली।")
 
     try:
-        result = extract_text_from_images(bytes_list)
+        result = await run_in_threadpool(extract_text_from_images, bytes_list)
         # Automatic MS Word sync if station is connected
         await auto_sync_to_word(user_id, result.transcribed_text, getattr(result, "stamp_paper_detected", False))
         return result
@@ -355,17 +422,17 @@ async def process_audio(file: UploadFile = File(...), user_id: str = Form(None))
     """
     # Accept standard audio formats, generic octet-stream, or common file extensions
     is_audio = (
-        file.content_type.startswith("audio/") 
+        (file.content_type and file.content_type.startswith("audio/")) 
         or file.content_type == "application/octet-stream"
-        or file.filename.endswith(('.wav', '.webm', '.mp3', '.m4a', '.ogg', '.aac', '.mp4'))
+        or (file.filename and file.filename.lower().endswith(('.wav', '.webm', '.mp3', '.m4a', '.ogg', '.aac', '.mp4')))
     )
     if not is_audio:
         raise HTTPException(status_code=400, detail="Uploaded file must be an audio file.")
         
     try:
         contents = await file.read()
-        mime_type = file.content_type if file.content_type.startswith("audio/") else "audio/wav"
-        result = transcribe_audio_dictation(contents, mime_type=mime_type)
+        mime_type = file.content_type if (file.content_type and file.content_type.startswith("audio/")) else "audio/wav"
+        result = await run_in_threadpool(transcribe_audio_dictation, contents, mime_type=mime_type)
         # Automatic MS Word sync if station is connected
         await auto_sync_to_word(user_id, result.transcribed_text, getattr(result, "stamp_paper_detected", False))
         return result
@@ -913,33 +980,6 @@ async def health_check():
         "timestamp": time.time(),
         "ai_model": get_model_status()
     }
-
-import threading
-import requests
-
-def keep_alive_worker():
-    """
-    Background daemon that pings Render's public URL every 9 minutes (540s)
-    to reset Render's 15-minute free-tier sleep timer, ensuring 24/7 uptime.
-    """
-    time.sleep(30)  # Initial boot buffer
-    app_url = os.getenv("RENDER_EXTERNAL_URL", "https://thesmartwork.onrender.com").rstrip("/")
-    ping_url = f"{app_url}/api/health"
-    print(f"[KeepAlive] 24/7 Watchdog daemon started. Target: {ping_url}")
-    while True:
-        try:
-            time.sleep(540)  # Ping every 9 minutes (well before 15-min sleep cutoff)
-            res = requests.get(ping_url, timeout=25)
-            print(f"[KeepAlive] Ping to {ping_url} -> Status {res.status_code}")
-        except Exception as e:
-            print(f"[KeepAlive] Heartbeat ping notice: {e}")
-
-@app.on_event("startup")
-def on_app_startup():
-    if os.getenv("RENDER") or os.getenv("RENDER_EXTERNAL_URL"):
-        t = threading.Thread(target=keep_alive_worker, daemon=True)
-        t.start()
-        print("[KeepAlive] 24/7 Render Keep-Alive background thread active.")
 
 # Serve Static Files
 os.makedirs("static", exist_ok=True)

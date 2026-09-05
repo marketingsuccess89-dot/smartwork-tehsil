@@ -1,0 +1,88 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+bin/
+include/
+lib/
+lib64/
+
+# Node & Frontend Build Artifacts
+node_modules/
+dist/
+build/
+.next/
+out/
+.nuxt/
+.vuepress/dist
+.cache/
+.parcel-cache/
+
+# PyInstaller & Packaging
+*.manifest
+*.spec
+
+# Large Binaries & Archives (Prevent memory waste & repo bloat)
+*.exe
+*.dll
+*.so
+*.dylib
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+cloudflared.exe
+SmartTyping_Agent.exe
+Tehsil_SmartWork_Project.zip
+
+# Test, Scratch & Temporary Browser Profile Artifacts
+scratch/
+audio_tests/
+*profile*/
+chrome_user_data/
+*.png
+*.jpg
+*.jpeg
+*.mp3
+*.wav
+*.pdf
+*.docx
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Logs & Databases
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/

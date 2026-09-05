@@ -1,13 +1,16 @@
 // State Variables
 let ws = null;
 let userEmail = '';
+let userPin = '';
 let pingInterval = null;
 let autoReconnect = true;
+let lastHandledDocId = null;
 
 // DOM Elements
 const loginContainer = document.getElementById('login-container');
 const syncContainer = document.getElementById('sync-container');
 const userEmailInput = document.getElementById('user-email');
+const userPinInput = document.getElementById('user-pin');
 const connectBtn = document.getElementById('connect-btn');
 const disconnectBtn = document.getElementById('disconnect-btn');
 
@@ -20,14 +23,15 @@ const insertManualBtn = document.getElementById('insert-manual-btn');
 // Office.js Initialization
 Office.onReady((info) => {
     if (info.host === Office.HostType.Word) {
-        // Office is ready and host is MS Word
         console.log("Office.js is ready!");
         
-        // Auto-load previous login email if exists
+        // Auto-load previous login email & PIN if exists
         const savedEmail = localStorage.getItem('tehsil_sync_email');
+        const savedPin = localStorage.getItem('tehsil_sync_pin') || '';
         if (savedEmail) {
             userEmailInput.value = savedEmail;
-            connectSync(savedEmail);
+            if (userPinInput) userPinInput.value = savedPin;
+            connectSync(savedEmail, savedPin);
         }
     }
 });
@@ -35,18 +39,19 @@ Office.onReady((info) => {
 // Event Listeners
 connectBtn.addEventListener('click', () => {
     const email = userEmailInput.value.trim().toLowerCase();
+    const pin = userPinInput ? userPinInput.value.trim() : '';
     if (!email) {
         alert("कृपया एक वैध ईमेल आईडी दर्ज करें।");
         return;
     }
-    // Simple email validation
     if (!email.includes('@')) {
         alert("ईमेल आईडी अमान्य है।");
         return;
     }
     localStorage.setItem('tehsil_sync_email', email);
+    localStorage.setItem('tehsil_sync_pin', pin);
     autoReconnect = true;
-    connectSync(email);
+    connectSync(email, pin);
 });
 
 disconnectBtn.addEventListener('click', () => {
@@ -62,8 +67,9 @@ insertManualBtn.addEventListener('click', () => {
 });
 
 // Connect to WebSocket Server
-function connectSync(email) {
+function connectSync(email, pin = '') {
     userEmail = email;
+    userPin = pin;
     activeUserDisplay.innerText = email;
     
     updateBadgeStatus('connecting');
@@ -72,7 +78,8 @@ function connectSync(email) {
     
     // Connect WebSocket
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/desktop/${encodeURIComponent(email)}`;
+    const pinParam = userPin ? `?pin=${encodeURIComponent(userPin)}` : '';
+    const wsUrl = `${protocol}//${window.location.host}/ws/desktop/${encodeURIComponent(email)}${pinParam}`;
     
     try {
         ws = new WebSocket(wsUrl);
@@ -97,30 +104,26 @@ function connectSync(email) {
             try {
                 const message = JSON.parse(event.data);
                 
-                if (message.event === 'transcription_ready') {
-                    const text = message.text;
-                    incomingTextPreview.value = text;
-                    insertManualBtn.removeAttribute('disabled');
-                    
-                    // Auto-insert if checked
-                    if (autoInsertToggle.checked) {
-                        insertTextIntoWord(text);
-                    }
-                } else if (message.event === 'open_in_word') {
+                if (message.event === 'transcription_ready' || message.event === 'open_in_word') {
                     const docId = message.doc_id;
-                    const docText = message.text || '';
-                    if (docText) {
-                        incomingTextPreview.value = docText;
-                        insertManualBtn.removeAttribute('disabled');
-                        if (autoInsertToggle && autoInsertToggle.checked) {
-                            insertTextIntoWord(docText);
-                        }
-                    } else {
-                        incomingTextPreview.value = `📄 नया दस्तावेज़ (ID: ${docId}) प्राप्त हुआ!\n\nफ़ाइल डाउनलोड हो रही है...`;
-                        insertManualBtn.removeAttribute('disabled');
+                    // Prevent duplicate execution if server sends both events for the same document
+                    if (docId && docId === lastHandledDocId) {
+                        return;
                     }
-                    // Automatically trigger download of pristine .docx
-                    window.location.href = `/d/${docId}`;
+                    if (docId) {
+                        lastHandledDocId = docId;
+                    }
+
+                    const text = message.text || '';
+                    if (text) {
+                        incomingTextPreview.value = text;
+                        insertManualBtn.removeAttribute('disabled');
+                        
+                        // Auto-insert into active Word document if toggle is checked
+                        if (autoInsertToggle && autoInsertToggle.checked) {
+                            insertTextIntoWord(text);
+                        }
+                    }
                 }
             } catch (err) {
                 console.error("Failed to parse websocket message:", err);
@@ -137,7 +140,7 @@ function connectSync(email) {
                 setTimeout(() => {
                     if (autoReconnect) {
                         console.log("Attempting to reconnect...");
-                        connectSync(userEmail);
+                        connectSync(userEmail, userPin);
                     }
                 }, 3000);
             }
@@ -174,13 +177,13 @@ function disconnectSync() {
 // Update Sync Badge UI Status
 function updateBadgeStatus(status) {
     if (status === 'connected') {
-        syncBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center bg-emerald-100 text-emerald-850 border border-emerald-200 text-emerald-700";
+        syncBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center bg-emerald-100 text-emerald-800 border border-emerald-200";
         syncBadge.innerHTML = `<span class="h-1.5 w-1.5 bg-emerald-500 rounded-full mr-1"></span><span>Connected</span>`;
     } else if (status === 'connecting') {
         syncBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center bg-amber-100 text-amber-800 border border-amber-200";
         syncBadge.innerHTML = `<span class="h-1.5 w-1.5 bg-amber-500 rounded-full animate-ping mr-1"></span><span>Connecting</span>`;
     } else {
-        syncBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center bg-red-105 text-red-800 border border-red-200 bg-red-100 text-red-750";
+        syncBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center bg-rose-100 text-rose-700 border border-rose-200";
         syncBadge.innerHTML = `<span class="h-1.5 w-1.5 bg-red-500 rounded-full mr-1"></span><span>Offline</span>`;
     }
 }

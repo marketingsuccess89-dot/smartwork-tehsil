@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Typing | Word Sync</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Office.js Library -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f7faf8;
+        }
+    </style>
+</head>
+<body class="bg-[#f7faf8] min-h-screen flex flex-col p-4 text-slate-800">
+
+    <!-- Header -->
+    <header class="flex items-center space-x-2.5 pb-3.5 mb-4 border-b border-emerald-100">
+        <div class="bg-gradient-to-tr from-emerald-600 to-teal-700 p-2 rounded-xl text-white shadow-md shadow-emerald-700/20">
+            <i class="fa-solid fa-bolt-lightning text-sm"></i>
+        </div>
+        <div>
+            <h1 class="text-sm font-bold text-emerald-950">Smart Typing Desktop Sync</h1>
+            <p class="text-[10px] text-emerald-700/80">Live Mobile-to-Word typing assistant</p>
+        </div>
+    </header>
+
+    <!-- Setup/Login Screen -->
+    <div id="login-container" class="space-y-4">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100/90">
+            <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-1.5">1. ईमेल दर्ज करें (Enter Gmail)</h3>
+            <p class="text-xs text-slate-500 mb-3">मोबाइल और कंप्यूटर को सिंक करने के लिए दोनों पर समान ईमेल का उपयोग करें।</p>
+            
+            <div class="space-y-3">
+                <input type="email" id="user-email" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600" placeholder="karan@gmail.com">
+                <input type="password" id="user-pin" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600" placeholder="सुरक्षा पिन / PIN (यदि सेट किया हो)">
+                
+                <button id="connect-btn" class="w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md shadow-emerald-700/20 flex items-center justify-center space-x-1.5 active:scale-95">
+                    <i class="fa-solid fa-circle-nodes"></i>
+                    <span>सिंक कनेक्ट करें (Connect Sync)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Sync Screen (Hidden initially) -->
+    <div id="sync-container" class="space-y-4 hidden flex-grow flex flex-col">
+        <!-- Status Panel -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100/90 space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-emerald-900 uppercase tracking-wide">Sync Status</span>
+                <span id="sync-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 bg-amber-100 text-amber-800 border border-amber-200">
+                    <span class="h-1.5 w-1.5 bg-amber-500 rounded-full animate-ping mr-1"></span>
+                    <span>Connecting</span>
+                </span>
+            </div>
+            
+            <div class="flex justify-between items-center bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 text-xs">
+                <div class="flex items-center space-x-2 text-emerald-950 font-medium">
+                    <i class="fa-solid fa-user-check text-emerald-600"></i>
+                    <span id="active-user-display" class="truncate max-w-[150px]">karan@gmail.com</span>
+                </div>
+                <button id="disconnect-btn" class="text-rose-500 hover:text-rose-700 transition text-[10px] font-bold">
+                    Change ID
+                </button>
+            </div>
+
+            <!-- Auto-Insert Configuration -->
+            <label class="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer select-none border-t border-slate-100 pt-3 mt-2">
+                <input type="checkbox" id="auto-insert-toggle" checked class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded transition">
+                <span>ऑटो-टाइपिंग (Auto-insert into Document)</span>
+            </label>
+        </div>
+
+        <!-- Latest Received Text Area -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-100/90 flex-grow flex flex-col">
+            <h3 class="text-xs font-bold text-emerald-950 uppercase tracking-wider mb-2">ताजा प्राप्त दस्तावेज़ (Latest Received)</h3>
+            
+            <textarea id="incoming-text-preview" readonly class="w-full flex-grow p-3 border border-slate-200 rounded-xl text-slate-800 font-mono text-xs leading-relaxed resize-none focus:outline-none bg-slate-50/50" placeholder="मोबाइल से स्कैन या रिकॉर्ड होने के बाद, आपका दस्तावेज़ यहाँ लाइव दिखाई देगा..."></textarea>
+            
+            <button id="insert-manual-btn" disabled class="w-full bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs mt-3 transition flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-95">
+                <i class="fa-regular fa-file-word"></i>
+                <span>दस्तावेज़ कर्सर पर डालें (Insert at Cursor)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Web App Script -->
+    <script src="/static/taskpane.js"></script>
+</body>
+</html>

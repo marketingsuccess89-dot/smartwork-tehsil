@@ -1,6 +1,7 @@
 // State Variables
 let activeTab = 'image'; // 'image' or 'audio'
 let selectedImageFiles = []; // Array of File objects (supports multi-page deeds)
+let activeThumbnailUrls = []; // Track active Object URLs to revoke and prevent leaks
 let selectedAudioFile = null;
 let mediaRecorder = null;
 let audioChunks = [];
@@ -53,6 +54,7 @@ const mobileUserEmailInput = document.getElementById('mobile-user-email');
 const mobileUserPinInput = document.getElementById('mobile-user-pin');
 const mobileLoginBtn = document.getElementById('mobile-login-btn');
 const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+const mobileAutoSyncToggle = document.getElementById('mobile-auto-sync-toggle');
 
 const documentEditor = document.getElementById('document-editor');
 const documentPreview = document.getElementById('document-preview');
@@ -207,6 +209,15 @@ function setupEventListeners() {
     }
     if (mobileLogoutBtn) {
         mobileLogoutBtn.addEventListener('click', unlinkMobileEmail);
+    }
+    if (mobileAutoSyncToggle) {
+        const savedPref = localStorage.getItem('tehsil_auto_sync');
+        if (savedPref !== null) {
+            mobileAutoSyncToggle.checked = (savedPref === 'true');
+        }
+        mobileAutoSyncToggle.addEventListener('change', () => {
+            localStorage.setItem('tehsil_auto_sync', mobileAutoSyncToggle.checked ? 'true' : 'false');
+        });
     }
 
     // 6. Editor Actions & Live Counters
@@ -483,6 +494,13 @@ function switchTab(tab) {
 // Render thumbnails for multi-page deeds
 function renderImageThumbnails() {
     if (!imagesGrid) return;
+
+    // Revoke previous blob URLs to prevent browser memory leaks
+    if (activeThumbnailUrls && activeThumbnailUrls.length > 0) {
+        activeThumbnailUrls.forEach(url => URL.revokeObjectURL(url));
+        activeThumbnailUrls = [];
+    }
+
     imagesGrid.innerHTML = '';
     
     selectedImageFiles.forEach((file, index) => {
@@ -490,6 +508,7 @@ function renderImageThumbnails() {
         thumbCard.className = 'relative group rounded-xl overflow-hidden border border-emerald-200 bg-white shadow-xs';
         
         const previewUrl = URL.createObjectURL(file);
+        activeThumbnailUrls.push(previewUrl);
         
         thumbCard.innerHTML = `
             <div class="relative h-28 bg-slate-100 flex items-center justify-center overflow-hidden">
@@ -575,6 +594,10 @@ async function handleImageSelection(filesInput) {
 }
 
 function clearImageSelection() {
+    if (activeThumbnailUrls && activeThumbnailUrls.length > 0) {
+        activeThumbnailUrls.forEach(url => URL.revokeObjectURL(url));
+        activeThumbnailUrls = [];
+    }
     selectedImageFiles = [];
     if (cameraInput) cameraInput.value = '';
     if (fileInput) fileInput.value = '';
@@ -709,8 +732,6 @@ async function processWithAI(mode) {
         selectedImageFiles.forEach((file) => {
             formData.append('files', file);
         });
-        // Also append 'file' for backwards compatibility
-        formData.append('file', selectedImageFiles[0]);
         url = '/api/process-image';
     } else {
         if (!selectedAudioFile) {
@@ -770,7 +791,12 @@ async function processWithAI(mode) {
         
         // Save to History
         saveToHistory(data);
-        showToast('success', 'Smart Typing द्वारा दस्तावेज़ तैयार कर लिया गया!');
+        const isAutoSyncOn = !mobileAutoSyncToggle || mobileAutoSyncToggle.checked;
+        if (mobileUserEmail && isDesktopConnected && isAutoSyncOn) {
+            showToast('success', 'दस्तावेज़ तैयार हुआ और स्वतः आपके MS Word में भेज दिया गया!');
+        } else {
+            showToast('success', 'Smart Typing द्वारा दस्तावेज़ तैयार कर लिया गया!');
+        }
 
     } catch (err) {
         console.error(err);
@@ -1174,6 +1200,9 @@ function showToast(type, message) {
     if (type === 'success') {
         toast.className = 'fixed bottom-6 right-6 bg-[#06281e] text-emerald-300 text-xs font-semibold py-3 px-5 rounded-xl shadow-2xl flex items-center space-x-2.5 transition duration-300 z-50 transform translate-y-0 opacity-100 border border-emerald-600/50';
         toastIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+    } else if (type === 'info') {
+        toast.className = 'fixed bottom-6 right-6 bg-[#06281e] text-sky-300 text-xs font-semibold py-3 px-5 rounded-xl shadow-2xl flex items-center space-x-2.5 transition duration-300 z-50 transform translate-y-0 opacity-100 border border-sky-600/50';
+        toastIcon.innerHTML = '<i class="fa-solid fa-circle-info text-sky-400"></i>';
     } else {
         toast.className = 'fixed bottom-6 right-6 bg-[#06281e] text-rose-300 text-xs font-semibold py-3 px-5 rounded-xl shadow-2xl flex items-center space-x-2.5 transition duration-300 z-50 transform translate-y-0 opacity-100 border border-rose-600/50';
         toastIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-400"></i>';
@@ -1215,12 +1244,19 @@ function loadHistory() {
         div.className = 'p-3 border border-emerald-100/80 rounded-xl hover:bg-emerald-50/50 cursor-pointer transition flex flex-col justify-between bg-white text-left shadow-sm';
         const textSnippet = item.transcribed_text.substring(0, 50) + (item.transcribed_text.length > 50 ? '...' : '');
         
-        div.innerHTML = `
-            <div class="flex justify-between items-center mb-1">
-                <span class="text-[10px] text-slate-400 font-semibold font-mono">${item.date}</span>
-            </div>
-            <p class="text-xs font-semibold text-emerald-950 leading-snug">${textSnippet}</p>
-        `;
+        const topRow = document.createElement('div');
+        topRow.className = 'flex justify-between items-center mb-1';
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'text-[10px] text-slate-400 font-semibold font-mono';
+        dateSpan.textContent = item.date;
+        topRow.appendChild(dateSpan);
+
+        const snippetPara = document.createElement('p');
+        snippetPara.className = 'text-xs font-semibold text-emerald-950 leading-snug';
+        snippetPara.textContent = textSnippet;
+
+        div.appendChild(topRow);
+        div.appendChild(snippetPara);
         
         div.addEventListener('click', () => {
             if (documentEditor) {

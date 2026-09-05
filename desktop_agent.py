@@ -14,8 +14,10 @@ import json
 import time
 import tempfile
 import asyncio
+import ssl
 import urllib.request
 import urllib.parse
+import websockets
 
 # Windows specific imports
 try:
@@ -229,29 +231,38 @@ async def agent_main():
         print("[ERROR] स्टेशन ID या पिन उपलब्ध नहीं है। ऐप बंद हो रहा है।")
         return
 
-    # Check for websockets library, install or fail gracefully
-    try:
-        import websockets
-    except ImportError:
-        print("[INFO] 'websockets' लाइब्रेरी इंस्टॉल की जा रही है...")
-        import subprocess
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "websockets"])
-        import websockets
-
     # WebSocket URL with PIN authentication query param
     encoded_id = urllib.parse.quote(station_id)
     encoded_pin = urllib.parse.quote(pin)
 
-    # Determine protocols
-    is_local = (
-        "localhost" in server_host 
-        or "127.0.0.1" in server_host 
-        or server_host.startswith("192.168.")
-        or server_host.startswith("10.")
-        or (":" in server_host and not server_host.startswith("https"))
-    )
+    # Determine protocols accurately
+    host_clean = server_host.strip()
+    explicit_scheme = None
+    if host_clean.startswith("https://") or host_clean.startswith("wss://"):
+        explicit_scheme = "secure"
+        host_clean = host_clean.split("://", 1)[1]
+    elif host_clean.startswith("http://") or host_clean.startswith("ws://"):
+        explicit_scheme = "insecure"
+        host_clean = host_clean.split("://", 1)[1]
+
+    host_clean = host_clean.rstrip("/")
+    hostname_only = host_clean.split(":", 1)[0].lower()
+
+    if explicit_scheme == "secure":
+        is_local = False
+    elif explicit_scheme == "insecure":
+        is_local = True
+    else:
+        is_local = (
+            hostname_only in ("localhost", "127.0.0.1")
+            or hostname_only.startswith("192.168.")
+            or hostname_only.startswith("10.")
+            or hostname_only.endswith(".local")
+        )
+
     ws_scheme = "ws" if is_local else "wss"
     http_scheme = "http" if is_local else "https"
+    server_host = host_clean
 
     ws_url = f"{ws_scheme}://{server_host}/ws/desktop/{encoded_id}?pin={encoded_pin}"
 
@@ -263,50 +274,101 @@ async def agent_main():
     print("=" * 60)
 
     retry_delay = 3
+    last_handled_doc_id = None
+
+    async def heartbeat_sender(ws):
+        """Periodically sends application ping to prevent proxy idle dropouts."""
+        try:
+            while True:
+                await asyncio.sleep(20)
+                await ws.send("ping")
+        except Exception:
+            pass
+
     while True:
         try:
             print(f"[CONNECTING] सर्वर से जुड़ रहा है: {ws_url} ...")
             async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as ws:
                 print(f"[CONNECTED] 🟢 सर्वर से सफलतापूर्वक जुड़ा! (ID: {station_id})")
-                print("  -> मोबाइल पर 'MS Word में भेजें' दबाते ही यहाँ Word फ़ाइल खुल जाएगी।")
+                print("  -> मोबाइल पर दस्तावेज़ तैयार होते ही यहाँ Word फ़ाइल स्वतः खुल जाएगी।")
                 retry_delay = 3
 
-                while True:
-                    raw_msg = await ws.recv()
-                    if raw_msg == "pong":
-                        continue
+                # Launch concurrent background heartbeat task
+                hb_task = asyncio.create_task(heartbeat_sender(ws))
 
-                    try:
-                        data = json.loads(raw_msg)
-                        event = data.get("event")
+                try:
+                    while True:
+                        raw_msg = await ws.recv()
+                        if raw_msg == "pong":
+                            continue
 
-                        if event == "connection_status":
-                            print(f"[INFO] सर्वर स्थिति: {data.get('status')} ({data.get('user_id')})")
+                        try:
+                            data = json.loads(raw_msg)
+                            event = data.get("event")
 
-                        elif event == "open_in_word":
-                            doc_id = data.get("doc_id")
-                            print(f"\n[EVENT] 📄 नया दस्तावेज़ प्राप्त हुआ! Doc ID: {doc_id}")
+                            if event == "connection_status":
+                                print(f"[INFO] सर्वर स्थिति: {data.get('status')} ({data.get('user_id')})")
 
-                            # Download the pristine DOCX file from server
-                            download_url = f"{http_scheme}://{server_host}/d/{doc_id}"
-                            temp_dir = tempfile.gettempdir()
-                            temp_file_path = os.path.join(temp_dir, f"Smart_Typing_{doc_id}_{int(time.time())}.docx")
+                            elif event in ("open_in_word", "transcription_ready"):
+                                doc_id = data.get("doc_id")
+                                # Prevent double-triggering for the same doc within short window
+                                if doc_id and doc_id == last_handled_doc_id:
+                                    continue
+                                if doc_id:
+                                    last_handled_doc_id = doc_id
 
-                            print(f"[DOWNLOAD] डाउनलोड हो रहा है: {download_url} ...")
-                            req = urllib.request.Request(
-                                download_url, 
-                                headers={"User-Agent": "SmartTyping-DesktopAgent/1.0"}
-                            )
-                            with urllib.request.urlopen(req) as resp, open(temp_file_path, "wb") as out_fp:
-                                out_fp.write(resp.read())
+                                print(f"\n[EVENT] 📄 नया दस्तावेज़ प्राप्त हुआ! Doc ID: {doc_id}")
 
-                            print(f"[SAVED] फ़ाइल सुरक्षित: {temp_file_path}")
+                                temp_dir = tempfile.gettempdir()
+                                temp_file_path = os.path.join(temp_dir, f"Smart_Typing_{doc_id}_{int(time.time())}.docx")
+                                downloaded_ok = False
 
-                            # Open directly in MS Word
-                            open_docx_in_word(temp_file_path)
+                                if doc_id:
+                                    # Download the pristine DOCX file from server
+                                    download_url = f"{http_scheme}://{server_host}/d/{doc_id}"
+                                    print(f"[DOWNLOAD] डाउनलोड हो रहा है: {download_url} ...")
+                                    req = urllib.request.Request(
+                                        download_url, 
+                                        headers={"User-Agent": "SmartTyping-DesktopAgent/1.0"}
+                                    )
+                                    try:
+                                        ctx = ssl.create_default_context()
+                                        with urllib.request.urlopen(req, context=ctx, timeout=20) as resp, open(temp_file_path, "wb") as out_fp:
+                                            out_fp.write(resp.read())
+                                        downloaded_ok = True
+                                    except Exception as ssl_err:
+                                        # Fallback to unverified SSL if Windows root certificates aren't bundled
+                                        try:
+                                            ctx_unverified = ssl._create_unverified_context()
+                                            with urllib.request.urlopen(req, context=ctx_unverified, timeout=20) as resp, open(temp_file_path, "wb") as out_fp:
+                                                out_fp.write(resp.read())
+                                            downloaded_ok = True
+                                        except Exception as dl_err:
+                                            print(f"[WARN] सर्वर से DOCX डाउनलोड विफल: {dl_err}")
 
-                    except Exception as parse_err:
-                        print(f"[WARN] संदेश पार्स करने में त्रुटि: {parse_err}")
+                                # Fallback: Generate DOCX locally from payload text if server download failed
+                                if not downloaded_ok and data.get("text"):
+                                    try:
+                                        from src.doc_builder import create_docx
+                                        stream = create_docx(data["text"], stamp_paper=data.get("stamp_paper", False))
+                                        with open(temp_file_path, "wb") as out_fp:
+                                            out_fp.write(stream.getvalue())
+                                        downloaded_ok = True
+                                        print(f"[FALLBACK] स्थानीय रूप से DOCX निर्मित: {temp_file_path}")
+                                    except Exception as gen_err:
+                                        print(f"[WARN] स्थानीय निर्माण विफल: {gen_err}")
+
+                                if downloaded_ok:
+                                    print(f"[SAVED] फ़ाइल सुरक्षित: {temp_file_path}")
+                                    open_docx_in_word(temp_file_path)
+                                else:
+                                    print("[ERROR] दस्तावेज़ फ़ाइल प्राप्त या निर्मित नहीं हो सकी।")
+
+                        except Exception as parse_err:
+                            print(f"[WARN] संदेश पार्स करने में त्रुटि: {parse_err}")
+
+                finally:
+                    hb_task.cancel()
 
         except (websockets.exceptions.ConnectionClosed, ConnectionRefusedError, OSError) as conn_err:
             print(f"[DISCONNECTED] कनेक्शन टूटा ({conn_err}). {retry_delay}s में पुनः प्रयास...")

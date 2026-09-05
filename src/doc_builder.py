@@ -5,9 +5,24 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import parse_xml
-from docx.oxml.ns import nsdecls
+from docx.oxml.ns import nsdecls, qn
 
 FONT_NAME = 'Nirmala UI'  # Industry standard Devanagari Hindi font in Windows & Office
+
+def apply_font(run, font_name=FONT_NAME):
+    """
+    Applies font name across Latin, Complex Script (Devanagari/Hindi), and East Asian
+    to guarantee Microsoft Word renders Hindi in Nirmala UI instead of falling back to Mangal.
+    """
+    run.font.name = font_name
+    rpr = run._element.get_or_add_rPr()
+    rfonts = rpr.find(qn('w:rFonts'))
+    if rfonts is None:
+        rfonts = rpr._add_rFonts()
+    rfonts.set(qn('w:ascii'), font_name)
+    rfonts.set(qn('w:hAnsi'), font_name)
+    rfonts.set(qn('w:cs'), font_name)
+    rfonts.set(qn('w:eastAsia'), font_name)
 
 def set_cell_background(cell, fill_hex="F3F4F6"):
     """Sets background shading of a table cell."""
@@ -89,7 +104,7 @@ def add_styled_paragraph(doc, text: str, style_type='body', alignment=None):
             content = part[2:-2]
 
         run = p.add_run(content)
-        run.font.name = FONT_NAME
+        apply_font(run)
         run.bold = is_bold
 
         if style_type == 'title':
@@ -199,7 +214,7 @@ def render_markdown_table(doc, table_lines):
                         txt = part[2:-2]
                     
                     run = p.add_run(txt)
-                    run.font.name = FONT_NAME
+                    apply_font(run)
                     run.font.size = Pt(10.5)
                     run.bold = bold
 
@@ -350,7 +365,7 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
                 is_bold = part.startswith('**') and part.endswith('**') and len(part) >= 4
                 txt = part[2:-2] if is_bold else part
                 run = p.add_run(txt)
-                run.font.name = FONT_NAME
+                apply_font(run)
                 run.font.size = Pt(12)
                 run.bold = is_bold
             i += 1

@@ -88,27 +88,32 @@ def record_model_rate_limit(model_name: str):
 def get_prioritized_models() -> list[str]:
     """
     Returns dynamically ordered models:
-    - If PRIMARY_MODEL is in cooldown, SECONDARY_MODEL is tried first.
-    - As soon as cooldown expires, PRIMARY_MODEL automatically resumes as default (#1).
+    - Models not in cooldown are prioritized in preferred order (PRIMARY -> SECONDARY -> EMERGENCY).
+    - Models in cooldown are placed at the end, ordered by which cooldown expires first.
     """
     now = time.time()
-    primary_in_cooldown = now < _model_cooldowns.get(PRIMARY_MODEL, 0.0)
+    base_order = [PRIMARY_MODEL, SECONDARY_MODEL] + [m for m in EMERGENCY_MODELS if m not in (PRIMARY_MODEL, SECONDARY_MODEL)]
     
-    if primary_in_cooldown:
+    ready_models = [m for m in base_order if now >= _model_cooldowns.get(m, 0.0)]
+    cooling_models = [m for m in base_order if now < _model_cooldowns.get(m, 0.0)]
+    cooling_models.sort(key=lambda m: _model_cooldowns.get(m, 0.0))
+    
+    if cooling_models and not ready_models:
+        print(f"[ModelManager] All models in cooldown! Attempting nearest cooldown model '{cooling_models[0]}'.")
+    elif cooling_models and PRIMARY_MODEL in cooling_models:
         remaining = int(_model_cooldowns[PRIMARY_MODEL] - now)
-        print(f"[ModelManager] Primary '{PRIMARY_MODEL}' is cooling down ({remaining}s remaining). Routing to Secondary '{SECONDARY_MODEL}'.")
-        order = [SECONDARY_MODEL] + [m for m in EMERGENCY_MODELS if m != SECONDARY_MODEL] + [PRIMARY_MODEL]
-    else:
-        order = [PRIMARY_MODEL, SECONDARY_MODEL] + [m for m in EMERGENCY_MODELS if m not in (PRIMARY_MODEL, SECONDARY_MODEL)]
-    
-    return order
+        next_model = ready_models[0] if ready_models else cooling_models[0]
+        print(f"[ModelManager] Primary '{PRIMARY_MODEL}' is cooling down ({remaining}s remaining). Routing to '{next_model}'.")
+
+    return ready_models + cooling_models
 
 def get_model_status() -> dict:
     """Returns real-time status of model priorities and cooldown timers."""
     now = time.time()
     primary_remaining = max(0, int(_model_cooldowns.get(PRIMARY_MODEL, 0.0) - now))
     secondary_remaining = max(0, int(_model_cooldowns.get(SECONDARY_MODEL, 0.0) - now))
-    active_default = SECONDARY_MODEL if primary_remaining > 0 else PRIMARY_MODEL
+    active_models = get_prioritized_models()
+    active_default = active_models[0] if active_models else PRIMARY_MODEL
     return {
         "active_primary": active_default,
         "default_primary": PRIMARY_MODEL,
