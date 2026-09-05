@@ -1439,27 +1439,29 @@ function unwrapParagraphs(text) {
         const isPageBreak = /^\s*-{3,}\s*$/.test(stripped);
         if (isPageBreak) inClosing = false;
 
-        const isNewClause = /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(stripped);
-        const isLabelLine = /^[^:\n]{2,35}\s*:\s*.*$/.test(stripped);
+        const cleanStripped = stripped.replace(/[*#_]/g, '').trim();
+
+        const isNewClause = /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(cleanStripped);
+        const isLabelLine = /^[^:\n]{2,35}\s*:\s*.*$/.test(cleanStripped);
 
         // Precision closing detection: sentences ending in verbs/punctuation are NOT closing blocks
-        const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(stripped);
+        const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(cleanStripped);
         let isClosingStart = false;
-        if (!isSentence && stripped.length < 45) {
-            if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(stripped)) {
+        if (!isSentence && cleanStripped.length < 45) {
+            if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(cleanStripped)) {
                 isClosingStart = true;
-            } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(stripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(stripped)) {
+            } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(cleanStripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(cleanStripped)) {
                 isClosingStart = true;
             }
         }
 
         if (isClosingStart) {
             inClosing = true;
-        } else if (inClosing && (isSentence || stripped.length > 60 || isNewClause || isHeading)) {
+        } else if (inClosing && (isSentence || cleanStripped.length > 60 || isNewClause || isHeading)) {
             inClosing = false;
         }
 
-        const isFormalBreak = /^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|संलग्नक|नाम|पिता|पता|कक्षा|अनुक्रमांक|मो०|मोबाइल|To:|From:|Subject:|Dear|Respected|Date:)/i.test(stripped) || isClosingStart;
+        const isFormalBreak = /^(सेवा में|महोदय|महोदया|श्रीमान|मान्यवर|विषय|स्थान|दिनांक|न्यायालय|मुकदमा|बनाम|थाना|धारा|प्रार्थना|अनुतोष|स्वीकृत|संलग्नक|नाम|पिता|पता|कक्षा|अनुक्रमांक|मो०|मोबाइल|To:|From:|Subject:|Dear|Respected|Date:)/i.test(cleanStripped) || isClosingStart;
 
         if (inClosing || isHeading || isBullet || isTable || isPageBreak || isNewClause || isLabelLine || isFormalBreak) {
             if (currentP.length > 0) {
@@ -1627,18 +1629,22 @@ function paginateDocument(rawText) {
             continue;
         }
 
+        const cleanLine = line.replace(/[*#_]/g, '').trim();
+
         // Numbered Clause
-        let numMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+        let numMatch = cleanLine.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
         if (numMatch) {
             const num = numMatch[1] || numMatch[2];
-            blocks.push({ type: 'clause', num: num, raw: numMatch[3] });
+            const rawContentMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
+            blocks.push({ type: 'clause', num: num, raw: rawClause });
             inClosingBlock = false;
             i++;
             continue;
         }
 
         // Date and place line stays on left
-        if (/^(दिनांक|स्थान|Date:|Place:)/i.test(line)) {
+        if (/^(दिनांक|स्थान|Date:|Place:)/i.test(cleanLine)) {
             inClosingBlock = false;
             blocks.push({ type: 'left_info', raw: line });
             i++;
@@ -1646,19 +1652,19 @@ function paginateDocument(rawText) {
         }
 
         // Check single closing / signature / applicant block lines
-        const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(line);
+        const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(cleanLine);
         let isClosingStart = false;
-        if (!isSentence && line.length < 45) {
-            if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(line)) {
+        if (!isSentence && cleanLine.length < 45) {
+            if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(cleanLine)) {
                 isClosingStart = true;
-            } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(line) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(line)) {
+            } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(cleanLine) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(cleanLine)) {
                 isClosingStart = true;
             }
         }
 
         if (isClosingStart) {
             inClosingBlock = true;
-        } else if (inClosingBlock && (isSentence || line.length > 60 || numMatch || line.startsWith('#'))) {
+        } else if (inClosingBlock && (isSentence || cleanLine.length > 60 || numMatch || line.startsWith('#'))) {
             inClosingBlock = false;
         }
 
@@ -1829,25 +1835,28 @@ function convertTextToWordHtml(rawText) {
             inClosing = false;
             fullHtml += `<h3>${formatInline(stripped.substring(4))}</h3>`;
         } else {
-            let numMatch = stripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            const cleanStripped = stripped.replace(/[*#_]/g, '').trim();
+            let numMatch = cleanStripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
             if (numMatch) {
                 inClosing = false;
                 let num = numMatch[1] || numMatch[2];
-                fullHtml += `<p><strong>${num}.</strong> ${formatInline(numMatch[3])}</p>`;
+                const rawContentMatch = stripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+                const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
+                fullHtml += `<p><strong>${num}.</strong> ${formatInline(rawClause)}</p>`;
             } else {
-                const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(stripped);
+                const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(cleanStripped);
                 let isClosingStart = false;
-                if (!isSentence && stripped.length < 45) {
-                    if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(stripped)) {
+                if (!isSentence && cleanStripped.length < 45) {
+                    if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(cleanStripped)) {
                         isClosingStart = true;
-                    } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(stripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(stripped)) {
+                    } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(cleanStripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(cleanStripped)) {
                         isClosingStart = true;
                     }
                 }
 
                 if (isClosingStart) {
                     inClosing = true;
-                } else if (inClosing && (isSentence || stripped.length > 60)) {
+                } else if (inClosing && (isSentence || cleanStripped.length > 60)) {
                     inClosing = false;
                 }
 

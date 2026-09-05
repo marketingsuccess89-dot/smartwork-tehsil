@@ -123,14 +123,17 @@ def save_doc_to_cache(doc_id: str, data: dict):
 
 def get_doc_from_cache(doc_id: str) -> dict | None:
     """Retrieves document data from memory or disk cache, strictly enforcing 48-hour expiration."""
+    clean_id = re.sub(r'[^a-zA-Z0-9_\-]', '', doc_id.strip())
+    if not clean_id:
+        return None
     now = time.time()
     
     # Check in-memory first
-    if doc_id in shared_documents:
-        data = shared_documents[doc_id]
+    if clean_id in shared_documents:
+        data = shared_documents[clean_id]
         if now - data.get('created_at', now) > CACHE_TTL_SECONDS:
-            shared_documents.pop(doc_id, None)
-            cache_file = os.path.join(DOC_CACHE_DIR, f"{doc_id}.json")
+            shared_documents.pop(clean_id, None)
+            cache_file = os.path.join(DOC_CACHE_DIR, f"{clean_id}.json")
             if os.path.exists(cache_file):
                 try: os.remove(cache_file)
                 except Exception: pass
@@ -138,7 +141,7 @@ def get_doc_from_cache(doc_id: str) -> dict | None:
         return data
 
     # Check disk cache
-    cache_file = os.path.join(DOC_CACHE_DIR, f"{doc_id}.json")
+    cache_file = os.path.join(DOC_CACHE_DIR, f"{clean_id}.json")
     if os.path.exists(cache_file):
         try:
             with open(cache_file, "r", encoding="utf-8") as f:
@@ -147,7 +150,7 @@ def get_doc_from_cache(doc_id: str) -> dict | None:
                 if now - created_at > CACHE_TTL_SECONDS:
                     os.remove(cache_file)
                     return None
-                shared_documents[doc_id] = data
+                shared_documents[clean_id] = data
                 return data
         except Exception:
             pass
@@ -480,11 +483,9 @@ async def download_docx_form(text: str = Form(...), stamp_paper: bool = Form(Fal
 @app.post("/api/create-share-link")
 async def create_share_link(req: DocxRequest):
     """Creates an instant 1-click download link for WhatsApp sharing."""
-    # Evict expired documents (> 48 hours) to prevent memory leak
+    # Evict expired documents (> 48 hours) from memory and disk cache
+    cleanup_expired_docs()
     now = time.time()
-    expired = [k for k, v in list(shared_documents.items()) if now - v.get('created_at', now) > 172800]
-    for k in expired:
-        shared_documents.pop(k, None)
 
     doc_id = str(uuid.uuid4())[:8]
     doc_info = {
@@ -598,23 +599,25 @@ async def view_shared_doc(doc_id: str):
             if line.startswith('|') or line.startswith('#') or re.match(r'^-{3,}$', line):
                 flush_closing()
 
+            clean_l = re.sub(r'[*#_]', '', line).strip()
+
             # Check if this line starts or continues the closing / signature / applicant block
             # Closing labels are short (e.g. "हस्ताक्षर:", "भवदीय,", "आवेदक / प्रार्थी:", "प्रार्थी:")
             # Never full sentences like "प्रार्थी/निगरानीकर्ता सादर निवेदन करता है कि:"
-            is_sentence = bool(re.search(r'(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$', line))
+            is_sentence = bool(re.search(r'(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$', clean_l))
             is_closing_start = False
 
-            if not is_sentence and len(line) < 45:
+            if not is_sentence and len(clean_l) < 45:
                 # Always-closing keywords
-                if re.match(r'^(?:हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b', line, re.IGNORECASE):
+                if re.match(r'^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b', clean_l, re.IGNORECASE):
                     is_closing_start = True
                 # Conditional keywords — only short closing labels
-                elif re.match(r'^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)', line) and not re.search(r'(?:सादर|निवेदन|प्रार्थना|करता|करती)', line):
+                elif re.match(r'^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)', clean_l) and not re.search(r'(?:सादर|निवेदन|प्रार्थना|करता|करती)', clean_l):
                     is_closing_start = True
 
             if in_closing:
                 # Close the closing block if line is too long, or a clause, or a new section
-                if is_sentence or len(line) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', line) or len(closing_lines) >= 6:
+                if is_sentence or len(clean_l) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', clean_l) or len(closing_lines) >= 6:
                     flush_closing()
                 else:
                     closing_lines.append(line)
@@ -701,16 +704,17 @@ async def view_shared_doc(doc_id: str):
                 continue
 
             # Numbered Clause
-            num_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', line)
+            num_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', clean_l)
             if num_match:
                 num = num_match.group(1) or num_match.group(2)
-                c_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(num_match.group(3)))
+                raw_content_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', line)
+                raw_c_text = raw_content_match.group(3) if raw_content_match else num_match.group(3)
+                c_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(raw_c_text))
                 content_parts.append(f'<div style="text-align: justify; margin-bottom: 6px; font-size: 14.5px; line-height: 1.5; page-break-inside: avoid; break-inside: avoid;"><strong>{num}.</strong> {c_text}</div>')
                 i += 1
                 continue
 
             # Recipient block (सेवा में, / To:)
-            clean_l = re.sub(r'[*#_]', '', line).strip()
             if clean_l.startswith('सेवा में') or clean_l.startswith('To:'):
                 in_recipient = True
                 p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
@@ -728,21 +732,21 @@ async def view_shared_doc(doc_id: str):
                     continue
 
             # Subject line (विषय:)
-            if line.startswith('विषय:') or line.startswith('Subject:'):
+            if clean_l.startswith('विषय:') or clean_l.startswith('Subject:'):
                 p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
                 content_parts.append(f'<p style="margin: 8px 0 6px 0; font-weight: bold; font-size: 14.5px; line-height: 1.4;">{p_esc}</p>')
                 i += 1
                 continue
 
             # Salutation (महोदय, / मान्यवर,)
-            if re.match(r'^(?:महोदय|महोदया|मान्यवर|श्रीमान|Respected|Dear)\b', line):
+            if re.match(r'^(?:महोदय|महोदया|मान्यवर|श्रीमान|Respected|Dear)\b', clean_l):
                 p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
                 content_parts.append(f'<p style="margin: 8px 0 4px 0; font-weight: 600; font-size: 14.5px; line-height: 1.4;">{p_esc}</p>')
                 i += 1
                 continue
 
             # Date / Place line
-            if re.match(r'^(?:दिनांक|स्थान|Date:|Place:)', line, re.IGNORECASE):
+            if re.match(r'^(?:दिनांक|स्थान|Date:|Place:)', clean_l, re.IGNORECASE):
                 p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
                 content_parts.append(f'<p style="margin: 8px 0 3px 0; font-size: 14px; line-height: 1.4;">{p_esc}</p>')
                 i += 1
@@ -986,21 +990,6 @@ async def health_check():
 # Serve Static Files
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/download/agent")
-async def download_pc_agent():
-    zip_path = os.path.join("static", "SmartTyping_PC_Agent.zip")
-    if os.path.exists(zip_path):
-        return FileResponse(
-            zip_path,
-            filename="SmartTyping_PC_Agent.zip",
-            media_type="application/zip",
-            headers={"Content-Disposition": "attachment; filename=SmartTyping_PC_Agent.zip"}
-        )
-    exe_path = "SmartTyping_Agent.exe"
-    if os.path.exists(exe_path):
-        return FileResponse(exe_path, filename="SmartTyping_Agent.exe", media_type="application/octet-stream")
-    raise HTTPException(status_code=404, detail="Agent package not found")
 
 @app.get("/")
 async def read_index():

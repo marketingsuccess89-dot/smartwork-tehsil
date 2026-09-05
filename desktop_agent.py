@@ -163,16 +163,23 @@ def prompt_user_credentials():
     except Exception as e:
         print(f"GUI not available ({e}), using console input...")
 
-    # Fallback to Console
-    print("=" * 50)
-    print("  Smart Typing PC Agent Setup")
-    print("=" * 50)
-    s_id = input(f"Gmail / स्टेशन कोड [{existing_id}]: ").strip() or existing_id
-    s_pin = input(f"सुरक्षा पिन / पासवर्ड [{existing_pin}]: ").strip() or existing_pin
-    cfg["station_id"] = s_id
-    cfg["pin"] = s_pin
-    cfg["server_host"] = existing_host
-    save_config(cfg)
+    # Fallback to Console if stdin is available (interactive terminal)
+    if sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty():
+        try:
+            print("=" * 50)
+            print("  Smart Typing PC Agent Setup")
+            print("=" * 50)
+            s_id = input(f"Gmail / स्टेशन कोड [{existing_id}]: ").strip() or existing_id
+            s_pin = input(f"सुरक्षा पिन / पासवर्ड [{existing_pin}]: ").strip() or existing_pin
+            cfg["station_id"] = s_id
+            cfg["pin"] = s_pin
+            cfg["server_host"] = existing_host
+            save_config(cfg)
+            return cfg
+        except Exception:
+            pass
+
+    # Non-interactive fallback: use existing saved configuration
     return cfg
 
 def open_docx_in_word(file_path):
@@ -275,6 +282,7 @@ async def agent_main():
 
     retry_delay = 3
     last_handled_doc_id = None
+    last_handled_time = 0.0
 
     async def heartbeat_sender(ws):
         """Periodically sends application ping to prevent proxy idle dropouts."""
@@ -311,11 +319,13 @@ async def agent_main():
 
                             elif event in ("open_in_word", "transcription_ready"):
                                 doc_id = data.get("doc_id")
-                                # Prevent double-triggering for the same doc within short window
-                                if doc_id and doc_id == last_handled_doc_id:
+                                now_ts = time.time()
+                                # Prevent double-triggering for the same doc within short 2.5s window
+                                if doc_id and doc_id == last_handled_doc_id and (now_ts - last_handled_time < 2.5):
                                     continue
                                 if doc_id:
                                     last_handled_doc_id = doc_id
+                                    last_handled_time = now_ts
 
                                 print(f"\n[EVENT] 📄 नया दस्तावेज़ प्राप्त हुआ! Doc ID: {doc_id}")
 
