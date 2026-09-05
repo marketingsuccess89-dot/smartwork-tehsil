@@ -759,7 +759,8 @@ async function processWithAI(mode) {
         url = '/api/process-audio';
     }
 
-    if (mobileUserEmail) {
+    const isAutoSyncOn = !mobileAutoSyncToggle || mobileAutoSyncToggle.checked;
+    if (mobileUserEmail && isAutoSyncOn) {
         formData.append('user_id', mobileUserEmail);
     }
 
@@ -1047,7 +1048,7 @@ function triggerNativePrint() {
             }
 
             if (inClosing) {
-                if (isSentence || cleanL.length > 60 || /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(cleanL) || closingLines.length >= 6) {
+                if (isSentence || cleanL.length > 60 || /^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+/.test(cleanL) || closingLines.length >= 6) {
                     flushClosing();
                 } else {
                     closingLines.push(line);
@@ -1187,11 +1188,11 @@ function triggerNativePrint() {
                 continue;
             }
 
-            // Numbered Clause (e.g. 1. or (1) or (क))
-            const numMatch = cleanL.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            // Numbered Clause (e.g. 1. or (1) or (क) or क. or (a) or a. or (i))
+            const numMatch = cleanL.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$/);
             if (numMatch) {
                 const num = numMatch[1] || numMatch[2];
-                const rawContentMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+                const rawContentMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$/);
                 const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
                 const clauseDiv = document.createElement('div');
                 clauseDiv.className = 'print-clause';
@@ -1590,7 +1591,7 @@ function unwrapParagraphs(text) {
 
         const cleanStripped = stripped.replace(/[*#_]/g, '').trim();
 
-        const isNewClause = /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(cleanStripped);
+        const isNewClause = /^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+/.test(cleanStripped);
         const isLabelLine = /^[^:\n]{2,35}\s*:\s*.*$/.test(cleanStripped);
 
         // Precision closing detection: sentences ending in verbs/punctuation are NOT closing blocks
@@ -1781,10 +1782,10 @@ function paginateDocument(rawText) {
         const cleanLine = line.replace(/[*#_]/g, '').trim();
 
         // Numbered Clause
-        let numMatch = cleanLine.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+        let numMatch = cleanLine.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$/);
         if (numMatch) {
             const num = numMatch[1] || numMatch[2];
-            const rawContentMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            const rawContentMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$/);
             const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
             blocks.push({ type: 'clause', num: num, raw: rawClause });
             inClosingBlock = false;
@@ -2064,11 +2065,11 @@ function convertTextToWordHtml(rawText) {
         }
 
         // Numbered Clause
-        let numMatch = cleanStripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+        let numMatch = cleanStripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$/);
         if (numMatch) {
             inClosing = false;
             let num = numMatch[1] || numMatch[2];
-            const rawContentMatch = stripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            const rawContentMatch = stripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$/);
             const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
             fullHtml += `<p><strong>${num}.</strong> ${formatInline(rawClause)}</p>`;
             i++;

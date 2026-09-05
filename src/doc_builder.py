@@ -130,7 +130,10 @@ def render_markdown_table(doc, table_lines):
         s = l.strip()
         if not s or re.match(r'^[\|\s\-:]+$', s):
             continue
-        cells = [c.strip() for c in s.strip('|').split('|')]
+        if s.startswith('|') and s.endswith('|'):
+            cells = [c.strip() for c in s[1:-1].split('|')]
+        else:
+            cells = [c.strip() for c in s.split('|')]
         raw_rows.append(cells)
 
     if not raw_rows:
@@ -247,7 +250,7 @@ def unwrap_paragraphs(text: str) -> str:
 
         clean_stripped = re.sub(r'[*#_]', '', stripped).strip()
 
-        is_new_clause = bool(re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', clean_stripped))
+        is_new_clause = bool(re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+', clean_stripped))
         # Universal label line: e.g. "नाम :", "विषय :", "पता :", "कक्षा :", "दिनांक :", "आवेदक / प्रार्थी:"
         is_label_line = bool(re.match(r'^[^:\n]{2,35}\s*:\s*.*$', clean_stripped))
 
@@ -311,6 +314,9 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
 
         # 1. Section break / Multi-page stamp layout (---)
         if re.match(r'^\s*-{3,}\s*$', stripped):
+            # Skip consecutive divider lines to prevent accidental empty pages
+            while i + 1 < len(lines) and re.match(r'^\s*-{3,}\s*$', lines[i+1].strip()):
+                i += 1
             new_section = doc.add_section()
             new_section.top_margin = Inches(1.0)
             new_section.bottom_margin = Inches(1.0)
@@ -373,12 +379,12 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
             i += 1
             continue
 
-        # 8. Numbered list items (e.g. 1., १., (1), (१), (क))
+        # 8. Numbered list items (e.g. 1., १., (1), (१), (क), क., (A), A., (i), i.)
         clean_stripped = re.sub(r'[*#_]', '', stripped).strip()
-        match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', clean_stripped)
+        match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$', clean_stripped)
         if match:
             num = match.group(1) or match.group(2)
-            raw_content_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', stripped)
+            raw_content_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$', stripped)
             content = raw_content_match.group(3) if raw_content_match else match.group(3)
             add_styled_paragraph(doc, f"**{num}.** {content}", style_type='clause', alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
             i += 1
@@ -454,7 +460,7 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
 
         if is_closing_start:
             in_closing_block = True
-        elif in_closing_block and (is_sentence or len(clean_stripped) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', clean_stripped) or stripped.startswith('#')):
+        elif in_closing_block and (is_sentence or len(clean_stripped) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+', clean_stripped) or stripped.startswith('#')):
             in_closing_block = False
 
         align = WD_ALIGN_PARAGRAPH.RIGHT if in_closing_block else WD_ALIGN_PARAGRAPH.JUSTIFY

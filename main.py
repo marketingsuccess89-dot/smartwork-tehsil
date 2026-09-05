@@ -641,7 +641,7 @@ async def view_shared_doc(doc_id: str):
 
             if in_closing:
                 # Close the closing block if line is too long, or a clause, or a new section
-                if is_sentence or len(clean_l) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+', clean_l) or len(closing_lines) >= 6:
+                if is_sentence or len(clean_l) > 60 or re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+', clean_l) or len(closing_lines) >= 6:
                     flush_closing()
                 else:
                     closing_lines.append(line)
@@ -664,7 +664,10 @@ async def view_shared_doc(doc_id: str):
                 rows = []
                 for tl in tbl_lines:
                     if not re.match(r'^[\|\s\-:]+$', tl):
-                        cells = [c.strip() for c in tl.split('|')[1:-1]]
+                        if tl.startswith('|') and tl.endswith('|'):
+                            cells = [c.strip() for c in tl[1:-1].split('|')]
+                        else:
+                            cells = [c.strip() for c in tl.split('|')]
                         rows.append(cells)
 
                 if rows:
@@ -728,10 +731,10 @@ async def view_shared_doc(doc_id: str):
                 continue
 
             # Numbered Clause
-            num_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', clean_l)
+            num_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$', clean_l)
             if num_match:
                 num = num_match.group(1) or num_match.group(2)
-                raw_content_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', line)
+                raw_content_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\))|(\d+|[०-९]+|[क-ह]|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[\.\)])\s+(.*)$', line)
                 raw_c_text = raw_content_match.group(3) if raw_content_match else num_match.group(3)
                 c_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(raw_c_text))
                 content_parts.append(f'<div style="text-align: justify; margin-bottom: 6px; font-size: 14.5px; line-height: 1.5; page-break-inside: avoid; break-inside: avoid;"><strong>{num}.</strong> {c_text}</div>')
