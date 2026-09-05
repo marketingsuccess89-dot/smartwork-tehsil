@@ -49,28 +49,60 @@ class SendToWordRequest(BaseModel):
     pin: str = ""
 
 # Active WebSocket Sessions for Desktop/MS Word Sync
-# Key: user_id (e.g. Gmail), Value: {"ws": WebSocket, "pin": str}
-active_connections: dict[str, dict] = {}
+# Key: user_id (e.g. Gmail), Value: list of {"ws": WebSocket, "pin": str}
+active_connections: dict[str, list[dict]] = {}
 
 # Active shared documents for 1-click downloads and Word sync
 # Key: doc_id, Value: {"text": str, "stamp_paper": bool, "created_at": float}
 shared_documents: dict[str, dict] = {}
 
+DOC_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch", "doc_cache")
+os.makedirs(DOC_CACHE_DIR, exist_ok=True)
+
+def save_doc_to_cache(doc_id: str, data: dict):
+    """Saves document data in memory and to disk so restarts/reloads never lose view links."""
+    shared_documents[doc_id] = data
+    try:
+        cache_file = os.path.join(DOC_CACHE_DIR, f"{doc_id}.json")
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+    except Exception as e:
+        print(f"Failed to cache document {doc_id}: {e}")
+
+def get_doc_from_cache(doc_id: str) -> dict | None:
+    """Retrieves document data from memory or disk cache."""
+    if doc_id in shared_documents:
+        return shared_documents[doc_id]
+    cache_file = os.path.join(DOC_CACHE_DIR, f"{doc_id}.json")
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                shared_documents[doc_id] = data
+                return data
+        except Exception:
+            pass
+    return None
+
 @app.websocket("/ws/desktop/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str, pin: str = ""):
     """
-    Handles WebSocket connections from Desktop Agent with optional PIN authentication.
+    Handles WebSocket connections from Desktop Agent and Word Web Add-in with PIN authentication.
+    Supports multiple concurrent sessions per user with race-condition-free cleanup.
     """
     await websocket.accept()
     from urllib.parse import unquote
     clean_user_id = unquote(user_id).strip().lower()
     clean_pin = pin.strip()
     
-    active_connections[clean_user_id] = {
+    session_info = {
         "ws": websocket,
         "pin": clean_pin
     }
-    print(f"Desktop client connected: {clean_user_id} (PIN configured: {bool(clean_pin)})")
+    if clean_user_id not in active_connections:
+        active_connections[clean_user_id] = []
+    active_connections[clean_user_id].append(session_info)
+    print(f"Desktop client connected: {clean_user_id} (Active sessions: {len(active_connections[clean_user_id])})")
     
     # Send welcome status
     await websocket.send_json({
@@ -86,9 +118,18 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, pin: str = ""):
             if data == "ping":
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
-        print(f"Desktop client disconnected: {clean_user_id}")
+        print(f"Desktop client disconnected normally: {clean_user_id}")
+    except Exception as e:
+        print(f"Desktop client connection closed ({e}): {clean_user_id}")
+    finally:
+        # Race-condition-free cleanup: ONLY evict this specific websocket instance
         if clean_user_id in active_connections:
-            del active_connections[clean_user_id]
+            active_connections[clean_user_id] = [
+                s for s in active_connections[clean_user_id] if s.get("ws") is not websocket
+            ]
+            if not active_connections[clean_user_id]:
+                del active_connections[clean_user_id]
+        print(f"Desktop client session cleaned up: {clean_user_id}")
 
 @app.get("/api/connection-status/{user_id}")
 async def get_connection_status(user_id: str):
@@ -96,14 +137,15 @@ async def get_connection_status(user_id: str):
     Checks if there is an active desktop/MS Word WebSocket connection for a user.
     """
     clean_user_id = user_id.strip().lower()
-    is_connected = clean_user_id in active_connections
-    return {"user_id": clean_user_id, "connected": is_connected}
+    sessions = active_connections.get(clean_user_id, [])
+    is_connected = len(sessions) > 0
+    return {"user_id": clean_user_id, "connected": is_connected, "sessions": len(sessions)}
 
 @app.post("/api/send-to-word")
 async def send_to_word(req: SendToWordRequest):
     """
     Securely sends a formatted deed directly to the user's Desktop MS Word.
-    Protected by PIN / Password verification.
+    Protected by PIN / Password verification and broadcasts to all active sessions.
     """
     clean_station_id = req.station_id.strip().lower()
     clean_pin = req.pin.strip()
@@ -115,18 +157,17 @@ async def send_to_word(req: SendToWordRequest):
             "message": "कृपया स्टेशन ID / Gmail दर्ज करें।"
         })
 
-    if clean_station_id not in active_connections:
+    sessions = active_connections.get(clean_station_id, [])
+    if not sessions:
         return JSONResponse(status_code=404, content={
             "success": False,
             "connected": False,
             "message": "कंप्यूटर पर Desktop Agent कनेक्ट नहीं है! कृपया पहले कंप्यूटर पर ऐप चालू करें।"
         })
 
-    conn_info = active_connections[clean_station_id]
-    stored_pin = conn_info.get("pin", "")
-
-    # Verify PIN if configured on Desktop Agent
-    if stored_pin and clean_pin != stored_pin:
+    # Verify PIN if configured on any active Desktop Agent session
+    configured_pins = [s.get("pin", "") for s in sessions if s.get("pin")]
+    if configured_pins and clean_pin not in configured_pins:
         return JSONResponse(status_code=401, content={
             "success": False,
             "connected": True,
@@ -139,33 +180,60 @@ async def send_to_word(req: SendToWordRequest):
     for k in expired:
         shared_documents.pop(k, None)
 
-    # Store document for clean DOCX stream download
+    # Store document for clean DOCX stream download with disk cache persistence
     doc_id = str(uuid.uuid4())[:8]
-    shared_documents[doc_id] = {
+    doc_info = {
         "text": req.text,
         "stamp_paper": req.stamp_paper,
         "created_at": now
     }
+    save_doc_to_cache(doc_id, doc_info)
 
-    ws = conn_info["ws"]
-    try:
-        await ws.send_json({
-            "event": "open_in_word",
-            "doc_id": doc_id,
-            "stamp_paper": req.stamp_paper,
-            "text": req.text
-        })
+    # Broadcast to all active sessions (both Desktop Agent and Word Add-in)
+    dead_sessions = []
+    sent_count = 0
+    payload = {
+        "event": "open_in_word",
+        "doc_id": doc_id,
+        "stamp_paper": req.stamp_paper,
+        "text": req.text
+    }
+    ready_payload = {
+        "event": "transcription_ready",
+        "doc_id": doc_id,
+        "stamp_paper": req.stamp_paper,
+        "text": req.text
+    }
+
+    for s in list(sessions):
+        try:
+            ws = s["ws"]
+            await ws.send_json(payload)
+            await ws.send_json(ready_payload)
+            sent_count += 1
+        except Exception:
+            dead_sessions.append(s)
+
+    # Evict dead sessions if any failed
+    if dead_sessions and clean_station_id in active_connections:
+        active_connections[clean_station_id] = [
+            s for s in active_connections[clean_station_id] if s not in dead_sessions
+        ]
+        if not active_connections[clean_station_id]:
+            del active_connections[clean_station_id]
+
+    if sent_count > 0:
         return {
             "success": True,
             "connected": True,
             "doc_id": doc_id,
             "message": "दस्तावेज़ सफलतापूर्वक कंप्यूटर पर भेजा गया! MS Word में नई फ़ाइल खुल रही है..."
         }
-    except Exception as ws_err:
+    else:
         return JSONResponse(status_code=500, content={
             "success": False,
             "connected": False,
-            "message": f"डेटा भेजने में त्रुटि: {str(ws_err)}"
+            "message": "कंप्यूटर से कनेक्शन टूट गया था। कृपया पुनः प्रयास करें।"
         })
 
 @app.get("/download/agent")
@@ -181,6 +249,56 @@ async def download_desktop_agent():
     release_url = "https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe"
     return RedirectResponse(url=release_url, status_code=302)
 
+async def auto_sync_to_word(user_id: str | None, text: str, stamp_paper: bool = False):
+    """
+    Automatically broadcasts freshly generated document to connected MS Word / Desktop Agent sessions.
+    """
+    if not user_id:
+        return
+    clean_user_id = user_id.strip().lower()
+    sessions = active_connections.get(clean_user_id, [])
+    if not sessions:
+        return
+
+    now = time.time()
+    doc_id = str(uuid.uuid4())[:8]
+    doc_info = {
+        "text": text,
+        "stamp_paper": stamp_paper,
+        "created_at": now
+    }
+    save_doc_to_cache(doc_id, doc_info)
+
+    payload_open = {
+        "event": "open_in_word",
+        "doc_id": doc_id,
+        "stamp_paper": stamp_paper,
+        "text": text
+    }
+    payload_ready = {
+        "event": "transcription_ready",
+        "doc_id": doc_id,
+        "stamp_paper": stamp_paper,
+        "text": text
+    }
+
+    dead_sessions = []
+    for s in list(sessions):
+        try:
+            ws = s["ws"]
+            await ws.send_json(payload_open)
+            await ws.send_json(ready_payload)
+            print(f"[AutoSync] Document {doc_id} successfully auto-sent to MS Word for user: {clean_user_id}")
+        except Exception:
+            dead_sessions.append(s)
+
+    if dead_sessions and clean_user_id in active_connections:
+        active_connections[clean_user_id] = [
+            s for s in active_connections[clean_user_id] if s not in dead_sessions
+        ]
+        if not active_connections[clean_user_id]:
+            del active_connections[clean_user_id]
+
 @app.post("/api/process-image")
 async def process_image(
     files: list[UploadFile] = File(None),
@@ -189,6 +307,7 @@ async def process_image(
 ):
     """
     Receives single or multiple document page images and runs Gemini Vision OCR.
+    Auto-syncs to MS Word if user has connected station.
     """
     target_files = []
     if files:
@@ -216,6 +335,8 @@ async def process_image(
 
     try:
         result = extract_text_from_images(bytes_list)
+        # Automatic MS Word sync if station is connected
+        await auto_sync_to_word(user_id, result.transcribed_text, getattr(result, "stamp_paper_detected", False))
         return result
     except ValueError as ve:
         import traceback
@@ -230,6 +351,7 @@ async def process_image(
 async def process_audio(file: UploadFile = File(...), user_id: str = Form(None)):
     """
     Receives dictation audio and transcribes/formats it via Gemini.
+    Auto-syncs to MS Word if user has connected station.
     """
     # Accept standard audio formats, generic octet-stream, or common file extensions
     is_audio = (
@@ -244,6 +366,8 @@ async def process_audio(file: UploadFile = File(...), user_id: str = Form(None))
         contents = await file.read()
         mime_type = file.content_type if file.content_type.startswith("audio/") else "audio/wav"
         result = transcribe_audio_dictation(contents, mime_type=mime_type)
+        # Automatic MS Word sync if station is connected
+        await auto_sync_to_word(user_id, result.transcribed_text, getattr(result, "stamp_paper_detected", False))
         return result
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
@@ -296,19 +420,20 @@ async def create_share_link(req: DocxRequest):
         shared_documents.pop(k, None)
 
     doc_id = str(uuid.uuid4())[:8]
-    shared_documents[doc_id] = {
+    doc_info = {
         'text': req.text,
         'stamp_paper': req.stamp_paper,
         'created_at': now
     }
+    save_doc_to_cache(doc_id, doc_info)
     return {"doc_id": doc_id}
 
 @app.get("/d/{doc_id}")
 async def download_shared_doc(doc_id: str):
     """Direct 1-click download of the MS Word (.docx) document."""
-    if doc_id not in shared_documents:
+    doc_data = get_doc_from_cache(doc_id)
+    if not doc_data:
         raise HTTPException(status_code=404, detail="दस्तावेज़ लिंक समाप्त हो चुका है।")
-    doc_data = shared_documents[doc_id]
     file_stream = create_docx(doc_data['text'], stamp_paper=doc_data['stamp_paper'])
     return StreamingResponse(
         file_stream,
@@ -322,7 +447,8 @@ async def download_shared_doc(doc_id: str):
 @app.get("/v/{doc_id}", response_class=HTMLResponse)
 async def view_shared_doc(doc_id: str):
     """Mobile & Desktop A4 Document Viewer with direct Word download and Print to PDF options."""
-    if doc_id not in shared_documents:
+    doc_data = get_doc_from_cache(doc_id)
+    if not doc_data:
         return HTMLResponse("""
         <!DOCTYPE html>
         <html lang="hi">
@@ -336,7 +462,6 @@ async def view_shared_doc(doc_id: str):
         </body></html>
         """, status_code=404)
 
-    doc_data = shared_documents[doc_id]
     raw_text = doc_data['text']
     stamp_paper = doc_data['stamp_paper']
 
@@ -825,4 +950,8 @@ async def read_index():
     return FileResponse("static/index.html")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    should_reload = os.getenv("UVICORN_RELOAD", "false").lower() in ("true", "1", "yes")
+    if should_reload:
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["src"])
+    else:
+        uvicorn.run(app, host="0.0.0.0", port=8000)
