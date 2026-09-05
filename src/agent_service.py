@@ -32,6 +32,12 @@ def compress_image(image_bytes: bytes, max_size: int = 1400, quality: int = 80) 
         img = ImageOps.exif_transpose(img)
         
         if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            if img.mode != 'RGBA':
+                img = img.convert('RGBA')
+            bg = Image.new('RGB', img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[3])
+            img = bg
+        elif img.mode != 'RGB':
             img = img.convert('RGB')
 
         # Resize first to target resolution to minimize memory and accelerate processing

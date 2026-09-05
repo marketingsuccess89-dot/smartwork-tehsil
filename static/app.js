@@ -452,6 +452,9 @@ async function compressImageClientSide(file, maxDimension = 1280, quality = 0.75
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
+                // Fill canvas with solid pure white background to avoid transparent pixels turning black
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
                 ctx.drawImage(img, 0, 0, width, height);
 
                 canvas.toBlob((blob) => {
@@ -1917,88 +1920,167 @@ function convertTextToWordHtml(rawText) {
     if (!rawText) return '';
     const unwrapped = unwrapParagraphs(rawText);
     const lines = unwrapped.split('\n');
-    let fullHtml = '';
-    let inTable = false;
+    let i = 0;
+    let inRecipient = false;
     let inClosing = false;
 
-    function closeTable() {
-        if (inTable) {
-            fullHtml += '</tbody></table>';
-            inTable = false;
+    while (i < lines.length) {
+        let stripped = lines[i].trim();
+        if (!stripped) {
+            i++;
+            continue;
         }
-    }
 
-    for (let line of lines) {
-        let stripped = line.trim();
-        if (!stripped) continue;
         if (stripped.match(/^-{3,}$/)) {
-            closeTable();
             inClosing = false;
             fullHtml += '<br clear="all" style="page-break-before:always; mso-break-type:section-break">';
+            i++;
             continue;
         }
 
+        // Markdown Table
         if (stripped.startsWith('|') && stripped.endsWith('|')) {
-            if (!inTable) {
-                fullHtml += '<table border="0" cellspacing="0" cellpadding="4" style="width:100%; border-collapse:collapse; margin-top:12pt; margin-bottom:12pt;"><tbody>';
-                inTable = true;
+            let tableLines = [];
+            while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+                tableLines.push(lines[i].trim());
+                i++;
             }
-            if (!stripped.match(/^[\|\s\-:]+$/)) {
-                let cells = stripped.split('|').slice(1, -1).map(c => c.trim());
-                fullHtml += '<tr>';
-                for (let c = 0; c < cells.length; c++) {
-                    let align = (cells.length === 2 && c === 1) ? 'right' : 'left';
-                    fullHtml += `<td style="vertical-align:top; text-align:${align}; padding:4pt 6pt;">${formatInline(cells[c])}</td>`;
+
+            let tableRows = [];
+            for (let tLine of tableLines) {
+                if (!tLine.match(/^[\|\s\-:]+$/)) {
+                    let cells = tLine.split('|').slice(1, -1).map(c => c.trim());
+                    tableRows.push(cells);
                 }
-                fullHtml += '</tr>';
+            }
+
+            if (tableRows.length > 0) {
+                const cols = Math.max(...tableRows.map(r => r.length));
+
+                // If dummy 2-column table with empty left column (| | भवदीय |), render as clean right-aligned paragraphs
+                if (cols === 2 && tableRows.every(r => !r[0] || r[0].trim() === '')) {
+                    for (let r = 0; r < tableRows.length; r++) {
+                        let cellVal = tableRows[r][1] || '';
+                        if (cellVal) {
+                            fullHtml += `<p style="text-align:right; margin:2pt 0; line-height:1.3;">${formatInline(cellVal)}</p>`;
+                        }
+                    }
+                    continue;
+                }
+
+                let isSig = tableRows.some(row =>
+                    row.some(cell => {
+                        const cl = cell.toLowerCase();
+                        return ['हस्ताक्षर', 'हसताक्षर', 'हस्तक्षर', 'हस्ताक्षरी', 'साक्षी', 'साक्क्षी', 'गवाह', 'प्रथम पक्ष', 'परथम पक्ष', 'द्वितीय पक्ष', 'दवतीय पक्ष', 'क्रेता', 'विक्रेता', 'शपथकर्ता', 'आवेदक', 'प्रार्थी', 'निवेदक', 'भवदीय', 'signature', 'witness', 'party', 'landlord', 'tenant', 'deponent', 'applicant'].some(kw => cl.includes(kw));
+                    })
+                );
+                if (cols === 2 && !isSig && tableRows.length <= 4) isSig = true;
+
+                let tblStyle = isSig ? 'border:none;' : 'border:1pt solid #06281e;';
+                fullHtml += `<table border="${isSig ? '0' : '1'}" cellspacing="0" cellpadding="4" style="width:100%; border-collapse:collapse; margin-top:12pt; margin-bottom:12pt; ${tblStyle}"><tbody>`;
+
+                for (let r = 0; r < tableRows.length; r++) {
+                    let isH = (r === 0 && !isSig);
+                    let bg = isH ? 'background-color:#f0fdf4; font-weight:bold;' : '';
+                    fullHtml += `<tr style="${bg}">`;
+                    for (let c = 0; c < cols; c++) {
+                        let cellVal = tableRows[r][c] || '';
+                        let align = isSig && cols === 2 ? (c === 0 ? 'left' : 'right') : (isSig ? 'center' : (isH ? 'center' : 'left'));
+                        let widthStyle = (isSig && cols === 2) ? 'width:50%;' : '';
+                        let cellBorder = isSig ? 'border:none;' : 'border:1pt solid #cbd5e1;';
+                        fullHtml += `<td style="vertical-align:top; text-align:${align}; padding:4pt 6pt; ${cellBorder} ${widthStyle}">${formatInline(cellVal)}</td>`;
+                    }
+                    fullHtml += '</tr>';
+                }
+                fullHtml += '</tbody></table>';
             }
             continue;
         }
 
-        closeTable();
+        const cleanStripped = stripped.replace(/[*#_]/g, '').trim();
 
         if (stripped.startsWith('# ')) {
             inClosing = false;
             fullHtml += `<h1>${formatInline(stripped.substring(2))}</h1>`;
+            i++;
+            continue;
         } else if (stripped.startsWith('## ')) {
             inClosing = false;
             fullHtml += `<h2>${formatInline(stripped.substring(3))}</h2>`;
+            i++;
+            continue;
         } else if (stripped.startsWith('### ')) {
             inClosing = false;
             fullHtml += `<h3>${formatInline(stripped.substring(4))}</h3>`;
-        } else {
-            const cleanStripped = stripped.replace(/[*#_]/g, '').trim();
-            let numMatch = cleanStripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
-            if (numMatch) {
-                inClosing = false;
-                let num = numMatch[1] || numMatch[2];
-                const rawContentMatch = stripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
-                const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
-                fullHtml += `<p><strong>${num}.</strong> ${formatInline(rawClause)}</p>`;
+            i++;
+            continue;
+        }
+
+        // Recipient block
+        if (cleanStripped.startsWith('सेवा में') || cleanStripped.startsWith('To:')) {
+            inRecipient = true;
+            fullHtml += `<p style="font-weight:bold; margin-bottom:3pt;">${formatInline(stripped)}</p>`;
+            i++;
+            continue;
+        }
+
+        if (inRecipient) {
+            if (cleanStripped.startsWith('विषय:') || cleanStripped.startsWith('Subject:') || /^(?:महोदय|महोदया|मान्यवर|Respected|Dear)\b/i.test(cleanStripped)) {
+                inRecipient = false;
             } else {
-                const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(cleanStripped);
-                let isClosingStart = false;
-                if (!isSentence && cleanStripped.length < 45) {
-                    if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(cleanStripped)) {
-                        isClosingStart = true;
-                    } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(cleanStripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(cleanStripped)) {
-                        isClosingStart = true;
-                    }
-                }
-
-                if (isClosingStart) {
-                    inClosing = true;
-                } else if (inClosing && (isSentence || cleanStripped.length > 60)) {
-                    inClosing = false;
-                }
-
-                let pAlign = inClosing ? 'right' : 'justify';
-                fullHtml += `<p style="text-align:${pAlign};">${formatInline(stripped)}</p>`;
+                fullHtml += `<p style="margin-left:24pt; margin-bottom:2pt;">${formatInline(stripped)}</p>`;
+                i++;
+                continue;
             }
         }
-    }
 
-    closeTable();
+        // Subject line
+        if (cleanStripped.startsWith('विषय:') || cleanStripped.startsWith('Subject:')) {
+            fullHtml += `<p style="font-weight:bold; margin:8pt 0 4pt 0;">${formatInline(stripped)}</p>`;
+            i++;
+            continue;
+        }
+
+        // Salutation
+        if (/^(?:महोदय|महोदया|मान्यवर|श्रीमान|Respected|Dear)\b/i.test(cleanStripped)) {
+            fullHtml += `<p style="font-weight:bold; margin:6pt 0 3pt 0;">${formatInline(stripped)}</p>`;
+            i++;
+            continue;
+        }
+
+        // Numbered Clause
+        let numMatch = cleanStripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+        if (numMatch) {
+            inClosing = false;
+            let num = numMatch[1] || numMatch[2];
+            const rawContentMatch = stripped.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
+            fullHtml += `<p><strong>${num}.</strong> ${formatInline(rawClause)}</p>`;
+            i++;
+            continue;
+        }
+
+        // Closing Detection
+        const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(cleanStripped);
+        let isClosingStart = false;
+        if (!isSentence && cleanStripped.length < 45) {
+            if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(cleanStripped)) {
+                isClosingStart = true;
+            } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(cleanStripped) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(cleanStripped)) {
+                isClosingStart = true;
+            }
+        }
+
+        if (isClosingStart) {
+            inClosing = true;
+        } else if (inClosing && (isSentence || cleanStripped.length > 60)) {
+            inClosing = false;
+        }
+
+        let pAlign = inClosing ? 'right' : 'justify';
+        fullHtml += `<p style="text-align:${pAlign};">${formatInline(stripped)}</p>`;
+        i++;
+    }
 
     return `<!DOCTYPE html>
 <html>
