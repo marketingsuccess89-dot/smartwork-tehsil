@@ -985,6 +985,21 @@ async def health_check():
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/download/agent")
+async def download_pc_agent():
+    zip_path = os.path.join("static", "SmartTyping_PC_Agent.zip")
+    if os.path.exists(zip_path):
+        return FileResponse(
+            zip_path,
+            filename="SmartTyping_PC_Agent.zip",
+            media_type="application/zip",
+            headers={"Content-Disposition": "attachment; filename=SmartTyping_PC_Agent.zip"}
+        )
+    exe_path = "SmartTyping_Agent.exe"
+    if os.path.exists(exe_path):
+        return FileResponse(exe_path, filename="SmartTyping_Agent.exe", media_type="application/octet-stream")
+    raise HTTPException(status_code=404, detail="Agent package not found")
+
 @app.get("/")
 async def read_index():
     return FileResponse("static/index.html")

@@ -37,6 +37,7 @@ out/
 *.so
 *.dylib
 *.zip
+!static/SmartTyping_PC_Agent.zip
 *.tar.gz
 *.tgz
 *.rar
