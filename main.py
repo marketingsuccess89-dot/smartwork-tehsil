@@ -511,6 +511,7 @@ async def download_shared_doc(doc_id: str):
         }
     )
 
+@app.get("/print/{doc_id}", response_class=HTMLResponse)
 @app.get("/v/{doc_id}", response_class=HTMLResponse)
 async def view_shared_doc(doc_id: str):
     """Mobile & Desktop A4 Document Viewer with direct Word download and Print to PDF options."""

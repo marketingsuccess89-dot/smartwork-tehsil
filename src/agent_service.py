@@ -305,45 +305,63 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     client = get_genai_client()
     
     prompt = """
-    You are an expert audio transcription assistant for legal, official, and administrative document dictation.
+    You are an expert audio transcription assistant specialized in Indian Legal, Court, Tehsil, and Administrative document dictation (तहसील व न्यायालय विलेख एवं प्रार्थना पत्र).
     Transcribe the spoken audio dictation into a clean, professional, print-ready Markdown document.
 
-    STRICT RULES FOR REAL HUMAN SPEECH:
-    1. **Conversational Chitchat & Noise Filtering (बातचीत व फ़ालतू बातों को हटाएं)**:
-       - Speakers often converse with the typist, ask for water/tea, check on the printer, or greet (e.g. "Hello brother", "चाय पी लूँ...", "प्रिंटर चल रहा है क्या", "Wait, hold on, let me take a sip of tea... where were we?").
-       - COMPLETELY OMIT all conversational chit-chat, side remarks, and casual talk. Do NOT put them in the final document!
+    STRICT RULES FOR DESI & REAL HUMAN SPEECH (देसी बोलचाल व मौखिक निर्देशों के नियम):
+    1. **Conversational Chitchat & Side Remarks Filtering (आपसी बातचीत व फ़ालतू बातों को 100% हटाएं)**:
+       - Elderly advocates, deed writers (कातिब/मुंशी), and rural citizens speak casually to the typist while dictating:
+         * e.g. "अरे मुंशी जी सुनो...", "टाइपिंग वाले बाबू ध्यान से लिखना...", "अरे चाय ठंडी हो रही है ज़रा एक घूँट पी लूँ...", "कहाँ थे हम... हाँ...", "अरे भैया समझ रहे हो ना...", "प्रिंटर ठीक चल रहा है?", "ज़रा पानी देना...".
+       - NEVER include any of these casual remarks, instructions to the typist, or personal chitchat in the transcribed document!
 
-    2. **Intelligent Markdown Bolding (बोल्ड करने के सटीक नियम)**:
+    2. **Spoken Formatting & Layout Directives (मौखिक फ़ॉर्मैटिंग व लाइन निर्देशों को Markdown में बदलें)**:
+       - Line Breaks & Paragraphs:
+         * "अब नीचे की लाइन से..." / "अगली लाइन में लिखो..." / "नीचे लिखो..." -> Insert a clean line break (`\n`).
+         * "पैरा बदलो..." / "नया पैराग्राफ बनाओ..." / "एक लाइन छोड़ कर लिखो..." -> Insert a new paragraph break (`\n\n`).
+       - Headers & Topics:
+         * "ऊपर हेडिंग डालो..." / "मोटे अक्षरों में शीर्षक लिखो..." -> '# [Title]' or '## [Title]'.
+         * "विषय में लिखो..." / "सब्जेक्ट डालो..." -> '**विषय:** [Text]'.
+       - Numbered Points:
+         * "पॉइंट नंबर 1 / पहला पॉइंट...", "दूसरा पॉइंट...", "शर्त नंबर 1..." -> '1. [Text]', '2. [Text]'.
+       - Parentheses:
+         * "ब्रैकेट में लिखो..." / "कोष्ठक में डालो..." -> '([Text])'.
+       - Signatures & Closings:
+         * If speaker dictates side-by-side signatures for TWO parties (e.g. "प्रथम पक्ष बाएँ, द्वितीय पक्ष दाएँ"):
+           Format as a clean 2-column Markdown table:
+           | **प्रथम पक्ष** | **द्वितीय पक्ष** |
+           | :--- | ---: |
+           | हस्ताक्षर: ____________ | हस्ताक्षर: ____________ |
+           | नाम: **[नाम]** | नाम: **[नाम]** |
+         * If speaker dictates single applicant details (e.g. "प्रार्थी / शपथकर्ता / भवदीय"):
+           Write as clean plain text block at the end (DO NOT create a table):
+           **प्रार्थी / शपथकर्ता / भवदीय**,  
+           **[नाम]**  
+           [पिता का नाम / उम्र / पता]
+
+    3. **Stutter, Slip of Tongue & Desi Self-Corrections (हकलाना, गलती सुधारना व 'अरे नहीं नहीं')**:
+       - When the speaker hesitates, slips tongue, or corrects themselves:
+         * e.g. "नाम रामकिशन... अरे नहीं नहीं, रामकिशन शर्मा लिखो" -> Transcribe ONLY "**रामकिशन शर्मा**".
+         * e.g. "रकबा 5 बीघा... अरे रुको 5 नहीं, 4 बीघा 12 बिस्वा लिखो" -> Transcribe ONLY "**4 बीघा 12 बिस्वा**".
+         * e.g. "उम्र 45... नहीं 48 वर्ष" -> Transcribe ONLY "**48 वर्ष**".
+         * e.g. "दिनांक 10 मार्च... काट के 15 मार्च 2026 करो" -> Transcribe ONLY "**15 मार्च 2026**".
+       - NEVER include the mistaken words or the correction phrases ("अरे नहीं नहीं", "काट के", "गलत हो गया").
+
+    4. **Intelligent Markdown Bolding (बोल्ड करने के सटीक नियम)**:
        - **Main Names (मुख्य व्यक्तियों व पक्षों के नाम बोल्ड करें)**:
-         * Always bold primary person names, father's names, and key parties when introduced: e.g. **रमेश कुमार**, **श्री कल्लू राम**, **सुरेश चंद**, **विजय वर्मा**, **राम शरण**, **सुमित शर्मा**, **अजय सिंह**.
-       - **Prices, Rents, Amounts & Measurements (कीमत, किराया, धनराशि व नाप-जोख बोल्ड करें)**:
-         * Always bold monetary amounts, rent figures, advance/deposit amounts, cheque numbers, and specific land plot/area measurements: e.g. **8,500 रुपये**, **₹5 लाख**, **0.500 हेक्टेयर**, **गाटा संख्या 124**, **15 दिन**.
-       - **Main Topics, Labels & Legal Roles (मुख्य विषय, लेबल्स व कानूनी पद बोल्ड करें)**:
-         * Always bold key document labels and topic headers: e.g. **विषय:**, **मुकदमा नंबर:**, **प्रार्थी:**, **बनाम**, **अनावेदक:**, **प्रथम पक्ष**, **द्वितीय पक्ष**, **शपथकर्ता:**, **हस्ताक्षर:**, **द्वारा अधिवक्ता:**, **साक्षी:**, **सत्यापन:**.
-       - **DO NOT Bold Regular Body Sentences (सामान्य वाक्यों को बोल्ड न करें)**:
-         * Regular narrative sentences, general descriptions, and connective clauses ('यह कि...', 'निवेदन है कि...') must remain normal unbolded text so the document remains clean, official, and readable.
+         * Person names, father's names, caste, age, village: e.g. **रामकिशन शर्मा**, **स्वर्गीय मुंशी लाल**, **62 वर्ष**, **ग्राम देवली**.
+       - **Land Details, Numbers & Measurements (भूमि रकबा, गाटा संख्या व नाप-जोख)**:
+         * Specific land numbers and areas: e.g. **गाटा संख्या 342**, **रकबा 0.450 हेक्टेयर**, **4 बीघा 12 बिस्वा**.
+       - **Financial Amounts (धनराशि व लेन-देन)**:
+         * e.g. **₹4,50,000 (चार लाख पचास हजार रुपये)**, **50,000 रुपये नकद**.
+       - **Chauhaddi / Boundaries (चौहद्दी व दिशाएं)**:
+         * e.g. **पूरब:** ..., **पश्चिम:** ..., **उत्तर:** ..., **दक्षिण:** ...
+       - **Document Labels & Roles (शीर्षक व पद)**:
+         * e.g. **विषय:**, **शपथ पत्र**, **बनाम**, **प्रार्थी:**, **अनावेदक:**, **गवाहान:**, **सत्यापन:**.
+       - **DO NOT Bold Regular Narrative Sentences (सामान्य कथनों को बोल्ड न करें)**:
+         * 'निवेदन है कि...', 'यह कि प्रार्थी...', 'अतः श्रीमान से प्रार्थना है कि...' should remain normal unbolded text.
 
-    3. **Convert Spoken Formatting Commands into Markdown (निर्देशों को फ़ॉर्मैटिंग में बदलें)**:
-       - If the speaker says: "Title at top: [Title]" or "ऊपर हेडिंग डालो [शीर्षक]" -> '# [Title]'
-       - If the speaker says: "Point number one / पहला पॉइंट" -> '1. [Text]'
-       - If the speaker dictates side-by-side signatures for TWO parties (e.g. "प्रथम पक्ष बाएँ, द्वितीय पक्ष दाएँ"):
-         Format as a clean 2-column Markdown table so Left and Right parties remain strictly separated:
-         | **प्रथम पक्ष** | **द्वितीय पक्ष** |
-         | :--- | ---: |
-         | हस्ताक्षर: ____________ | हस्ताक्षर: ____________ |
-         | नाम: **[नाम]** | नाम: **[नाम]** |
-       - If the speaker dictates a single signature / applicant details at the end (e.g. प्रार्थी, भवदीय, शपथकर्ता):
-         Write it directly as plain text lines, DO NOT create a table ('|') for a single person:
-         **शपथकर्ता / प्रार्थी / भवदीय**,
-         **[नाम]**
-         [पिता का नाम / पद / पता]
-
-    4. **Stutter, Slip of Tongue & Self-Corrections (हकलाना व सुधार)**:
-       - When the speaker corrects themselves (e.g. "9000... no wait, make that 9500", or "नाम अमित... नहीं नहीं, सुमित लिखो"), transcribe ONLY the final intended correction ("**9,500**" / "**सुमित**").
-
-    5. **Accurate Legal Text & Numbers**:
-       - Transcribe the actual agreement terms, party names, dates, and amounts faithfully.
-       - DO NOT invent or add any unmentioned clauses or legal boilerplate.
+    5. **Accurate Legal Terminology**:
+       - Preserve authentic Indian legal words (e.g. खतौनी, इंतकाल, काश्तकार, बैनामा, इकरारनामा, वसीयतनामा, चौहद्दी, तकसीम, दाखिल खारिज).
 
     Ensure your response strictly matches the required JSON schema.
     """
