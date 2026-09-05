@@ -631,6 +631,7 @@ function handleAudioSelection(file) {
 
 function clearAudioSelection() {
     selectedAudioFile = null;
+    audioChunks = [];
     if (audioInput) audioInput.value = '';
     if (audioPreview) audioPreview.src = '';
     if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
@@ -710,8 +711,21 @@ async function startRecording() {
 function stopRecording() {
     if (!mediaRecorder || !isRecording) return;
     
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    try {
+        if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+    } catch (e) {
+        console.warn('Error stopping MediaRecorder:', e);
+    }
+    
+    try {
+        if (mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+    } catch (e) {
+        console.warn('Error stopping stream tracks:', e);
+    }
     
     isRecording = false;
     clearInterval(recordDurationTimer);
@@ -1918,6 +1932,7 @@ function formatInline(str) {
 // Convert entire document text into formatted HTML for MS Word clipboard paste
 function convertTextToWordHtml(rawText) {
     if (!rawText) return '';
+    let fullHtml = '';
     const unwrapped = unwrapParagraphs(rawText);
     const lines = unwrapped.split('\n');
     let i = 0;

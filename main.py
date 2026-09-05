@@ -581,12 +581,15 @@ async def view_shared_doc(doc_id: str):
     total_pages = len(page_texts)
     rendered_pages = []
 
+    stamp_box_class = "" if stamp_paper else "hidden "
+    stamp_btn_text = "स्टाम्प स्पेस हटाएं" if stamp_paper else "स्टाम्प स्पेस जोड़ें"
+
     for page_idx, p_text in enumerate(page_texts):
         p_lines = p_text.split('\n')
         content_parts = []
 
         if page_idx == 0:
-            content_parts.append('<div id="stamp-spacer-box" class="hidden w-full h-[2.7in] mb-4 border-2 border-dashed border-emerald-300 rounded-xl bg-emerald-50/50 flex items-center justify-center text-emerald-800 font-bold text-xs select-none">📜 स्टाम्प पेपर प्रिंट एरिया (3.0" Space Reserved)</div>')
+            content_parts.append(f'<div id="stamp-spacer-box" class="{stamp_box_class}w-full h-[2.7in] mb-4 border-2 border-dashed border-emerald-300 rounded-xl bg-emerald-50/50 flex items-center justify-center text-emerald-800 font-bold text-xs select-none">📜 स्टाम्प पेपर प्रिंट एरिया (3.0" Space Reserved)</div>')
 
         if total_pages > 1:
             content_parts.append(f'<div class="no-print flex items-center justify-between pb-2 mb-4 border-b border-slate-200 text-xs font-semibold text-emerald-800"><span>📄 पृष्ठ {page_idx + 1} / {total_pages}</span><span class="text-slate-400 font-normal">A4 साइज़ (1.0" मार्जिन)</span></div>')
@@ -935,6 +938,23 @@ async def view_shared_doc(doc_id: str):
                 line-height: 1.25 !important;
                 font-size: 11.5pt !important;
             }}
+            #stamp-spacer-box {{
+                height: 2.7in !important;
+                border: none !important;
+                background: transparent !important;
+                color: transparent !important;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-size: 0 !important;
+                line-height: 0 !important;
+            }}
+            #stamp-spacer-box.hidden {{
+                display: none !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }}
         }}
         </style>
     <script>
@@ -970,7 +990,7 @@ async def view_shared_doc(doc_id: str):
         <div class="flex items-center space-x-2">
             <button onclick="toggleStampSpace()" id="stamp-toggle-btn" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-200 font-semibold py-2 px-3 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-sm cursor-pointer">
                 <i class="fa-solid fa-stamp"></i>
-                <span id="stamp-toggle-text">स्टाम्प स्पेस जोड़ें</span>
+                <span id="stamp-toggle-text">{stamp_btn_text}</span>
             </button>
             <a href="/d/{doc_id}" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-sm">
                 <i class="fa-solid fa-file-word"></i>
