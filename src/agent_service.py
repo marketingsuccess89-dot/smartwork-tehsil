@@ -308,21 +308,35 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
        - Speakers often converse with the typist, ask for water/tea, check on the printer, or greet (e.g. "Hello brother", "चाय पी लूँ...", "प्रिंटर चल रहा है क्या", "Wait, hold on, let me take a sip of tea... where were we?").
        - COMPLETELY OMIT all conversational chit-chat, side remarks, and casual talk. Do NOT put them in the final document!
 
-    2. **Convert Spoken Formatting Commands into Markdown (निर्देशों को फ़ॉर्मैटिंग में बदलें)**:
+    2. **Intelligent Markdown Bolding (बोल्ड करने के सटीक नियम)**:
+       - **Main Names (मुख्य व्यक्तियों व पक्षों के नाम बोल्ड करें)**:
+         * Always bold primary person names, father's names, and key parties when introduced: e.g. **रमेश कुमार**, **श्री कल्लू राम**, **सुरेश चंद**, **विजय वर्मा**, **राम शरण**, **सुमित शर्मा**, **अजय सिंह**.
+       - **Prices, Rents, Amounts & Measurements (कीमत, किराया, धनराशि व नाप-जोख बोल्ड करें)**:
+         * Always bold monetary amounts, rent figures, advance/deposit amounts, cheque numbers, and specific land plot/area measurements: e.g. **8,500 रुपये**, **₹5 लाख**, **0.500 हेक्टेयर**, **गाटा संख्या 124**, **15 दिन**.
+       - **Main Topics, Labels & Legal Roles (मुख्य विषय, लेबल्स व कानूनी पद बोल्ड करें)**:
+         * Always bold key document labels and topic headers: e.g. **विषय:**, **मुकदमा नंबर:**, **प्रार्थी:**, **बनाम**, **अनावेदक:**, **प्रथम पक्ष**, **द्वितीय पक्ष**, **शपथकर्ता:**, **हस्ताक्षर:**, **द्वारा अधिवक्ता:**, **साक्षी:**, **सत्यापन:**.
+       - **DO NOT Bold Regular Body Sentences (सामान्य वाक्यों को बोल्ड न करें)**:
+         * Regular narrative sentences, general descriptions, and connective clauses ('यह कि...', 'निवेदन है कि...') must remain normal unbolded text so the document remains clean, official, and readable.
+
+    3. **Convert Spoken Formatting Commands into Markdown (निर्देशों को फ़ॉर्मैटिंग में बदलें)**:
        - If the speaker says: "Title at top: [Title]" or "ऊपर हेडिंग डालो [शीर्षक]" -> '# [Title]'
        - If the speaker says: "Point number one / पहला पॉइंट" -> '1. [Text]'
-        - If the speaker dictates side-by-side signatures for TWO parties (e.g. "प्रथम पक्ष बाएँ, द्वितीय पक्ष दाएँ"):
-          Format as a clean 2-column Markdown table so Left and Right parties remain strictly separated:
-          | [Left Party / Title] | [Right Party / Title] |
-          | :--- | ---: |
-          | [Left Name] | [Right Name] |
-        - If the speaker dictates a single signature / applicant details at the end (e.g. प्रार्थी, भवदीय, शपथकर्ता):
-          Write it directly as plain text lines, DO NOT create a table ('|') for a single person!
+       - If the speaker dictates side-by-side signatures for TWO parties (e.g. "प्रथम पक्ष बाएँ, द्वितीय पक्ष दाएँ"):
+         Format as a clean 2-column Markdown table so Left and Right parties remain strictly separated:
+         | **प्रथम पक्ष** | **द्वितीय पक्ष** |
+         | :--- | ---: |
+         | हस्ताक्षर: ____________ | हस्ताक्षर: ____________ |
+         | नाम: **[नाम]** | नाम: **[नाम]** |
+       - If the speaker dictates a single signature / applicant details at the end (e.g. प्रार्थी, भवदीय, शपथकर्ता):
+         Write it directly as plain text lines, DO NOT create a table ('|') for a single person:
+         **शपथकर्ता / प्रार्थी / भवदीय**,
+         **[नाम]**
+         [पिता का नाम / पद / पता]
 
-    3. **Stutter, Slip of Tongue & Self-Corrections (हकलाना व सुधार)**:
-       - When the speaker corrects themselves (e.g. "9000... no wait, make that 9500", or "नाम अमित... नहीं नहीं, सुमित लिखो"), transcribe ONLY the final intended correction ("9500" / "सुमित").
+    4. **Stutter, Slip of Tongue & Self-Corrections (हकलाना व सुधार)**:
+       - When the speaker corrects themselves (e.g. "9000... no wait, make that 9500", or "नाम अमित... नहीं नहीं, सुमित लिखो"), transcribe ONLY the final intended correction ("**9,500**" / "**सुमित**").
 
-    4. **Accurate Legal Text & Numbers**:
+    5. **Accurate Legal Text & Numbers**:
        - Transcribe the actual agreement terms, party names, dates, and amounts faithfully.
        - DO NOT invent or add any unmentioned clauses or legal boilerplate.
 
