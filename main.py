@@ -115,6 +115,7 @@ def save_doc_to_cache(doc_id: str, data: dict):
     """Saves document data in memory and to disk so restarts/reloads never lose view links."""
     shared_documents[doc_id] = data
     try:
+        os.makedirs(DOC_CACHE_DIR, exist_ok=True)
         cache_file = os.path.join(DOC_CACHE_DIR, f"{doc_id}.json")
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
@@ -423,18 +424,38 @@ async def process_audio(file: UploadFile = File(...), user_id: str = Form(None))
     Receives dictation audio and transcribes/formats it via Gemini.
     Auto-syncs to MS Word if user has connected station.
     """
-    # Accept standard audio formats, generic octet-stream, or common file extensions
+    # Accept standard audio formats, video containers from mobile Chrome, generic octet-stream, or common file extensions
     is_audio = (
-        (file.content_type and file.content_type.startswith("audio/")) 
+        (file.content_type and (file.content_type.startswith("audio/") or file.content_type.startswith("video/webm") or file.content_type.startswith("video/mp4") or file.content_type.startswith("video/ogg"))) 
         or file.content_type == "application/octet-stream"
-        or (file.filename and file.filename.lower().endswith(('.wav', '.webm', '.mp3', '.m4a', '.ogg', '.aac', '.mp4')))
+        or (file.filename and file.filename.lower().endswith(('.wav', '.webm', '.mp3', '.m4a', '.ogg', '.aac', '.mp4', '.opus', '.flac', '.m4v')))
     )
     if not is_audio:
         raise HTTPException(status_code=400, detail="Uploaded file must be an audio file.")
         
     try:
         contents = await file.read()
-        mime_type = file.content_type if (file.content_type and file.content_type.startswith("audio/")) else "audio/wav"
+        
+        # Accurately resolve MIME type
+        if file.content_type and (file.content_type.startswith("audio/") or file.content_type.startswith("video/")):
+            mime_type = file.content_type
+        elif file.filename and '.' in file.filename:
+            ext = file.filename.lower().split('.')[-1]
+            ext_map = {
+                'mp3': 'audio/mp3',
+                'wav': 'audio/wav',
+                'webm': 'audio/webm',
+                'm4a': 'audio/mp4',
+                'mp4': 'audio/mp4',
+                'ogg': 'audio/ogg',
+                'opus': 'audio/opus',
+                'aac': 'audio/aac',
+                'flac': 'audio/flac'
+            }
+            mime_type = ext_map.get(ext, "audio/wav")
+        else:
+            mime_type = "audio/wav"
+
         result = await run_in_threadpool(transcribe_audio_dictation, contents, mime_type=mime_type)
         # Automatic MS Word sync if station is connected
         await auto_sync_to_word(user_id, result.transcribed_text, getattr(result, "stamp_paper_detected", False))

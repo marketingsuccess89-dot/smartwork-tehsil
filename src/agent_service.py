@@ -129,9 +129,13 @@ def get_model_status() -> dict:
         "is_fallback_active": primary_remaining > 0
     }
 
+_cached_client = None
+_cached_api_key = None
+
 def get_genai_client():
-    global _cached_client
-    if _cached_client is None:
+    global _cached_client, _cached_api_key
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         env_file = os.path.join(project_root, ".env")
         if os.path.exists(env_file):
@@ -144,9 +148,13 @@ def get_genai_client():
                 pass
         load_dotenv(override=True)
         api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY not found in environment. Please add it to your .env file.")
+
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found in environment. Please add it to your .env file.")
+
+    if _cached_client is None or _cached_api_key != api_key:
         _cached_client = genai.Client(api_key=api_key)
+        _cached_api_key = api_key
     return _cached_client
 
 def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResult:

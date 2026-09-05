@@ -374,10 +374,12 @@ def create_docx(text: str, stamp_paper: bool = False) -> io.BytesIO:
             continue
 
         # 8. Numbered list items (e.g. 1., १., (1), (१), (क))
-        match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', stripped)
+        clean_stripped = re.sub(r'[*#_]', '', stripped).strip()
+        match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', clean_stripped)
         if match:
             num = match.group(1) or match.group(2)
-            content = match.group(3)
+            raw_content_match = re.match(r'^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$', stripped)
+            content = raw_content_match.group(3) if raw_content_match else match.group(3)
             add_styled_paragraph(doc, f"**{num}.** {content}", style_type='clause', alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
             i += 1
             continue
