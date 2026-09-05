@@ -315,6 +315,15 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
        - NEVER include any of these casual remarks, instructions to the typist, or personal chitchat in the transcribed document!
 
     2. **Spoken Formatting & Layout Directives (मौखिक फ़ॉर्मैटिंग व लाइन निर्देशों को Markdown में बदलें)**:
+       - Recipient Block ("सेवा में" का सही प्रारूप):
+         * ALWAYS place "**सेवा में,**" on its own separate line.
+         * The recipient's official title/designation and office/district MUST start on the subsequent line(s) below it:
+           ```markdown
+           **सेवा में,**  
+           श्रीमान उपजिलाधिकारी महोदय,  
+           तहसील सोहना, जनपद गुरुग्राम।
+           ```
+         * NEVER merge "सेवा में," and the recipient's name into a single combined line!
        - Line Breaks & Paragraphs:
          * "अब नीचे की लाइन से..." / "अगली लाइन में लिखो..." / "नीचे लिखो..." -> Insert a clean line break (`\n`).
          * "पैरा बदलो..." / "नया पैराग्राफ बनाओ..." / "एक लाइन छोड़ कर लिखो..." -> Insert a new paragraph break (`\n\n`).
@@ -338,14 +347,33 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
            **[नाम]**  
            [पिता का नाम / उम्र / पता]
 
-    3. **Filter Spoken Clause Starters & Conversational Preamble ('यह कि', 'प्रार्थी का नाम लिखो', 'लिखो कि' को हटाएं)**:
+    3. **Intelligent Dialect & Mispronunciation Normalization (देहाती बोली व अशुद्ध उच्चारण का कानूनी मानकीकरण)**:
+       - Elderly villagers, rustic citizens, and informal speakers often use dialectal or mispronounced words:
+         * "तसलीदार / तसीलदार" ➔ **तहसीलदार**
+         * "रजिस्टरी" ➔ **रजिस्ट्री**
+         * "दाखिल खारिच / खारिज़" ➔ **दाखिल खारिज**
+         * "संकरमनीय" ➔ **संक्रमणीय**
+         * "दरखास्त / अरजी" ➔ **प्रार्थना पत्र**
+         * "मुआबजा / नोकसान" ➔ **मुआवजा / नुकसान**
+         * "कास्तकार / किसान" ➔ **काश्तकार**
+         * "चोहद्दी / चारों तरफ की हद" ➔ **चौहद्दी**
+         * "हलफनामा / सपत पत्र" ➔ **शपथ पत्र**
+         * "विपक्षिया / सामने वाला" ➔ **विपक्षी / अनावेदक**
+         * "साछी / सखीदार / गवाही" ➔ **साक्षी / गवाह**
+         * "काबिज दखल / दखील" ➔ **काबिज दखील**
+         * "इंतकाल / इंतकालिया" ➔ **इंतकाल**
+         * "बटवारा / हिस्सा बटवारा" ➔ **बंटवारा**
+         * "चकरोट / चकरोड" ➔ **चकरोड**
+       - Intelligently understand the speaker's true intent and standardize all dialectal/mispronounced words into clean, standard Hindi legal vocabulary!
+
+    4. **Filter Spoken Clause Starters & Conversational Preamble ('यह कि', 'प्रार्थी का नाम लिखो', 'लिखो कि' को हटाएं)**:
        - Advocates/speakers often use colloquial filler starters when dictating numbered points:
          * e.g. "पहला पॉइंट डालो... यह कि प्रार्थी का नाम लिखो... प्रार्थी रामपाल सिंह यादव..." -> Do NOT write "यह कि" or "प्रार्थी का नाम लिखो". Write directly: `1. प्रार्थी **रामपाल सिंह यादव** पुत्र...`
          * e.g. "दूसरा पॉइंट... यह कि प्रार्थी मौजा भोंडसी स्थित..." -> Write directly: `2. प्रार्थी मौजा भोंडसी स्थित...`
          * e.g. "चौथा पॉइंट लिखो... यह कि विपक्षी सुखबीर सिंह..." -> Write directly: `4. विपक्षी **सुखबीर सिंह** ने...`
        - Repetitive conversational prefixes like "यह कि", "इसमें लिखो कि", "लिखो कि", "अगला यह कि" are spoken artifacts used while explaining to the typist. Strip them so that each numbered point starts cleanly and directly with the subject matter.
 
-    4. **Stutter, Slip of Tongue & Desi Self-Corrections (हकलाना, गलती सुधारना व 'अरे नहीं नहीं')**:
+    5. **Stutter, Slip of Tongue & Desi Self-Corrections (हकलाना, गलती सुधारना व 'अरे नहीं नहीं')**:
        - When the speaker hesitates, slips tongue, or corrects themselves:
          * e.g. "नाम रामकिशन... अरे नहीं नहीं, रामकिशन शर्मा लिखो" -> Transcribe ONLY "**रामकिशन शर्मा**".
          * e.g. "रकबा 5 बीघा... अरे रुको 5 नहीं, 4 बीघा 12 बिस्वा लिखो" -> Transcribe ONLY "**4 बीघा 12 बिस्वा**".
@@ -353,7 +381,7 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
          * e.g. "दिनांक 10 मार्च... काट के 15 मार्च 2026 करो" -> Transcribe ONLY "**15 मार्च 2026**".
        - NEVER include the mistaken words or the correction phrases ("अरे नहीं नहीं", "काट के", "गलत हो गया").
 
-    5. **Intelligent Markdown Bolding (बोल्ड करने के सटीक नियम)**:
+    6. **Intelligent Markdown Bolding (बोल्ड करने के सटीक नियम)**:
        - **Main Names (मुख्य व्यक्तियों व पक्षों के नाम बोल्ड करें)**:
          * Person names, father's names, caste, age, village: e.g. **रामकिशन शर्मा**, **स्वर्गीय मुंशी लाल**, **62 वर्ष**, **ग्राम देवली**.
        - **Land Details, Numbers & Measurements (भूमि रकबा, गाटा संख्या व नाप-जोख)**:
@@ -367,7 +395,7 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
        - **DO NOT Bold Regular Narrative Sentences (सामान्य कथनों को बोल्ड न करें)**:
          * 'निवेदन है कि...', 'अतः श्रीमान से प्रार्थना है कि...' should remain normal unbolded text.
 
-    6. **Accurate Legal Terminology**:
+    7. **Accurate Legal Terminology**:
        - Preserve authentic Indian legal words (e.g. खतौनी, इंतकाल, काश्तकार, बैनामा, इकरारनामा, वसीयतनामा, चौहद्दी, तकसीम, दाखिल खारिज).
 
     Ensure your response strictly matches the required JSON schema.

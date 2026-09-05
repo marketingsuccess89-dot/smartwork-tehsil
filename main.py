@@ -710,19 +710,20 @@ async def view_shared_doc(doc_id: str):
                 continue
 
             # Recipient block (सेवा में, / To:)
-            if line.startswith('सेवा में') or line.startswith('To:'):
+            clean_l = re.sub(r'[*#_]', '', line).strip()
+            if clean_l.startswith('सेवा में') or clean_l.startswith('To:'):
                 in_recipient = True
                 p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
-                content_parts.append(f'<p style="margin: 0 0 2px 0; font-weight: 600; font-size: 14.5px; line-height: 1.4;">{p_esc}</p>')
+                content_parts.append(f'<p style="margin: 0 0 4px 0; font-weight: bold; font-size: 15px; line-height: 1.4;">{p_esc}</p>')
                 i += 1
                 continue
 
             if in_recipient:
-                if line.startswith('विषय:') or line.startswith('Subject:') or re.match(r'^(?:महोदय|महोदया|मान्यवर|श्रीमान)', line):
+                if clean_l.startswith('विषय:') or clean_l.startswith('Subject:') or re.match(r'^(?:महोदय|महोदया|मान्यवर|Respected|Dear)\b', clean_l):
                     in_recipient = False
                 else:
                     p_esc = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_lib.escape(line))
-                    content_parts.append(f'<p style="margin: 0 0 2px 0; padding-left: 16px; font-size: 14px; line-height: 1.35;">{p_esc}</p>')
+                    content_parts.append(f'<p style="margin: 0 0 2px 0; padding-left: 24px; font-size: 14.5px; line-height: 1.35;">{p_esc}</p>')
                     i += 1
                     continue
 
