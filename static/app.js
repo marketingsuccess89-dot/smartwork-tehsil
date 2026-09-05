@@ -973,9 +973,75 @@ function triggerNativePrint() {
 
         const lines = pageText.split('\n');
         let i = 0;
+        let inRecipient = false;
+        let inClosing = false;
+        let closingLines = [];
+
+        function flushClosing() {
+            if (closingLines.length > 0) {
+                const blockDiv = document.createElement('div');
+                blockDiv.className = 'print-closing-block';
+                blockDiv.style.textAlign = 'right';
+                blockDiv.style.marginTop = '10pt';
+                blockDiv.style.pageBreakInside = 'avoid';
+                blockDiv.style.breakInside = 'avoid';
+
+                for (let cIdx = 0; cIdx < closingLines.length; cIdx++) {
+                    const cl = closingLines[cIdx];
+                    const p = document.createElement('p');
+                    p.style.margin = '2pt 0';
+                    p.style.textAlign = 'right';
+                    p.style.lineHeight = '1.3';
+                    const isTitle = (cIdx === 0 || cl.includes('हस्ताक्षर') || cl.includes('आवेदक') || cl.includes('प्रार्थी') || cl.includes('भवदीय') || cl.includes('शिष्य'));
+                    if (isTitle) p.style.fontWeight = 'bold';
+                    p.innerHTML = formatInline(cl);
+                    blockDiv.appendChild(p);
+                }
+                pageSheet.appendChild(blockDiv);
+                closingLines = [];
+                inClosing = false;
+            }
+        }
+
         while (i < lines.length) {
             const line = lines[i].trim();
             if (!line || /^-{3,}$/.test(line)) {
+                i++;
+                continue;
+            }
+
+            // Flush closing if table, heading, or divider is encountered
+            if (line.startsWith('|') || line.startsWith('#') || /^-{3,}$/.test(line)) {
+                flushClosing();
+            }
+
+            const cleanL = line.replace(/[*#_]/g, '').trim();
+
+            // Closing / signature / applicant block detection
+            const isSentence = /(?:कि:|है[।\.]|हूँ[।\.]|था[।\.]|करें[।\.]|गया[।\.]|जाएगा[।\.])$/.test(cleanL);
+            let isClosingStart = false;
+
+            if (!isSentence && cleanL.length < 45) {
+                if (/^(?:द्वारा अधिवक्ता|अधिवक्ता|हस्ताक्षर|भवदीय|निवेदक|शपथी|शपथकर्ता|विनीत|आपका आज्ञाकारी|आज्ञाकारी|स्वीकृत व प्रस्तुतकर्ता|Sincerely|Regards|Yours obediently|Yours faithfully)\b/i.test(cleanL)) {
+                    isClosingStart = true;
+                } else if (/^(?:आवेदक|प्रार्थी)\s*(?:[/:,।\-]|बनाम|$)/i.test(cleanL) && !/(?:सादर|निवेदन|प्रार्थना|करता|करती)/.test(cleanL)) {
+                    isClosingStart = true;
+                }
+            }
+
+            if (inClosing) {
+                if (isSentence || cleanL.length > 60 || /^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+/.test(cleanL) || closingLines.length >= 6) {
+                    flushClosing();
+                } else {
+                    closingLines.push(line);
+                    i++;
+                    continue;
+                }
+            }
+
+            if (isClosingStart) {
+                inClosing = true;
+                closingLines.push(line);
                 i++;
                 continue;
             }
@@ -1105,14 +1171,78 @@ function triggerNativePrint() {
             }
 
             // Numbered Clause (e.g. 1. or (1) or (क))
-            const numMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+            const numMatch = cleanL.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
             if (numMatch) {
                 const num = numMatch[1] || numMatch[2];
-                const content = numMatch[3];
+                const rawContentMatch = line.match(/^(?:(?:\(?(\d+|[०-९]+|[क-ह])\))|(\d+|[०-९]+)[\.\)])\s+(.*)$/);
+                const rawClause = rawContentMatch ? rawContentMatch[3] : numMatch[3];
                 const clauseDiv = document.createElement('div');
                 clauseDiv.className = 'print-clause';
-                clauseDiv.innerHTML = `<strong>${num}.</strong> ${formatInline(content)}`;
+                clauseDiv.innerHTML = `<strong>${num}.</strong> ${formatInline(rawClause)}`;
                 pageSheet.appendChild(clauseDiv);
+                i++;
+                continue;
+            }
+
+            // Recipient block (सेवा में, / To:)
+            if (cleanL.startsWith('सेवा में') || cleanL.startsWith('To:')) {
+                inRecipient = true;
+                const p = document.createElement('p');
+                p.style.margin = '0 0 4pt 0';
+                p.style.fontWeight = 'bold';
+                p.style.fontSize = '12pt';
+                p.innerHTML = formatInline(line);
+                pageSheet.appendChild(p);
+                i++;
+                continue;
+            }
+
+            if (inRecipient) {
+                if (cleanL.startsWith('विषय:') || cleanL.startsWith('Subject:') || /^(?:महोदय|महोदया|मान्यवर|Respected|Dear)\b/i.test(cleanL)) {
+                    inRecipient = false;
+                } else {
+                    const p = document.createElement('p');
+                    p.style.margin = '0 0 2pt 0';
+                    p.style.paddingLeft = '20pt';
+                    p.style.fontSize = '11.5pt';
+                    p.innerHTML = formatInline(line);
+                    pageSheet.appendChild(p);
+                    i++;
+                    continue;
+                }
+            }
+
+            // Subject line (विषय:)
+            if (cleanL.startsWith('विषय:') || cleanL.startsWith('Subject:')) {
+                const p = document.createElement('p');
+                p.style.margin = '8pt 0 6pt 0';
+                p.style.fontWeight = 'bold';
+                p.style.fontSize = '11.5pt';
+                p.innerHTML = formatInline(line);
+                pageSheet.appendChild(p);
+                i++;
+                continue;
+            }
+
+            // Salutation (महोदय, / मान्यवर,)
+            if (/^(?:महोदय|महोदया|मान्यवर|श्रीमान|Respected|Dear)\b/i.test(cleanL)) {
+                const p = document.createElement('p');
+                p.style.margin = '8pt 0 4pt 0';
+                p.style.fontWeight = '600';
+                p.style.fontSize = '11.5pt';
+                p.innerHTML = formatInline(line);
+                pageSheet.appendChild(p);
+                i++;
+                continue;
+            }
+
+            // Date / Place line
+            if (/^(?:दिनांक|स्थान|Date:|Place:)/i.test(cleanL)) {
+                const p = document.createElement('p');
+                p.style.margin = '8pt 0 3pt 0';
+                p.style.fontSize = '11pt';
+                p.innerHTML = formatInline(line);
+                pageSheet.appendChild(p);
                 i++;
                 continue;
             }
@@ -1124,6 +1254,8 @@ function triggerNativePrint() {
             pageSheet.appendChild(p);
             i++;
         }
+
+        flushClosing();
 
         printMount.appendChild(pageSheet);
     });

@@ -189,7 +189,7 @@ def render_markdown_table(doc, table_lines):
             p.paragraph_format.line_spacing = 1.15
 
             # Handle <br> tags within cells
-            sub_lines = cell_text.replace('<br>', '\n').replace('<br/>', '\n').split('\n')
+            sub_lines = re.split(r'<br\s*/?>', cell_text, flags=re.IGNORECASE)
             for s_idx, s_line in enumerate(sub_lines):
                 if s_idx > 0:
                     p = cell.add_paragraph()

@@ -5,6 +5,7 @@ let userPin = '';
 let pingInterval = null;
 let autoReconnect = true;
 let lastHandledDocId = null;
+let lastHandledTime = 0;
 
 // DOM Elements
 const loginContainer = document.getElementById('login-container');
@@ -106,12 +107,14 @@ function connectSync(email, pin = '') {
                 
                 if (message.event === 'transcription_ready' || message.event === 'open_in_word') {
                     const docId = message.doc_id;
-                    // Prevent duplicate execution if server sends both events for the same document
-                    if (docId && docId === lastHandledDocId) {
+                    const now = Date.now();
+                    // Prevent duplicate execution if server sends both events for the same document within 2.5s window
+                    if (docId && docId === lastHandledDocId && (now - lastHandledTime < 2500)) {
                         return;
                     }
                     if (docId) {
                         lastHandledDocId = docId;
+                        lastHandledTime = now;
                     }
 
                     const text = message.text || '';
