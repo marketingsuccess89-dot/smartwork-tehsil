@@ -347,33 +347,27 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
            **[नाम]**  
            [पिता का नाम / उम्र / पता]
 
-    3. **Intelligent Dialect & Mispronunciation Normalization (देहाती बोली व अशुद्ध उच्चारण का कानूनी मानकीकरण)**:
-       - Elderly villagers, rustic citizens, and informal speakers often use dialectal or mispronounced words:
-         * "तसलीदार / तसीलदार" ➔ **तहसीलदार**
-         * "रजिस्टरी" ➔ **रजिस्ट्री**
-         * "दाखिल खारिच / खारिज़" ➔ **दाखिल खारिज**
-         * "संकरमनीय" ➔ **संक्रमणीय**
-         * "दरखास्त / अरजी" ➔ **प्रार्थना पत्र**
-         * "मुआबजा / नोकसान" ➔ **मुआवजा / नुकसान**
-         * "कास्तकार / किसान" ➔ **काश्तकार**
-         * "चोहद्दी / चारों तरफ की हद" ➔ **चौहद्दी**
-         * "हलफनामा / सपत पत्र" ➔ **शपथ पत्र**
-         * "विपक्षिया / सामने वाला" ➔ **विपक्षी / अनावेदक**
-         * "साछी / सखीदार / गवाही" ➔ **साक्षी / गवाह**
-         * "काबिज दखल / दखील" ➔ **काबिज दखील**
-         * "इंतकाल / इंतकालिया" ➔ **इंतकाल**
-         * "बटवारा / हिस्सा बटवारा" ➔ **बंटवारा**
-         * "चकरोट / चकरोड" ➔ **चकरोड**
-       - Intelligently understand the speaker's true intent and standardize all dialectal/mispronounced words into clean, standard Hindi legal vocabulary!
+    4. **Colloquial Spoken-to-Professional Legal & Administrative Vocabulary (आम बोलचाल के शब्दों को उच्च-स्तरीय औपचारिक व कानूनी भाषा में बदलना)**:
+       - Users speak in casual, everyday spoken Hindi (बोलचाल की भाषा), but the generated document MUST read like a formal, professionally drafted letter or legal petition written by a seasoned legal expert:
+         * "मेरा नाम XYZ है / मैं XYZ इस गांव में रहता हूँ" ➔ `प्रार्थी **[XYZ]**, साकिन / निवासी **[ग्राम]**...`
+         * "असल में बात ऐसी है कि / मामला ऐसा है कि" ➔ `सविनय निवेदन इस प्रकार है कि...`
+         * "मेरी जमीन पर कब्जा कर लिया / जमीन छीन ली" ➔ `प्रार्थी की स्वामित्व वाली भूमि पर अनाधिकृत रूप से अवैध कब्जा कर लिया गया है`
+         * "गाली-गलौज की और मारने की धमकी दी" ➔ `अभद्र भाषा का प्रयोग करते हुए जान से मारने एवं गंभीर परिणाम भुगतने की धमकियां दी गईं`
+         * "बड़ा नुकसान हो गया / बहुत परेशानी हो रही है" ➔ `प्रार्थी को अत्यधिक मानसिक, शारीरिक एवं आर्थिक क्षति का सामना करना पड़ रहा है`
+         * "कागज साथ में लगाए हैं / सबूत देख लेना" ➔ `संलग्न साक्ष्यों एवं दस्तावेजी अभिलेखों का अवलोकन करने की कृपा करें`
+         * "हमारा काम जल्दी करवा दो / इंसाफ दिलाओ" ➔ `अतः श्रीमान से सादर प्रार्थना है कि उक्त प्रकरण पर त्वरित संज्ञान लेते हुए न्यायसंगत वैधानिक कार्यवाही करने की कृपा करें`
+         * "बिजली का बिल बहुत ज्यादा आ गया" ➔ `वास्तविक विद्युत उपभोग की तुलना में अत्यधिक त्रुटिपूर्ण बिल निर्गत किया गया है`
+         * "रास्ता बंद कर दिया / नाली रोक दी" ➔ `सार्वजनिक आवागमन का मार्ग / जल निकासी को दुर्भावनापूर्ण तरीके से अवरुद्ध कर दिया गया है`
+       - Preserve the core facts, names, dates, amounts, and specific details exactly, but elevate the tone to formal, respectful, and legally sound prose.
 
-    4. **Filter Spoken Clause Starters & Conversational Preamble ('यह कि', 'प्रार्थी का नाम लिखो', 'लिखो कि' को हटाएं)**:
+    5. **Filter Spoken Clause Starters & Conversational Preamble ('यह कि', 'प्रार्थी का नाम लिखो', 'लिखो कि' को हटाएं)**:
        - Advocates/speakers often use colloquial filler starters when dictating numbered points:
          * e.g. "पहला पॉइंट डालो... यह कि प्रार्थी का नाम लिखो... प्रार्थी रामपाल सिंह यादव..." -> Do NOT write "यह कि" or "प्रार्थी का नाम लिखो". Write directly: `1. प्रार्थी **रामपाल सिंह यादव** पुत्र...`
          * e.g. "दूसरा पॉइंट... यह कि प्रार्थी मौजा भोंडसी स्थित..." -> Write directly: `2. प्रार्थी मौजा भोंडसी स्थित...`
          * e.g. "चौथा पॉइंट लिखो... यह कि विपक्षी सुखबीर सिंह..." -> Write directly: `4. विपक्षी **सुखबीर सिंह** ने...`
        - Repetitive conversational prefixes like "यह कि", "इसमें लिखो कि", "लिखो कि", "अगला यह कि" are spoken artifacts used while explaining to the typist. Strip them so that each numbered point starts cleanly and directly with the subject matter.
 
-    5. **Stutter, Slip of Tongue & Desi Self-Corrections (हकलाना, गलती सुधारना व 'अरे नहीं नहीं')**:
+    6. **Stutter, Slip of Tongue & Desi Self-Corrections (हकलाना, गलती सुधारना व 'अरे नहीं नहीं')**:
        - When the speaker hesitates, slips tongue, or corrects themselves:
          * e.g. "नाम रामकिशन... अरे नहीं नहीं, रामकिशन शर्मा लिखो" -> Transcribe ONLY "**रामकिशन शर्मा**".
          * e.g. "रकबा 5 बीघा... अरे रुको 5 नहीं, 4 बीघा 12 बिस्वा लिखो" -> Transcribe ONLY "**4 बीघा 12 बिस्वा**".
