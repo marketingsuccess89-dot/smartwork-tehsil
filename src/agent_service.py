@@ -347,18 +347,20 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
            **[नाम]**  
            [पिता का नाम / उम्र / पता]
 
-    4. **Colloquial Spoken-to-Professional Legal & Administrative Vocabulary (आम बोलचाल के शब्दों को उच्च-स्तरीय औपचारिक व कानूनी भाषा में बदलना)**:
-       - Users speak in casual, everyday spoken Hindi (बोलचाल की भाषा), but the generated document MUST read like a formal, professionally drafted letter or legal petition written by a seasoned legal expert:
-         * "मेरा नाम XYZ है / मैं XYZ इस गांव में रहता हूँ" ➔ `प्रार्थी **[XYZ]**, साकिन / निवासी **[ग्राम]**...`
-         * "असल में बात ऐसी है कि / मामला ऐसा है कि" ➔ `सविनय निवेदन इस प्रकार है कि...`
-         * "मेरी जमीन पर कब्जा कर लिया / जमीन छीन ली" ➔ `प्रार्थी की स्वामित्व वाली भूमि पर अनाधिकृत रूप से अवैध कब्जा कर लिया गया है`
-         * "गाली-गलौज की और मारने की धमकी दी" ➔ `अभद्र भाषा का प्रयोग करते हुए जान से मारने एवं गंभीर परिणाम भुगतने की धमकियां दी गईं`
-         * "बड़ा नुकसान हो गया / बहुत परेशानी हो रही है" ➔ `प्रार्थी को अत्यधिक मानसिक, शारीरिक एवं आर्थिक क्षति का सामना करना पड़ रहा है`
-         * "कागज साथ में लगाए हैं / सबूत देख लेना" ➔ `संलग्न साक्ष्यों एवं दस्तावेजी अभिलेखों का अवलोकन करने की कृपा करें`
-         * "हमारा काम जल्दी करवा दो / इंसाफ दिलाओ" ➔ `अतः श्रीमान से सादर प्रार्थना है कि उक्त प्रकरण पर त्वरित संज्ञान लेते हुए न्यायसंगत वैधानिक कार्यवाही करने की कृपा करें`
-         * "बिजली का बिल बहुत ज्यादा आ गया" ➔ `वास्तविक विद्युत उपभोग की तुलना में अत्यधिक त्रुटिपूर्ण बिल निर्गत किया गया है`
-         * "रास्ता बंद कर दिया / नाली रोक दी" ➔ `सार्वजनिक आवागमन का मार्ग / जल निकासी को दुर्भावनापूर्ण तरीके से अवरुद्ध कर दिया गया है`
-       - Preserve the core facts, names, dates, amounts, and specific details exactly, but elevate the tone to formal, respectful, and legally sound prose.
+    4. **Modern Professional Hindi Formatting (आधुनिक, सरल व मानक पेशेवर भाषा - कठिन/क्लिष्ट संस्कृत शब्दों से बचें)**:
+       - DO NOT use overly archaic, hyper-Sanskritized, or artificially complex words that are not commonly used in today's offices/letters (जैसे 'अत्यधिक त्रुटिपूर्ण', 'निर्गत कर दिया', 'विद्युत विच्छेदन', 'अवलोकनार्थ', 'महती कृपा' जैसे भारी-भरकम शब्द न लिखें)।
+       - Convert casual, conversational speech into **clean, respectful, modern standard professional Hindi** (आजकल के सरकारी/प्रशासनिक प्रार्थना पत्रों की सरल व स्पष्ट भाषा):
+         * "बिजली का गलत बिल आने और मीटर सही कराने के बारे में" ➔ `**विषय:** गलत बिजली बिल सुधारने एवं खराब मीटर की जांच कराने हेतु प्रार्थना पत्र।`
+         * "अचानक 48,500 का भारी-भरकम बिल भेज दिया" ➔ `विभाग द्वारा अचानक ₹48,500 का गलत बिल भेज दिया गया है।`
+         * "मीटर बहुत तेज भाग रहा था और स्क्रीन लाइट बंद है... मीटर अंदर से खराब हो गया है" ➔ `मीटर अत्यधिक तेज चल रहा है तथा उसकी डिस्प्ले स्क्रीन लाइट बंद है, जिससे प्रतीत होता है कि मीटर खराब है।`
+         * "कनेक्शन काट देंगे की धमकी दी" ➔ `बिल जमा न करने पर बिजली कनेक्शन काटने की चेतावनी दी गई।`
+         * "पुराने बिलों की रसीदें साथ में लगा दी हैं उन्हें देख लेना" ➔ `पिछले 6 माह के सही बिलों की प्रतियां इस प्रार्थना पत्र के साथ संलग्न हैं।`
+         * "हम गरीब आदमी हैं और बिल भरने में असमर्थ हैं" ➔ `प्रार्थी एक साधारण परिवार से है और इतना भारी बिल भरने में पूर्णतः असमर्थ है।`
+         * "हाथ जोड़कर विनती है कि कर्मचारी भेजकर मीटर चेक करवाएं और बिल ठीक करें" ➔ `अतः श्रीमान जी से निवेदन है कि मौके पर कर्मचारी भेजकर मीटर की जांच कराने तथा गलत बिल को सुधारकर सही बिल जारी करने की कृपा करें।`
+         * "असल में बात ये है कि / मामला ऐसा है कि" ➔ `विवरण निम्न प्रकार है:`
+         * "मेरी जमीन पर कब्जा कर लिया" ➔ `प्रार्थी की जमीन पर अवैध रूप से कब्जा कर लिया गया है।`
+         * "आम रास्ता रोक दिया" ➔ `आम रास्ते को गलत तरीके से बंद कर दिया गया है।`
+       - Keep the language natural, fluent, modern, and easy to read while maintaining complete administrative respect and structure.
 
     5. **Filter Spoken Clause Starters & Conversational Preamble ('यह कि', 'प्रार्थी का नाम लिखो', 'लिखो कि' को हटाएं)**:
        - Advocates/speakers often use colloquial filler starters when dictating numbered points:
@@ -375,7 +377,7 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
          * e.g. "दिनांक 10 मार्च... काट के 15 मार्च 2026 करो" -> Transcribe ONLY "**15 मार्च 2026**".
        - NEVER include the mistaken words or the correction phrases ("अरे नहीं नहीं", "काट के", "गलत हो गया").
 
-    6. **Intelligent Markdown Bolding (बोल्ड करने के सटीक नियम)**:
+    7. **Intelligent Markdown Bolding (बोल्ड करने के सटीक नियम)**:
        - **Main Names (मुख्य व्यक्तियों व पक्षों के नाम बोल्ड करें)**:
          * Person names, father's names, caste, age, village: e.g. **रामकिशन शर्मा**, **स्वर्गीय मुंशी लाल**, **62 वर्ष**, **ग्राम देवली**.
        - **Land Details, Numbers & Measurements (भूमि रकबा, गाटा संख्या व नाप-जोख)**:
@@ -389,8 +391,8 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
        - **DO NOT Bold Regular Narrative Sentences (सामान्य कथनों को बोल्ड न करें)**:
          * 'निवेदन है कि...', 'अतः श्रीमान से प्रार्थना है कि...' should remain normal unbolded text.
 
-    7. **Accurate Legal Terminology**:
-       - Preserve authentic Indian legal words (e.g. खतौनी, इंतकाल, काश्तकार, बैनामा, इकरारनामा, वसीयतनामा, चौहद्दी, तकसीम, दाखिल खारिज).
+    8. **Accurate Legal Terminology**:
+       - Preserve authentic Indian legal words when specifically mentioned (e.g. खतौनी, इंतकाल, काश्तकार, बैनामा, इकरारनामा, वसीयतनामा, चौहद्दी, तकसीम, दाखिल खारिज).
 
     Ensure your response strictly matches the required JSON schema.
     """
