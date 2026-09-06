@@ -31,9 +31,36 @@ if hasattr(sys.stdout, "reconfigure"):
 try:
     import win32com.client
     import winsound
+    import win32event
+    import win32api
+    import winerror
 except ImportError:
     win32com = None
     winsound = None
+    win32event = None
+    win32api = None
+    winerror = None
+
+_instance_mutex = None
+
+def check_single_instance(mutex_name="Global\\SmartTypingAgent_SingleInstance_Mutex"):
+    """
+    Guarantees that only ONE instance of SmartTyping_Agent runs on this computer at any time.
+    If another instance is already running, prevents duplicate background processes.
+    """
+    global _instance_mutex
+    if win32event and win32api and winerror:
+        try:
+            _instance_mutex = win32event.CreateMutex(None, False, mutex_name)
+            last_err = win32api.GetLastError()
+            if last_err == winerror.ERROR_ALREADY_EXISTS:
+                print("[INFO] Smart Typing Agent पहले से बैकग्राउंड में चल रहा है (Already running).")
+                return False
+            return True
+        except Exception as e:
+            print(f"[WARN] Mutex check skipped: {e}")
+            return True
+    return True
 
 try:
     import winreg
@@ -248,15 +275,18 @@ def prompt_user_credentials():
 def open_docx_in_word(file_path):
     """
     Opens the downloaded DOCX in MS Word as a new separate window.
-    Guarantees existing open documents are untouched.
+    Guarantees exactly ONE instance of the document is opened.
     """
     abs_path = os.path.abspath(file_path)
     if not os.path.exists(abs_path):
         print(f"[ERROR] फ़ाइल नहीं मिली: {abs_path}")
         return False
 
-    try:
-        if win32com:
+    opened = False
+
+    # Attempt 1: Open via MS Word COM Object
+    if win32com:
+        try:
             try:
                 word = win32com.client.GetObject(Class="Word.Application")
             except Exception:
@@ -264,29 +294,37 @@ def open_docx_in_word(file_path):
             
             word.Visible = True
             doc = word.Documents.Open(abs_path)
-            word.Activate()
-            doc.Activate()
+            opened = True
             print(f"[SUCCESS] MS Word में नया दस्तावेज़ सफलतापूर्वक खुला: {abs_path}")
+
+            # Non-critical activation in isolated try block (never triggers os.startfile fallback)
+            try:
+                word.Activate()
+                doc.Activate()
+            except Exception:
+                pass
+
             if winsound:
                 try:
                     winsound.MessageBeep(winsound.MB_ICONASTERISK)
                 except Exception:
                     pass
+
             return True
-        else:
-            # Fallback for systems without win32com
-            os.startfile(abs_path)
-            print(f"[SUCCESS] OS डिफ़ॉल्ट प्रोग्राम में खुला: {abs_path}")
-            return True
-    except Exception as e:
-        print(f"[WARN] COM API विफल ({e}), डिफ़ॉल्ट प्रोग्राम से खोल रहे हैं...")
+        except Exception as com_err:
+            print(f"[WARN] COM API विफल ({com_err}), OS डिफ़ॉल्ट से खोल रहे हैं...")
+
+    # Attempt 2: Fallback to OS default only if COM did NOT open the file
+    if not opened:
         try:
             os.startfile(abs_path)
             print(f"[SUCCESS] OS डिफ़ॉल्ट प्रोग्राम में खुला: {abs_path}")
             return True
-        except Exception as err2:
-            print(f"[ERROR] फ़ाइल खोलने में असमर्थ: {err2}")
+        except Exception as os_err:
+            print(f"[ERROR] फ़ाइल खोलने में असमर्थ: {os_err}")
             return False
+
+    return True
 
 async def agent_main():
     # Set CWD to app directory so relative paths work even when booted from System32
@@ -460,6 +498,21 @@ async def agent_main():
             await asyncio.sleep(5)
 
 if __name__ == "__main__":
+    if not check_single_instance():
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showinfo(
+                "Smart Typing Agent", 
+                "Smart Typing Agent पहले से बैकग्राउंड में सक्रिय है!\n\nआप मोबाइल या वेब से 'MS Word में भेजें' बटन दबाकर सीधे काम कर सकते हैं।"
+            )
+            root.destroy()
+        except Exception:
+            pass
+        sys.exit(0)
+
     try:
         asyncio.run(agent_main())
     except KeyboardInterrupt:

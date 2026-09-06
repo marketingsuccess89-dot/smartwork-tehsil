@@ -172,10 +172,15 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, pin: str = ""):
         "ws": websocket,
         "pin": clean_pin
     }
-    if clean_user_id not in active_connections:
-        active_connections[clean_user_id] = []
-    active_connections[clean_user_id].append(session_info)
-    print(f"Desktop client connected: {clean_user_id} (Active sessions: {len(active_connections[clean_user_id])})")
+    # Close any stale previous connections for this user to guarantee single delivery
+    if clean_user_id in active_connections:
+        for old_s in list(active_connections[clean_user_id]):
+            try:
+                await old_s["ws"].close(code=1000, reason="New session connected")
+            except Exception:
+                pass
+    active_connections[clean_user_id] = [session_info]
+    print(f"Desktop client connected: {clean_user_id} (Active sessions: 1)")
     
     # Send welcome status
     await websocket.send_json({

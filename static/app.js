@@ -1461,7 +1461,14 @@ function unlinkMobileEmail() {
 }
 
 // Explicit On-Demand Send to Desktop MS Word
+let isSendingToWord = false;
+
 async function handleSendToWord() {
+    if (isSendingToWord) {
+        console.warn('Send to Word request already in flight. Ignoring duplicate click.');
+        return;
+    }
+
     const text = documentEditor ? documentEditor.value.trim() : '';
     if (!text) {
         showToast('error', 'भेजने के लिए पहले दस्तावेज़ तैयार करें।');
@@ -1477,6 +1484,7 @@ async function handleSendToWord() {
         return;
     }
 
+    isSendingToWord = true;
     const sendToWordBtn = document.getElementById('send-to-word-btn');
     if (sendToWordBtn) sendToWordBtn.setAttribute('disabled', 'true');
     showToast('info', 'MS Word में भेजा जा रहा है...');
@@ -1512,6 +1520,9 @@ async function handleSendToWord() {
         showToast('error', 'कनेक्शन त्रुटि: कंप्यूटर तक नहीं पहुँच सका।');
     } finally {
         if (sendToWordBtn) sendToWordBtn.removeAttribute('disabled');
+        setTimeout(() => {
+            isSendingToWord = false;
+        }, 1500);
     }
 }
 
