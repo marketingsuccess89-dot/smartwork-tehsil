@@ -260,17 +260,11 @@ async def send_to_word(req: SendToWordRequest):
     }
     save_doc_to_cache(doc_id, doc_info)
 
-    # Broadcast to all active sessions (both Desktop Agent and Word Add-in)
+    # Broadcast single atomic event to all active sessions
     dead_sessions = []
     sent_count = 0
     payload = {
         "event": "open_in_word",
-        "doc_id": doc_id,
-        "stamp_paper": req.stamp_paper,
-        "text": req.text
-    }
-    ready_payload = {
-        "event": "transcription_ready",
         "doc_id": doc_id,
         "stamp_paper": req.stamp_paper,
         "text": req.text
@@ -280,7 +274,6 @@ async def send_to_word(req: SendToWordRequest):
         try:
             ws = s["ws"]
             await ws.send_json(payload)
-            await ws.send_json(ready_payload)
             sent_count += 1
         except Exception:
             dead_sessions.append(s)
@@ -320,56 +313,6 @@ async def download_desktop_agent():
     release_url = "https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe"
     return RedirectResponse(url=release_url, status_code=302)
 
-async def auto_sync_to_word(user_id: str | None, text: str, stamp_paper: bool = False):
-    """
-    Automatically broadcasts freshly generated document to connected MS Word / Desktop Agent sessions.
-    """
-    if not user_id:
-        return
-    clean_user_id = user_id.strip().lower()
-    sessions = active_connections.get(clean_user_id, [])
-    if not sessions:
-        return
-
-    now = time.time()
-    doc_id = str(uuid.uuid4())[:8]
-    doc_info = {
-        "text": text,
-        "stamp_paper": stamp_paper,
-        "created_at": now
-    }
-    save_doc_to_cache(doc_id, doc_info)
-
-    payload_open = {
-        "event": "open_in_word",
-        "doc_id": doc_id,
-        "stamp_paper": stamp_paper,
-        "text": text
-    }
-    payload_ready = {
-        "event": "transcription_ready",
-        "doc_id": doc_id,
-        "stamp_paper": stamp_paper,
-        "text": text
-    }
-
-    dead_sessions = []
-    for s in list(sessions):
-        try:
-            ws = s["ws"]
-            await ws.send_json(payload_open)
-            await ws.send_json(payload_ready)
-            print(f"[AutoSync] Document {doc_id} successfully auto-sent to MS Word for user: {clean_user_id}")
-        except Exception:
-            dead_sessions.append(s)
-
-    if dead_sessions and clean_user_id in active_connections:
-        active_connections[clean_user_id] = [
-            s for s in active_connections[clean_user_id] if s not in dead_sessions
-        ]
-        if not active_connections[clean_user_id]:
-            del active_connections[clean_user_id]
-
 @app.post("/api/process-image")
 async def process_image(
     files: list[UploadFile] = File(None),
@@ -406,8 +349,6 @@ async def process_image(
 
     try:
         result = await run_in_threadpool(extract_text_from_images, bytes_list)
-        # Automatic MS Word sync if station is connected
-        await auto_sync_to_word(user_id, result.transcribed_text, getattr(result, "stamp_paper_detected", False))
         return result
     except ValueError as ve:
         import traceback
@@ -422,7 +363,6 @@ async def process_image(
 async def process_audio(file: UploadFile = File(...), user_id: str = Form(None)):
     """
     Receives dictation audio and transcribes/formats it via Gemini.
-    Auto-syncs to MS Word if user has connected station.
     """
     # Accept standard audio formats, video containers from mobile Chrome, generic octet-stream, or common file extensions
     is_audio = (
@@ -457,8 +397,6 @@ async def process_audio(file: UploadFile = File(...), user_id: str = Form(None))
             mime_type = "audio/wav"
 
         result = await run_in_threadpool(transcribe_audio_dictation, contents, mime_type=mime_type)
-        # Automatic MS Word sync if station is connected
-        await auto_sync_to_word(user_id, result.transcribed_text, getattr(result, "stamp_paper_detected", False))
         return result
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

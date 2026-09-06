@@ -54,7 +54,6 @@ const mobileUserEmailInput = document.getElementById('mobile-user-email');
 const mobileUserPinInput = document.getElementById('mobile-user-pin');
 const mobileLoginBtn = document.getElementById('mobile-login-btn');
 const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
-const mobileAutoSyncToggle = document.getElementById('mobile-auto-sync-toggle');
 
 const documentEditor = document.getElementById('document-editor');
 const documentPreview = document.getElementById('document-preview');
@@ -209,15 +208,6 @@ function setupEventListeners() {
     }
     if (mobileLogoutBtn) {
         mobileLogoutBtn.addEventListener('click', unlinkMobileEmail);
-    }
-    if (mobileAutoSyncToggle) {
-        const savedPref = localStorage.getItem('tehsil_auto_sync');
-        if (savedPref !== null) {
-            mobileAutoSyncToggle.checked = (savedPref === 'true');
-        }
-        mobileAutoSyncToggle.addEventListener('change', () => {
-            localStorage.setItem('tehsil_auto_sync', mobileAutoSyncToggle.checked ? 'true' : 'false');
-        });
     }
 
     // 6. Editor Actions & Live Counters
@@ -759,11 +749,6 @@ async function processWithAI(mode) {
         url = '/api/process-audio';
     }
 
-    const isAutoSyncOn = !mobileAutoSyncToggle || mobileAutoSyncToggle.checked;
-    if (mobileUserEmail && isAutoSyncOn) {
-        formData.append('user_id', mobileUserEmail);
-    }
-
     // Show Loading Overlay and Button State
     if (loadingOverlay) loadingOverlay.classList.remove('hidden');
     if (processBtn && processBtnText) {
@@ -809,12 +794,7 @@ async function processWithAI(mode) {
         
         // Save to History
         saveToHistory(data);
-        const isAutoSyncOn = !mobileAutoSyncToggle || mobileAutoSyncToggle.checked;
-        if (mobileUserEmail && isDesktopConnected && isAutoSyncOn) {
-            showToast('success', 'दस्तावेज़ तैयार हुआ और स्वतः आपके MS Word में भेज दिया गया!');
-        } else {
-            showToast('success', 'Smart Typing द्वारा दस्तावेज़ तैयार कर लिया गया!');
-        }
+        showToast('success', 'Smart Typing द्वारा दस्तावेज़ तैयार कर लिया गया! समीक्षा करें और "MS Word में भेजें" दबाएं।');
 
     } catch (err) {
         console.error(err);

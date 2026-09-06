@@ -98,6 +98,8 @@ function connectSync(email, pin = '') {
             }, 20000);
         };
         
+const processedDocIds = new Set();
+        
         ws.onmessage = (event) => {
             // Check for pong
             if (event.data === 'pong') return;
@@ -107,14 +109,15 @@ function connectSync(email, pin = '') {
                 
                 if (message.event === 'transcription_ready' || message.event === 'open_in_word') {
                     const docId = message.doc_id;
-                    const now = Date.now();
-                    // Prevent duplicate execution if server sends both events for the same document within 2.5s window
-                    if (docId && docId === lastHandledDocId && (now - lastHandledTime < 2500)) {
-                        return;
-                    }
                     if (docId) {
-                        lastHandledDocId = docId;
-                        lastHandledTime = now;
+                        if (processedDocIds.has(docId)) {
+                            return;
+                        }
+                        processedDocIds.add(docId);
+                        if (processedDocIds.size > 500) {
+                            const first = processedDocIds.values().next().value;
+                            processedDocIds.delete(first);
+                        }
                     }
 
                     const text = message.text || '';

@@ -281,8 +281,7 @@ async def agent_main():
     print("=" * 60)
 
     retry_delay = 3
-    last_handled_doc_id = None
-    last_handled_time = 0.0
+    processed_doc_ids = set()
 
     async def heartbeat_sender(ws):
         """Periodically sends application ping to prevent proxy idle dropouts."""
@@ -298,7 +297,7 @@ async def agent_main():
             print(f"[CONNECTING] सर्वर से जुड़ रहा है: {ws_url} ...")
             async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as ws:
                 print(f"[CONNECTED] 🟢 सर्वर से सफलतापूर्वक जुड़ा! (ID: {station_id})")
-                print("  -> मोबाइल पर दस्तावेज़ तैयार होते ही यहाँ Word फ़ाइल स्वतः खुल जाएगी।")
+                print("  -> मोबाइल पर 'MS Word में भेजें' बटन दबाते ही यहाँ Word फ़ाइल खुल जाएगी।")
                 retry_delay = 3
 
                 # Launch concurrent background heartbeat task
@@ -319,13 +318,13 @@ async def agent_main():
 
                             elif event in ("open_in_word", "transcription_ready"):
                                 doc_id = data.get("doc_id")
-                                now_ts = time.time()
-                                # Prevent double-triggering for the same doc within short 2.5s window
-                                if doc_id and doc_id == last_handled_doc_id and (now_ts - last_handled_time < 2.5):
-                                    continue
                                 if doc_id:
-                                    last_handled_doc_id = doc_id
-                                    last_handled_time = now_ts
+                                    if doc_id in processed_doc_ids:
+                                        print(f"[INFO] Doc ID {doc_id} पहले ही प्रोसेस किया जा चुका है (Duplicate skipped).")
+                                        continue
+                                    processed_doc_ids.add(doc_id)
+                                    if len(processed_doc_ids) > 1000:
+                                        processed_doc_ids.pop()
 
                                 print(f"\n[EVENT] 📄 नया दस्तावेज़ प्राप्त हुआ! Doc ID: {doc_id}")
 
