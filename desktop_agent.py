@@ -19,6 +19,14 @@ import urllib.request
 import urllib.parse
 import websockets
 
+# Ensure UTF-8 output in Windows console without crash
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Windows specific imports
 try:
     import win32com.client
@@ -27,9 +35,24 @@ except ImportError:
     win32com = None
     winsound = None
 
+try:
+    import winreg
+except ImportError:
+    winreg = None
+
+REGISTRY_APP_NAME = "SmartTypingAgent"
+REGISTRY_RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+
+def get_app_dir():
+    """Returns the persistent folder where this executable or script resides."""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
 def get_config_file():
-    """Returns a writable config path, falling back to user home directory if needed."""
-    local_cfg = os.path.abspath("station_config.json")
+    """Returns a writable config path in the app directory, with home fallback."""
+    app_dir = get_app_dir()
+    local_cfg = os.path.join(app_dir, "station_config.json")
     try:
         if os.path.exists(local_cfg):
             if os.access(local_cfg, os.W_OK):
@@ -41,6 +64,44 @@ def get_config_file():
     except Exception:
         pass
     return os.path.join(os.path.expanduser("~"), ".smart_typing_station_config.json")
+
+def ensure_autostart_registry():
+    """
+    Permanently registers SmartTyping_Agent.exe in Windows Startup (HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run)
+    so that it automatically starts on computer boot / login 24/7 without requiring manual clicks.
+    """
+    if not winreg:
+        return False
+    try:
+        if getattr(sys, "frozen", False):
+            current_exe = os.path.abspath(sys.executable)
+            cmd_value = f'"{current_exe}"'
+        else:
+            current_script = os.path.abspath(__file__)
+            python_exe = os.path.abspath(sys.executable)
+            cmd_value = f'"{python_exe}" "{current_script}"'
+
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER, 
+            REGISTRY_RUN_KEY, 
+            0, 
+            winreg.KEY_SET_VALUE | winreg.KEY_READ
+        )
+        try:
+            existing_val, _ = winreg.QueryValueEx(key, REGISTRY_APP_NAME)
+            if existing_val == cmd_value:
+                winreg.CloseKey(key)
+                return True
+        except FileNotFoundError:
+            pass
+
+        winreg.SetValueEx(key, REGISTRY_APP_NAME, 0, winreg.REG_SZ, cmd_value)
+        winreg.CloseKey(key)
+        print(f"[AUTOSTART] Registered for 24/7 Windows Startup on Boot: {cmd_value}")
+        return True
+    except Exception as e:
+        print(f"[AUTOSTART ERROR] Registry registration failed: {e}")
+        return False
 
 DEFAULT_SERVER = "thesmartwork.onrender.com"
 DEFAULT_WS_SCHEME = "wss"
@@ -138,12 +199,13 @@ def prompt_user_credentials():
             cfg["pin"] = s_pin
             cfg["server_host"] = existing_host
             save_config(cfg)
+            ensure_autostart_registry()
             res_data["submitted"] = True
             root.destroy()
 
         btn_save = tk.Button(
             frame, 
-            text="✅ कनेक्ट करें और चालू रखें", 
+            text="✅ कनेक्ट करें और 24/7 चालू रखें", 
             font=("Segoe UI", 10, "bold"), 
             bg="#059669", 
             fg="white", 
@@ -175,6 +237,7 @@ def prompt_user_credentials():
             cfg["pin"] = s_pin
             cfg["server_host"] = existing_host
             save_config(cfg)
+            ensure_autostart_registry()
             return cfg
         except Exception:
             pass
@@ -226,6 +289,15 @@ def open_docx_in_word(file_path):
             return False
 
 async def agent_main():
+    # Set CWD to app directory so relative paths work even when booted from System32
+    try:
+        os.chdir(get_app_dir())
+    except Exception:
+        pass
+
+    # Ensure 24/7 Windows Startup Auto-Start
+    ensure_autostart_registry()
+
     cfg = load_config()
     if not cfg.get("station_id") or not cfg.get("pin"):
         cfg = prompt_user_credentials()
