@@ -134,14 +134,14 @@ function setupEventListeners() {
         });
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            dropZone.classList.add('border-emerald-500', 'bg-emerald-50/40', 'scale-[1.01]');
+            dropZone.classList.add('border-indigo-500', 'bg-indigo-50/40', 'scale-[1.01]');
         });
         dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/40', 'scale-[1.01]');
+            dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/40', 'scale-[1.01]');
         });
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/40', 'scale-[1.01]');
+            dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/40', 'scale-[1.01]');
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 handleImageSelection(Array.from(e.dataTransfer.files));
             }
@@ -472,17 +472,17 @@ async function compressImageClientSide(file, maxDimension = 1280, quality = 0.75
     });
 }
 
-// Switch Tabs (Image / Voice) - Selected tab turns Rich Green
+// Switch Tabs (Image / Voice) - Selected tab turns Royal Indigo
 function switchTab(tab) {
     activeTab = tab;
     if (tab === 'image') {
-        tabImageBtn.className = "w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 bg-emerald-700 text-white shadow-md shadow-emerald-700/20";
-        tabAudioBtn.className = "w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/50";
+        tabImageBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/20";
+        tabAudioBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-indigo-900 hover:bg-indigo-50/50";
         panelImage.classList.remove('hidden');
         panelAudio.classList.add('hidden');
     } else {
-        tabAudioBtn.className = "w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 bg-emerald-700 text-white shadow-md shadow-emerald-700/20";
-        tabImageBtn.className = "w-full flex justify-center items-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/50";
+        tabAudioBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/20";
+        tabImageBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-indigo-900 hover:bg-indigo-50/50";
         panelAudio.classList.remove('hidden');
         panelImage.classList.add('hidden');
     }
@@ -502,7 +502,7 @@ function renderImageThumbnails() {
     
     selectedImageFiles.forEach((file, index) => {
         const thumbCard = document.createElement('div');
-        thumbCard.className = 'relative group rounded-xl overflow-hidden border border-emerald-200 bg-white shadow-xs';
+        thumbCard.className = 'relative group rounded-xl overflow-hidden border border-indigo-200 bg-white shadow-xs';
         
         const previewUrl = URL.createObjectURL(file);
         activeThumbnailUrls.push(previewUrl);
@@ -510,14 +510,14 @@ function renderImageThumbnails() {
         thumbCard.innerHTML = `
             <div class="relative h-28 bg-slate-100 flex items-center justify-center overflow-hidden">
                 <img src="${previewUrl}" alt="पेज ${index + 1}" class="w-full h-full object-cover">
-                <div class="absolute top-1.5 left-1.5 bg-emerald-900/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 shadow-xs">
+                <div class="absolute top-1.5 left-1.5 bg-indigo-950/85 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20 shadow-xs">
                     पेज ${index + 1}
                 </div>
                 <button type="button" class="remove-page-btn absolute top-1.5 right-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full h-6 w-6 flex items-center justify-center transition shadow-sm cursor-pointer" title="इस पेज को हटाएं" data-index="${index}">
                     <i class="fa-solid fa-xmark text-xs pointer-events-none"></i>
                 </button>
             </div>
-            <div class="p-1.5 bg-emerald-50/50 flex justify-between items-center text-[10px] text-emerald-900 truncate">
+            <div class="p-1.5 bg-indigo-50/50 flex justify-between items-center text-[10px] text-indigo-950 truncate">
                 <span class="font-medium truncate max-w-[120px]">${file.name || `Page_${index + 1}.jpg`}</span>
                 <span class="text-slate-400 text-[9px] font-mono">${(file.size / 1024).toFixed(0)} KB</span>
             </div>
@@ -678,19 +678,19 @@ function renderAudioList() {
 
     selectedAudioFiles.forEach((item, index) => {
         const card = document.createElement('div');
-        card.className = 'bg-white border border-emerald-100 rounded-xl p-2.5 shadow-2xs flex flex-col space-y-2 transition hover:border-emerald-300 animate-pop-in';
+        card.className = 'bg-white border border-indigo-100 rounded-xl p-2.5 shadow-2xs flex flex-col space-y-2 transition hover:border-indigo-300 animate-pop-in';
 
         card.innerHTML = `
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <span class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
+                    <span class="bg-gradient-to-r from-indigo-600 to-blue-700 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
                         <i class="fa-solid fa-microphone text-[9px]"></i>
                         <span>भाग ${index + 1}</span>
                     </span>
                     <span class="text-xs font-semibold text-slate-800 truncate max-w-[150px] sm:max-w-[200px]" title="${item.name}">${item.name}</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <span class="text-[10px] font-mono font-bold text-emerald-900 bg-emerald-100/70 px-2 py-0.5 rounded-md border border-emerald-200/70">
+                    <span class="text-[10px] font-mono font-bold text-indigo-950 bg-indigo-100/70 px-2 py-0.5 rounded-md border border-indigo-200/70">
                         ⏱️ ${item.durationStr}
                     </span>
                     <button type="button" class="remove-audio-node-btn text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition cursor-pointer" data-index="${index}" title="इस भाग को हटाएं">
@@ -698,7 +698,7 @@ function renderAudioList() {
                     </button>
                 </div>
             </div>
-            <audio controls src="${item.url}" class="h-8 w-full rounded-lg bg-emerald-50/50"></audio>
+            <audio controls src="${item.url}" class="h-8 w-full rounded-lg bg-indigo-50/50"></audio>
         `;
 
         const delBtn = card.querySelector('.remove-audio-node-btn');

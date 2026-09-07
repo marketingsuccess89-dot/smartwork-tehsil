@@ -15,7 +15,7 @@
     <style>
         body {
             font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f7faf8;
+            background-color: #f4f6fb;
         }
         /* Custom Keyframe Animations */
         @keyframes popIn {
@@ -32,22 +32,22 @@
         @keyframes cameraZoomInOut {
             0%, 100% {
                 transform: scale(1);
-                box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.25);
+                box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.25);
             }
             50% {
                 transform: scale(1.028);
-                box-shadow: 0 16px 32px -5px rgba(5, 150, 105, 0.45);
+                box-shadow: 0 16px 32px -5px rgba(79, 70, 229, 0.45);
             }
         }
         /* Mic Button Zoom In-Out Animation */
         @keyframes micZoomInOut {
             0%, 100% {
                 transform: scale(1);
-                box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+                box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
             }
             50% {
                 transform: scale(1.1);
-                box-shadow: 0 0 30px rgba(5, 150, 105, 0.6);
+                box-shadow: 0 0 30px rgba(79, 70, 229, 0.6);
             }
         }
         @keyframes pulseRing {
@@ -75,7 +75,7 @@
         }
         .pop-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.08), 0 8px 10px -6px rgba(6, 78, 59, 0.04);
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
         }
         .pop-btn {
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -88,18 +88,17 @@
         }
         /* Paper Document Aesthetics */
         .paper-canvas {
-            box-shadow: 0 12px 30px -5px rgba(6, 78, 59, 0.07), 0 4px 10px -3px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.07), 0 4px 10px -3px rgba(0, 0, 0, 0.03);
             background: #ffffff;
             border: 1px solid #e2e8f0;
         }
-        /* Authentic A4 Single-Page Sheet (Strictly Non-Expanding, Zero Scrolling) */
         /* Authentic A4 Print Paper Preview Sheet */
         .a4-print-sheet {
             width: 100%;
             max-width: 530px;
             min-height: 720px;
             background: #ffffff;
-            box-shadow: 0 8px 25px -5px rgba(6, 78, 59, 0.10), 0 3px 8px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 25px -5px rgba(15, 23, 42, 0.10), 0 3px 8px -2px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
             border-radius: 6px;
             padding: 32px 36px;
@@ -117,9 +116,9 @@
         }
         @media (max-width: 640px) {
             .a4-print-sheet {
-                padding: 20px 16px;
+                padding: 18px 14px;
                 font-size: 11.5px;
-                min-height: 520px;
+                min-height: 320px;
                 line-height: 1.45;
             }
         }
@@ -132,11 +131,11 @@
             background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: #a7f3d0;
+            background: #c7d2fe;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #059669;
+            background: #6366f1;
         }
 
         /* High-Fidelity A4 Native Print & Save as PDF Styles */
@@ -187,7 +186,7 @@
                 text-align: center !important;
                 font-size: 18pt !important;
                 font-weight: bold !important;
-                color: #06281e !important;
+                color: #0a1128 !important;
                 margin-top: 0 !important;
                 margin-bottom: 14pt !important;
                 page-break-after: avoid !important;
@@ -196,7 +195,7 @@
             h2.print-heading {
                 font-size: 13pt !important;
                 font-weight: bold !important;
-                color: #0a1914 !important;
+                color: #1e293b !important;
                 margin-top: 10pt !important;
                 margin-bottom: 4pt !important;
                 page-break-after: avoid !important;
@@ -232,30 +231,30 @@
         }
     </style>
 </head>
-<body class="bg-[#f7faf8] text-slate-800 min-h-screen flex flex-col antialiased overflow-x-hidden w-full max-w-full">
+<body class="bg-[#f4f6fb] text-slate-800 min-h-screen flex flex-col antialiased overflow-x-hidden w-full max-w-full">
 
-    <!-- Rich Emerald Luxury Header -->
-    <header class="bg-gradient-to-r from-[#06281e] via-[#0b3d2e] to-[#06281e] border-b border-emerald-900/60 text-white sticky top-0 z-30 shadow-md w-full">
+    <!-- Royal Midnight Luxury Header -->
+    <header class="bg-gradient-to-r from-[#0a1128] via-[#101f42] to-[#0a1128] border-b border-indigo-900/60 text-white sticky top-0 z-30 shadow-md w-full">
         <div class="container mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
-            <!-- Left: Brand with Rich Gold/Emerald Accent -->
+            <!-- Left: Brand with Gold & Indigo Accents -->
             <div class="flex items-center space-x-2">
-                <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-1.5 rounded-lg text-white shadow-lg shadow-emerald-500/30 flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-bolt-lightning text-sm text-emerald-950"></i>
+                <div class="bg-gradient-to-tr from-amber-400 via-amber-500 to-indigo-600 p-1.5 rounded-lg text-slate-950 shadow-lg shadow-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-crown text-sm text-slate-950"></i>
                 </div>
                 <div class="flex items-baseline space-x-2">
-                    <span class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-emerald-100 to-teal-200 bg-clip-text text-transparent">Smart Typing</span>
-                    <span class="text-[10px] text-emerald-300/80 hidden sm:inline font-medium">Fast &amp; Accurate Document Intelligence</span>
+                    <span class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-amber-100 to-indigo-200 bg-clip-text text-transparent">Smart Typing</span>
+                    <span class="text-[10px] text-indigo-300/80 hidden sm:inline font-medium">Fast &amp; Accurate Document Intelligence</span>
                 </div>
             </div>
             
             <!-- Right: Download PC Agent & History Buttons -->
             <div class="flex items-center space-x-2 flex-shrink-0">
-                <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden md:inline-flex pop-btn bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-emerald-600/50 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
-                    <i class="fa-solid fa-download text-emerald-300 text-xs"></i>
+                <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden md:inline-flex pop-btn bg-indigo-900/80 hover:bg-indigo-800 text-indigo-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-indigo-700/60 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
+                    <i class="fa-solid fa-download text-amber-300 text-xs"></i>
                     <span>डाउनलोड PC एजेंट (.exe)</span>
                 </a>
-                <button id="toggle-history" class="pop-btn bg-emerald-900/70 hover:bg-emerald-800 text-emerald-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-emerald-700/60 transition flex items-center space-x-1.5 shadow-sm">
-                    <i class="fa-solid fa-clock-rotate-left text-emerald-400 text-xs"></i>
+                <button id="toggle-history" class="pop-btn bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-700/60 transition flex items-center space-x-1.5 shadow-sm">
+                    <i class="fa-solid fa-clock-rotate-left text-indigo-400 text-xs"></i>
                     <span>इतिहास</span>
                 </button>
             </div>
@@ -266,35 +265,36 @@
     <main class="flex-grow container mx-auto px-3 sm:px-4 py-4 sm:py-5 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 w-full max-w-full overflow-x-hidden">
         
         <!-- Left Column: Input Controls (5 cols) -->
-        <section class="lg:col-span-5 flex flex-col space-y-4">
+        <section class="lg:col-span-5 flex flex-col space-y-3 sm:space-y-4">
             
             <!-- Desktop Sync Card (VIP / Premium Feature) -->
-            <div class="pop-card bg-gradient-to-b from-amber-50/40 via-white to-white rounded-2xl shadow-sm border-2 border-amber-300/80 p-4 relative overflow-hidden">
+            <div class="pop-card bg-gradient-to-b from-amber-50/60 via-white to-white rounded-2xl shadow-sm border-2 border-amber-300/90 p-3 sm:p-4 relative overflow-hidden">
                 <!-- Top Right Subtle Glow / Tag -->
-                <div class="flex items-center justify-between border-b border-amber-100/80 pb-2.5 mb-2.5">
-                    <div class="flex items-center space-x-2">
-                        <span class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-xs flex items-center space-x-1 border border-amber-300">
-                            <i class="fa-solid fa-crown text-amber-950 text-[10px]"></i>
+                <div class="flex items-center justify-between border-b border-amber-100/80 pb-2 mb-2 sm:pb-2.5 sm:mb-2.5 gap-1.5">
+                    <div class="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
+                        <span class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-black text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 rounded-full shadow-xs flex items-center space-x-1 border border-amber-300 flex-shrink-0">
+                            <i class="fa-solid fa-crown text-amber-950 text-[9px]"></i>
                             <span>PREMIUM</span>
                         </span>
-                        <h3 class="text-xs font-bold text-amber-950 uppercase tracking-wide flex items-center">
-                            <i class="fa-solid fa-desktop text-emerald-700 mr-1 text-xs"></i>
-                            <span>कंप्यूटर वर्ड सिंक (PC Sync)</span>
+                        <h3 class="text-[11px] sm:text-xs font-bold text-amber-950 uppercase tracking-wide flex items-center truncate">
+                            <i class="fa-solid fa-desktop text-indigo-700 mr-1 text-xs flex-shrink-0"></i>
+                            <span class="truncate">कंप्यूटर वर्ड सिंक (PC Sync)</span>
                         </h3>
                     </div>
-                    <span id="mobile-sync-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                    <span id="mobile-sync-badge" class="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 flex-shrink-0">
                         🔴 Offline
                     </span>
                 </div>
 
-                <!-- Premium Membership Feature Highlight Notice -->
-                <div class="bg-gradient-to-r from-amber-100/80 via-yellow-50 to-amber-100/80 border border-amber-200/90 rounded-xl px-2.5 py-1.5 mb-2.5 flex items-center justify-between text-[11px] text-amber-950 shadow-2xs">
+                <!-- Premium Membership Feature Highlight Notice with King Crown PRO Badge -->
+                <div class="bg-gradient-to-r from-amber-100/90 via-yellow-50 to-amber-100/90 border border-amber-200/90 rounded-xl px-2.5 py-1.5 mb-2.5 flex items-center justify-between text-[11px] text-amber-950 shadow-2xs gap-1.5">
                     <div class="flex items-center space-x-1.5 truncate">
-                        <i class="fa-solid fa-gem text-amber-600 text-xs flex-shrink-0"></i>
-                        <span class="font-bold truncate">VIP मेम्बरशिप सुविधा (Auto MS Word Transfer)</span>
+                        <i class="fa-solid fa-crown text-amber-600 text-xs flex-shrink-0"></i>
+                        <span class="font-bold truncate text-[10.5px] sm:text-[11px]">VIP मेम्बरशिप सुविधा (Auto MS Word Transfer)</span>
                     </div>
-                    <span class="text-[9px] bg-amber-500 text-white font-extrabold px-1.5 py-0.5 rounded flex-shrink-0 shadow-2xs">
-                        ⭐ PRO
+                    <span class="text-[9px] bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0 shadow-2xs border border-amber-400/60">
+                        <i class="fa-solid fa-crown text-[8px] text-yellow-200"></i>
+                        <span>PRO</span>
                     </span>
                 </div>
                 
@@ -307,19 +307,19 @@
                             <input type="password" id="mobile-user-pin" class="w-full text-xs px-3 py-2 border border-amber-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition bg-white" placeholder="सुरक्षा पिन (PIN)">
                         </div>
                     </div>
-                    <div class="flex justify-between items-center pt-1">
-                        <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-[11px] text-emerald-800 hover:text-emerald-950 font-bold flex items-center space-x-1" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
-                            <i class="fa-solid fa-laptop text-xs text-emerald-700"></i>
+                    <div class="flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 pt-0.5">
+                        <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-[11px] text-indigo-700 hover:text-indigo-900 font-bold flex items-center space-x-1" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
+                            <i class="fa-solid fa-laptop text-xs text-indigo-600"></i>
                             <span>PC एजेंट (.exe) <span class="text-[10px] text-slate-400 font-normal hidden sm:inline">(Windows के लिए)</span></span>
                         </a>
-                        <button id="mobile-login-btn" class="pop-btn bg-gradient-to-r from-amber-600 to-emerald-800 hover:from-amber-700 hover:to-emerald-900 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition shadow-sm shadow-amber-700/20 flex items-center space-x-1">
+                        <button id="mobile-login-btn" class="pop-btn bg-gradient-to-r from-amber-600 to-indigo-700 hover:from-amber-700 hover:to-indigo-800 text-white font-bold py-1.5 px-4 rounded-xl text-xs transition shadow-sm shadow-amber-700/20 flex items-center space-x-1.5 flex-shrink-0">
                             <i class="fa-solid fa-crown text-[10px] text-yellow-300"></i>
                             <span>लिंक करें</span>
                         </button>
                     </div>
                 </div>
                 
-                <div id="mobile-active-section" class="hidden flex flex-col space-y-2 bg-gradient-to-r from-amber-50/70 to-emerald-50/70 p-2.5 rounded-xl border border-amber-200 text-xs">
+                <div id="mobile-active-section" class="hidden flex flex-col space-y-2 bg-gradient-to-r from-amber-50/70 to-indigo-50/70 p-2.5 rounded-xl border border-amber-200 text-xs">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2 truncate">
                             <i class="fa-solid fa-crown text-amber-600 text-xs"></i>
@@ -330,29 +330,29 @@
                             Unlink
                         </button>
                     </div>
-                    <div class="text-[11px] text-emerald-900 pt-1.5 border-t border-amber-200/60 flex items-center gap-1.5 font-medium">
-                        <i class="fa-solid fa-circle-check text-emerald-600 text-xs"></i>
+                    <div class="text-[11px] text-indigo-950 pt-1.5 border-t border-amber-200/60 flex items-center gap-1.5 font-medium">
+                        <i class="fa-solid fa-circle-check text-indigo-600 text-xs"></i>
                         <span>दस्तावेज़ तैयार होने पर नीचे "MS Word में भेजें" बटन दबाएं</span>
                     </div>
                 </div>
             </div>
             
-            <!-- Mode Selector Tabs (Image / Voice) - Turns Rich Green on Click -->
-            <div class="bg-emerald-950/5 p-1 rounded-2xl flex space-x-1 border border-emerald-100">
-                <button id="tab-image" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-emerald-700 text-white shadow-md shadow-emerald-700/20">
+            <!-- Mode Selector Tabs (Image / Voice) - Turns Royal Indigo on Click -->
+            <div class="bg-slate-200/70 p-1 rounded-2xl flex space-x-1 border border-slate-200">
+                <button id="tab-image" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
                     <i class="fa-solid fa-camera mr-1.5 text-xs"></i> <span>फ़ोटो (Image)</span>
                 </button>
-                <button id="tab-audio" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/50">
+                <button id="tab-audio" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-indigo-900 hover:bg-indigo-50/50">
                     <i class="fa-solid fa-microphone mr-1.5 text-xs"></i> <span>बोलकर (Voice)</span>
                 </button>
             </div>
 
             <!-- Image Upload Panel -->
-            <div id="panel-image" class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-3.5 sm:p-5 flex-grow flex flex-col">
+            <div id="panel-image" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-4 flex flex-col">
                 
                 <!-- Popup Animated Mobile Camera Action Button with Smooth Zoom In-Out (Native Direct Camera Launch) -->
-                <div class="mb-3">
-                    <label for="camera-input" id="mobile-cam-label" class="animate-zoom-camera w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 text-white text-xs sm:text-sm font-bold py-3 px-3 sm:px-5 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer select-none text-center">
+                <div class="mb-2.5">
+                    <label for="camera-input" id="mobile-cam-label" class="animate-zoom-camera w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white text-xs sm:text-sm font-bold py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer select-none text-center">
                         <div class="bg-white/20 p-1.5 rounded-lg flex items-center justify-center flex-shrink-0">
                             <i class="fa-solid fa-camera text-xs sm:text-sm"></i>
                         </div>
@@ -361,22 +361,22 @@
                     <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
                 </div>
 
-                <!-- Drag & Drop Zone with Multi-file support (Gallery & Files) -->
-                <div id="drop-zone" class="border-2 border-dashed border-emerald-200 rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/20 transition-all duration-200 bg-[#f9fbf9] flex-grow min-h-[160px] group">
-                    <div class="bg-emerald-50 text-emerald-600 h-11 w-11 rounded-2xl flex items-center justify-center mb-2.5 shadow-inner group-hover:scale-110 transition-transform duration-200">
-                        <i class="fa-solid fa-cloud-arrow-up text-lg animate-float-fast text-emerald-600"></i>
+                <!-- Drag & Drop Zone with Multi-file support (Gallery & Files) - Ultra Compact on Desktop -->
+                <div id="drop-zone" class="border-2 border-dashed border-indigo-200/80 rounded-2xl p-3 sm:p-3.5 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/25 transition-all duration-200 bg-[#fbfcfe] min-h-[90px] sm:min-h-[105px] max-h-[125px] group">
+                    <div class="bg-indigo-50 text-indigo-600 h-8 w-8 sm:h-9 sm:w-9 rounded-xl flex items-center justify-center mb-1.5 shadow-inner group-hover:scale-110 transition-transform duration-200">
+                        <i class="fa-solid fa-cloud-arrow-up text-sm sm:text-base animate-float-fast text-indigo-600"></i>
                     </div>
-                    <p class="text-xs font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">फ़ोटो यहाँ ड्रैग करें या गैलरी से 1 या अधिक पेज चुनें</p>
-                    <p class="text-[11px] text-slate-400 mt-1">1, 2 या 3 पेज एक साथ जोड़ सकते हैं</p>
+                    <p class="text-[11px] sm:text-xs font-bold text-slate-700 group-hover:text-indigo-700 transition-colors">फ़ोटो यहाँ ड्रैग करें या गैलरी से 1 या अधिक पेज चुनें</p>
+                    <p class="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">1, 2 या 3 पेज एक साथ जोड़ सकते हैं</p>
                     <input type="file" id="file-input" accept="image/*" multiple class="hidden">
                 </div>
 
                 <!-- Multi-Page Image Preview Area -->
-                <div id="image-preview-container" class="mt-3 hidden border border-emerald-100 rounded-2xl p-3 bg-emerald-50/30 relative animate-pop-in">
-                    <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-emerald-100">
+                <div id="image-preview-container" class="mt-2.5 hidden border border-indigo-100 rounded-2xl p-2.5 sm:p-3 bg-indigo-50/30 relative animate-pop-in">
+                    <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-indigo-100">
                         <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-copy text-emerald-700 text-xs"></i>
-                            <span id="page-count-badge" class="font-bold text-xs text-emerald-950 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">0 पेज चुने गए</span>
+                            <i class="fa-solid fa-copy text-indigo-700 text-xs"></i>
+                            <span id="page-count-badge" class="font-bold text-xs text-indigo-950 bg-indigo-100 px-2.5 py-0.5 rounded-full border border-indigo-200">0 पेज चुने गए</span>
                         </div>
                         <button id="clear-all-images" type="button" class="text-rose-600 hover:text-rose-800 text-[11px] font-semibold transition flex items-center space-x-1 cursor-pointer">
                             <i class="fa-solid fa-trash-can text-xs"></i>
@@ -385,17 +385,17 @@
                     </div>
 
                     <!-- Thumbnails Grid -->
-                    <div id="images-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto p-1"></div>
+                    <div id="images-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1"></div>
 
                     <!-- Add More Pages Action Buttons -->
-                    <div class="mt-3 pt-2.5 border-t border-emerald-100/80 flex space-x-2">
-                        <label for="camera-input-add" class="flex-1 pop-btn bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-2 px-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm">
+                    <div class="mt-2.5 pt-2 border-t border-indigo-100/80 flex space-x-2">
+                        <label for="camera-input-add" class="flex-1 pop-btn bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 sm:py-2 px-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm">
                             <i class="fa-solid fa-camera text-xs"></i>
-                            <span>+ अगला पेज फोटो लें</span>
+                            <span>+ अगला पेज फोटो</span>
                         </label>
                         <input type="file" id="camera-input-add" accept="image/*" capture="environment" class="hidden">
 
-                        <label for="file-input-add" class="flex-1 pop-btn bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold py-2 px-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs">
+                        <label for="file-input-add" class="flex-1 pop-btn bg-white hover:bg-indigo-50 text-indigo-800 border border-indigo-300 font-semibold py-1.5 sm:py-2 px-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs">
                             <i class="fa-regular fa-images text-xs"></i>
                             <span>+ गैलरी से जोड़ें</span>
                         </label>
@@ -405,42 +405,42 @@
             </div>
 
             <!-- Voice Recording Panel with Zoom In-Out Mic Animation & Multi-Note Support -->
-            <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-5 flex-grow flex flex-col hidden">
+            <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5 flex-grow flex flex-col hidden">
                 <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wide flex items-center">
-                        <i class="fa-solid fa-microphone-lines text-emerald-600 mr-1.5 text-sm"></i>
+                    <h3 class="text-xs font-bold text-indigo-950 uppercase tracking-wide flex items-center">
+                        <i class="fa-solid fa-microphone-lines text-indigo-600 mr-1.5 text-sm"></i>
                         बोलकर जानकारी लिखवाएं
                     </h3>
-                    <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
-                        <i class="fa-solid fa-infinity text-emerald-700 text-[10px]"></i>
-                        <span>असीमित (Unlimited) वॉइस नोट्स</span>
+                    <span class="text-[10px] font-bold text-indigo-800 bg-indigo-100/80 border border-indigo-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                        <i class="fa-solid fa-infinity text-indigo-700 text-[10px]"></i>
+                        <span>असीमित (Unlimited) नोट्स</span>
                     </span>
                 </div>
 
                 <!-- Mic Container with Pulsing Waves & Zoom In-Out Button -->
-                <div class="border border-emerald-100/60 rounded-2xl p-6 flex flex-col items-center justify-center text-center bg-[#f9fbf9] flex-grow relative overflow-hidden">
-                    <div id="record-timer" class="text-3xl font-mono text-emerald-950 font-extrabold mb-4 tracking-tight">00:00</div>
+                <div class="border border-indigo-100/70 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center bg-[#fbfcfe] flex-grow relative overflow-hidden">
+                    <div id="record-timer" class="text-3xl font-mono text-indigo-950 font-extrabold mb-3 tracking-tight">00:00</div>
                     
                     <!-- Pulsing Record Rings Animation -->
-                    <div class="relative flex items-center justify-center h-28 w-28">
-                        <div id="record-ring" class="absolute h-28 w-28 rounded-full bg-emerald-500 opacity-30 pulse-wave hidden"></div>
-                        <div id="record-ring-2" class="absolute h-24 w-24 rounded-full bg-teal-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
+                    <div class="relative flex items-center justify-center h-24 w-24 sm:h-28 sm:w-28">
+                        <div id="record-ring" class="absolute h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-indigo-500 opacity-30 pulse-wave hidden"></div>
+                        <div id="record-ring-2" class="absolute h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-blue-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
                         <!-- Mic Button with Zoom In-Out Animation -->
-                        <button id="record-btn" class="animate-zoom-mic h-20 w-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xl shadow-emerald-700/30 flex items-center justify-center transition focus:outline-none relative z-10 active:scale-95">
+                        <button id="record-btn" class="animate-zoom-mic h-18 w-18 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white shadow-xl shadow-indigo-700/30 flex items-center justify-center transition focus:outline-none relative z-10 active:scale-95">
                             <i id="record-icon" class="fa-solid fa-microphone text-2xl"></i>
                         </button>
                     </div>
 
-                    <p id="record-status" class="text-xs font-bold text-slate-700 mt-5">माइक चालू करने के लिए बटन दबाएं</p>
+                    <p id="record-status" class="text-xs font-bold text-slate-700 mt-4">माइक चालू करने के लिए बटन दबाएं</p>
                     <p class="text-[11px] text-slate-400 mt-0.5">अलग-अलग भाग (Part 1, 2, 3...) में जितने चाहें उतने वॉइस नोट्स जोड़ें</p>
                 </div>
 
                 <!-- Multi-Audio Voice Notes List Container -->
-                <div id="audio-preview-container" class="mt-3 hidden border border-emerald-100 rounded-2xl p-3 bg-emerald-50/40 relative animate-pop-in">
-                    <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-emerald-100">
+                <div id="audio-preview-container" class="mt-3 hidden border border-indigo-100 rounded-2xl p-3 bg-indigo-50/40 relative animate-pop-in">
+                    <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-indigo-100">
                         <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-microphone text-emerald-700 text-xs"></i>
-                            <span id="audio-count-badge" class="font-bold text-xs text-emerald-950 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">0 वॉइस नोट जुड़े</span>
+                            <i class="fa-solid fa-microphone text-indigo-700 text-xs"></i>
+                            <span id="audio-count-badge" class="font-bold text-xs text-indigo-950 bg-indigo-100 px-2.5 py-0.5 rounded-full border border-indigo-200">0 वॉइस नोट जुड़े</span>
                         </div>
                         <button id="remove-audio" type="button" class="text-rose-600 hover:text-rose-800 text-[11px] font-semibold transition flex items-center space-x-1 cursor-pointer">
                             <i class="fa-solid fa-trash-can text-xs"></i>
@@ -449,25 +449,25 @@
                     </div>
 
                     <!-- Voice Notes Scrollable List -->
-                    <div id="audio-list-grid" class="space-y-2 max-h-56 overflow-y-auto p-1 pr-1.5">
+                    <div id="audio-list-grid" class="space-y-2 max-h-48 overflow-y-auto p-1 pr-1.5">
                         <!-- Dynamic audio cards -->
                     </div>
                 </div>
 
                 <!-- Audio File Upload (Alternative) -->
-                <div class="mt-4 border-t border-slate-100 pt-3">
-                    <div class="flex justify-between items-center mb-1.5">
+                <div class="mt-3 border-t border-slate-100 pt-2.5">
+                    <div class="flex justify-between items-center mb-1">
                         <label for="audio-input" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">या पहले से रिकॉर्ड ऑडियो फ़ाइल जोड़ें:</label>
-                        <span class="text-[10px] text-slate-400 font-medium">मल्टीपल फाइल्स समर्थित</span>
+                        <span class="text-[10px] text-slate-400 font-medium">मल्टीपल समर्थित</span>
                     </div>
-                    <input type="file" id="audio-input" accept="audio/*" multiple class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                    <input type="file" id="audio-input" accept="audio/*" multiple class="block w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                 </div>
             </div>
 
             <!-- Action Trigger Button (Name: Not 'Generate', but 'दस्तावेज़ तैयार करें (Start Smart Typing)') -->
-            <div class="pt-1">
-                <button id="process-btn" class="pop-btn w-full bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3 sm:py-3.5 px-3 sm:px-5 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 text-center">
-                    <i class="fa-solid fa-wand-magic-sparkles text-xs sm:text-sm text-emerald-200 flex-shrink-0"></i>
+            <div class="pt-0.5">
+                <button id="process-btn" class="pop-btn w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white font-bold py-3 sm:py-3.5 px-3 sm:px-5 rounded-xl shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 text-center">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xs sm:text-sm text-indigo-200 flex-shrink-0"></i>
                     <span id="process-btn-text" class="tracking-wide text-xs sm:text-sm">दस्तावेज़ तैयार करें (Smart Typing)</span>
                 </button>
             </div>
@@ -475,42 +475,42 @@
         </section>
 
         <!-- Right Column: Enhanced "तैयार दस्तावेज़" Document Canvas (7 cols) -->
-        <section class="lg:col-span-7 flex flex-col space-y-4">
+        <section class="lg:col-span-7 flex flex-col space-y-3 sm:space-y-4">
             
             <!-- Modern Workspace Desk Card: A4 Preview Desk -->
-            <div class="bg-emerald-950/[0.03] rounded-2xl border border-emerald-100/90 p-3 sm:p-4 flex-grow flex flex-col min-h-[720px] sm:min-h-[820px] shadow-sm">
+            <div class="bg-slate-100/60 rounded-2xl border border-slate-200/90 p-2.5 sm:p-4 flex-grow flex flex-col min-h-0 sm:min-h-[700px] shadow-sm">
                 
                 <!-- Document Header with Status, Counters and Tools -->
-                <div class="flex flex-wrap justify-between items-center bg-white rounded-xl p-3 mb-3 border border-emerald-100/80 shadow-xs">
+                <div class="flex flex-wrap justify-between items-center bg-white rounded-xl p-2.5 sm:p-3 mb-2.5 sm:mb-3 border border-slate-200/80 shadow-xs gap-2">
                     <!-- Left: Title & Preview Badge -->
-                    <div class="flex items-center space-x-2.5">
-                        <div class="bg-gradient-to-tr from-emerald-600 to-teal-600 text-white p-1.5 rounded-lg shadow-sm">
+                    <div class="flex items-center space-x-2 sm:space-x-2.5">
+                        <div class="bg-gradient-to-tr from-indigo-600 to-blue-600 text-white p-1.5 rounded-lg shadow-sm flex-shrink-0">
                             <i class="fa-solid fa-file-lines text-xs"></i>
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
-                                <h2 class="text-xs sm:text-sm font-bold text-emerald-950">A4 दस्तावेज़ प्रीव्यू (Preview Mode)</h2>
-                                <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 hidden sm:inline-block">
+                                <h2 class="text-xs sm:text-sm font-bold text-slate-900">A4 दस्तावेज़ प्रीव्यू (Preview Mode)</h2>
+                                <span class="text-[9px] sm:text-[10px] font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/60 hidden sm:inline-block">
                                      <i class="fa-solid fa-lock mr-1 text-[9px]"></i>Read-Only
                                 </span>
                             </div>
                             <div class="flex items-center space-x-2 mt-0.5">
-                                <span id="word-count-badge" class="text-[10px] font-semibold text-emerald-800 font-mono">0 Words • 0 Chars</span>
+                                <span id="word-count-badge" class="text-[10px] font-semibold text-indigo-900 font-mono">0 Words • 0 Chars</span>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Right: Font Zoom & Copy Actions -->
-                    <div class="flex items-center space-x-1.5 mt-2 sm:mt-0">
+                    <div class="flex items-center space-x-1.5">
                         <!-- Font Size Zoom Controls -->
-                        <div class="flex items-center bg-emerald-50/70 rounded-lg p-0.5 border border-emerald-200/60 text-xs text-emerald-900" title="Text Zoom">
-                            <button id="font-decrease-btn" title="Zoom Out" class="px-2 py-1 hover:bg-white hover:text-emerald-700 rounded-md transition font-bold">A-</button>
-                            <span class="text-[10px] text-emerald-300">|</span>
-                            <button id="font-increase-btn" title="Zoom In" class="px-2 py-1 hover:bg-white hover:text-emerald-700 rounded-md transition font-bold">A+</button>
+                        <div class="flex items-center bg-indigo-50/70 rounded-lg p-0.5 border border-indigo-200/60 text-xs text-indigo-900" title="Text Zoom">
+                            <button id="font-decrease-btn" title="Zoom Out" class="px-2 py-1 hover:bg-white hover:text-indigo-700 rounded-md transition font-bold">A-</button>
+                            <span class="text-[10px] text-indigo-300">|</span>
+                            <button id="font-increase-btn" title="Zoom In" class="px-2 py-1 hover:bg-white hover:text-indigo-700 rounded-md transition font-bold">A+</button>
                         </div>
 
                         <!-- Copy Button -->
-                        <button id="copy-btn" title="Copy to Clipboard" class="pop-btn px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-emerald-700 bg-slate-50 hover:bg-white rounded-lg transition border border-slate-200 flex items-center space-x-1.5 shadow-2xs">
+                        <button id="copy-btn" title="Copy to Clipboard" class="pop-btn px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-indigo-700 bg-slate-50 hover:bg-white rounded-lg transition border border-slate-200 flex items-center space-x-1.5 shadow-2xs">
                             <i class="fa-regular fa-copy text-xs"></i>
                             <span>Copy</span>
                         </button>
@@ -523,22 +523,22 @@
                 </div>
 
                 <!-- Page Navigation Controls (for Multi-Page A4 Documents) -->
-                <div id="page-nav-bar" class="hidden flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-emerald-100/90 shadow-2xs mb-3 text-xs select-none">
-                    <button id="prev-page-btn" class="px-2.5 py-1 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg font-semibold disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-1" disabled>
+                <div id="page-nav-bar" class="hidden flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-indigo-100 shadow-2xs mb-2.5 text-xs select-none">
+                    <button id="prev-page-btn" class="px-2.5 py-1 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg font-semibold disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-1" disabled>
                         <i class="fa-solid fa-chevron-left text-[10px]"></i>
                         <span>पिछला पेज</span>
                     </button>
-                    <span id="page-indicator" class="font-bold text-emerald-950 font-mono text-xs bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200/60">
+                    <span id="page-indicator" class="font-bold text-indigo-950 font-mono text-xs bg-indigo-50 px-3 py-1 rounded-md border border-indigo-200/60">
                         पेज 1 / 1
                     </span>
-                    <button id="next-page-btn" class="px-2.5 py-1 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg font-semibold disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-1" disabled>
+                    <button id="next-page-btn" class="px-2.5 py-1 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg font-semibold disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-1" disabled>
                         <span>अगला पेज</span>
                         <i class="fa-solid fa-chevron-right text-[10px]"></i>
                     </button>
                 </div>
 
-                <!-- A4 Paper Preview Container (Natural Scrollable Desk Frame) -->
-                <div class="flex flex-col items-center justify-start rounded-xl relative p-2 sm:p-4 bg-slate-200/80 border border-slate-300/80 touch-pan-y min-h-[660px] sm:min-h-[780px] max-h-[780px] sm:max-h-[840px] overflow-y-auto w-full">
+                <!-- A4 Paper Preview Container (Adaptive Compact Height on Mobile, Generous Frame on Desktop) -->
+                <div class="flex flex-col items-center justify-start rounded-xl relative p-2 sm:p-4 bg-slate-200/80 border border-slate-300/80 touch-pan-y min-h-[300px] sm:min-h-[660px] max-h-[580px] sm:max-h-[820px] overflow-y-auto w-full">
                     
                     <div id="document-preview" class="a4-print-sheet select-text cursor-default relative">
                         
@@ -549,12 +549,12 @@
                         </div>
 
                         <!-- Placeholder state when document is empty -->
-                        <div id="preview-placeholder" class="h-full min-h-[480px] sm:min-h-[620px] flex flex-col items-center justify-center text-center text-slate-400 select-none p-4">
-                            <div class="w-16 h-20 rounded-lg border-2 border-dashed border-emerald-300 flex flex-col items-center justify-center mb-3 bg-emerald-50/50 shadow-inner">
-                                <i class="fa-solid fa-file-invoice text-emerald-600 text-3xl"></i>
+                        <div id="preview-placeholder" class="h-full min-h-[240px] sm:min-h-[520px] flex flex-col items-center justify-center text-center text-slate-400 select-none p-3 sm:p-4">
+                            <div class="w-14 h-18 sm:w-16 sm:h-20 rounded-lg border-2 border-dashed border-indigo-300 flex flex-col items-center justify-center mb-2.5 sm:mb-3 bg-indigo-50/50 shadow-inner">
+                                <i class="fa-solid fa-file-invoice text-indigo-600 text-2xl sm:text-3xl"></i>
                             </div>
-                            <h4 class="text-sm font-bold text-slate-700 mb-1">A4 दस्तावेज़ प्रीव्यू</h4>
-                            <p class="text-xs text-slate-400 max-w-xs leading-relaxed">
+                            <h4 class="text-xs sm:text-sm font-bold text-slate-700 mb-1">A4 दस्तावेज़ प्रीव्यू</h4>
+                            <p class="text-[11px] sm:text-xs text-slate-400 max-w-xs leading-relaxed">
                                 फ़ोटो अपलोड या वॉइस रिकॉर्ड होते ही AI द्वारा तैयार असली A4 दस्तावेज़ यहाँ दिखेगा।
                             </p>
                         </div>
@@ -568,42 +568,42 @@
                     
                     <!-- Loading Overlay Animation -->
                     <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm hidden flex flex-col items-center justify-center rounded-xl z-20 animate-pop-in">
-                        <div class="h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-                        <p class="text-sm font-bold text-emerald-950">Smart Typing जारी है...</p>
-                        <p class="text-xs text-emerald-600/80 mt-1">दस्तावेज़ का A4 प्रिंट प्रीव्यू तैयार किया जा रहा है</p>
+                        <div class="h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <p class="text-sm font-bold text-indigo-950">Smart Typing जारी है...</p>
+                        <p class="text-xs text-indigo-600/80 mt-1">दस्तावेज़ का A4 प्रिंट प्रीव्यू तैयार किया जा रहा है</p>
                     </div>
                 </div>
 
-                <!-- Bottom Actions Bar: Attractive Download Button in Rich Emerald -->
-                <div class="pt-3.5 flex flex-wrap justify-between items-center gap-3">
-                    <div class="flex items-center space-x-2 text-xs">
-                        <label class="flex items-center space-x-2 cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-emerald-100 shadow-2xs hover:border-emerald-300 transition">
-                            <input type="checkbox" id="stamp-paper-toggle" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                <!-- Bottom Actions Bar: Stamp Paper Toggle + 3 Centered / Balanced Action Buttons -->
+                <div class="pt-3 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center space-x-2 cursor-pointer select-none bg-white px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 shadow-2xs hover:border-indigo-300 transition">
+                            <input type="checkbox" id="stamp-paper-toggle" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
                             <span class="font-bold text-slate-800 text-xs">📜 स्टाम्प पेपर मोड (3.0" Space)</span>
                         </label>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                    <!-- 3 Clean Balanced Action Buttons (Single column on Mobile, 3 equal columns on Desktop) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5 w-full">
                         <!-- Direct WhatsApp Share Button -->
-                        <button type="button" id="share-whatsapp-direct-btn" class="pop-btn w-full sm:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer">
+                        <button type="button" id="share-whatsapp-direct-btn" class="pop-btn w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3 px-3 rounded-xl shadow-md shadow-emerald-500/20 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer">
                             <i class="fa-brands fa-whatsapp text-lg"></i>
                             <span>WhatsApp पर भेजें</span>
                         </button>
 
                         <!-- Direct Send to PC MS Word Button -->
-                        <button type="button" id="send-to-word-btn" class="pop-btn w-full sm:w-auto bg-[#06281e] hover:bg-[#0c4031] text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-emerald-950/25 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer border border-emerald-500/40">
-                            <i class="fa-solid fa-desktop text-emerald-400 text-sm"></i>
+                        <button type="button" id="send-to-word-btn" class="pop-btn w-full bg-[#0a1128] hover:bg-[#101f42] text-white font-bold py-3 px-3 rounded-xl shadow-md shadow-indigo-950/20 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer border border-indigo-500/30">
+                            <i class="fa-solid fa-desktop text-indigo-400 text-sm"></i>
                             <span>MS Word में भेजें</span>
                         </button>
 
-                        <form id="download-form" action="/api/download-docx" method="POST" class="w-full sm:w-auto">
+                        <!-- Word DOCX Download -->
+                        <form id="download-form" action="/api/download-docx" method="POST" class="w-full">
                             <input type="hidden" name="text" id="download-text-input">
                             <input type="hidden" name="stamp_paper" id="download-stamp-input" value="false">
-                            <button type="submit" id="download-docx-btn" class="pop-btn w-full sm:w-auto bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-700 hover:from-emerald-700 hover:via-teal-800 hover:to-emerald-800 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer text-xs sm:text-sm">
-                                <div class="bg-white/20 p-1 rounded-lg flex items-center justify-center">
-                                    <i class="fa-solid fa-file-word text-sm"></i>
-                                </div>
-                                <span class="tracking-wide">Word (.DOCX) डाउनलोड</span>
+                            <button type="submit" id="download-docx-btn" class="pop-btn w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white font-bold py-3 px-3 rounded-xl shadow-md shadow-indigo-600/20 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer text-xs sm:text-sm">
+                                <i class="fa-solid fa-file-word text-sm"></i>
+                                <span>Word (.DOCX) डाउनलोड</span>
                             </button>
                         </form>
                     </div>
@@ -616,10 +616,10 @@
     </main>
 
     <!-- Slide-out Sidebar: Processing History -->
-    <div id="history-sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl border-l border-emerald-100 transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
-        <div class="p-3.5 border-b border-emerald-100/80 flex justify-between items-center bg-emerald-50/50">
-            <h3 class="font-bold text-emerald-950 text-sm flex items-center">
-                <i class="fa-solid fa-clock-rotate-left text-emerald-600 mr-2 text-xs"></i>
+    <div id="history-sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl border-l border-slate-200 transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
+        <div class="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
+            <h3 class="font-bold text-slate-900 text-sm flex items-center">
+                <i class="fa-solid fa-clock-rotate-left text-indigo-600 mr-2 text-xs"></i>
                 इतिहास (History)
             </h3>
             <button id="close-history" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-200 transition">
@@ -641,21 +641,21 @@
     </div>
 
     <!-- Backdrop for history sidebar -->
-    <div id="sidebar-backdrop" class="fixed inset-0 bg-emerald-950/40 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-40 hidden transition-opacity"></div>
 
     <!-- WhatsApp Share Modal (Opens immediately upon download or click) -->
     <div id="modal-share" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-emerald-950/60 backdrop-blur-sm" onclick="closeModal('modal-share')"></div>
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-emerald-100 animate-pop-in">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('modal-share')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-slate-200 animate-pop-in">
             <!-- Modal Header -->
-            <div class="p-4 border-b border-emerald-100/80 flex justify-between items-center bg-emerald-50/60">
+            <div class="p-4 border-b border-indigo-100/80 flex justify-between items-center bg-indigo-50/60">
                 <div class="flex items-center space-x-2">
-                    <div class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg flex items-center justify-center">
-                        <i class="fa-solid fa-circle-check text-base text-emerald-600"></i>
+                    <div class="bg-indigo-100 text-indigo-700 p-1.5 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-circle-check text-base text-indigo-600"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-emerald-950">दस्तावेज़ तैयार है!</h3>
-                        <p class="text-[10px] text-emerald-700 font-medium">WhatsApp शेयर एवं डाउनलोड विकल्प</p>
+                        <h3 class="font-bold text-sm text-slate-900">दस्तावेज़ तैयार है!</h3>
+                        <p class="text-[10px] text-indigo-700 font-medium">WhatsApp शेयर एवं डाउनलोड विकल्प</p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-share')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
@@ -676,13 +676,13 @@
 
                 <!-- 2. Direct Word DOCX Download Button (docx download) -->
                 <button id="download-docx-modal-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
-                    <i class="fa-solid fa-file-word text-xs text-emerald-600"></i>
+                    <i class="fa-solid fa-file-word text-xs text-indigo-600"></i>
                     <span>Word (.DOCX) फ़ाइल डाउनलोड करें</span>
                 </button>
 
                 <!-- 3. Copy Text for WhatsApp Button (text copy) -->
                 <button id="whatsapp-copy-btn" class="pop-btn w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold py-2 px-4 rounded-xl text-xs border border-slate-200 transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer">
-                    <i class="fa-regular fa-copy text-xs text-emerald-600"></i>
+                    <i class="fa-regular fa-copy text-xs text-indigo-600"></i>
                     <span>पूरा टेक्स्ट कॉपी करें</span>
                 </button>
             </div>
@@ -691,16 +691,16 @@
 
     <!-- Station Setup Modal (Shown if user clicks Send to Word without linked credentials) -->
     <div id="modal-station-setup" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-emerald-950/60 backdrop-blur-sm" onclick="closeModal('modal-station-setup')"></div>
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-emerald-100 animate-pop-in">
-            <div class="p-4 border-b border-emerald-100/80 flex justify-between items-center bg-emerald-50/60">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('modal-station-setup')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-slate-200 animate-pop-in">
+            <div class="p-4 border-b border-indigo-100/80 flex justify-between items-center bg-indigo-50/60">
                 <div class="flex items-center space-x-2">
-                    <div class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg flex items-center justify-center">
-                        <i class="fa-solid fa-desktop text-base text-emerald-700"></i>
+                    <div class="bg-indigo-100 text-indigo-700 p-1.5 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-desktop text-base text-indigo-700"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-emerald-950">कंप्यूटर वर्ड सिंक लॉगिन</h3>
-                        <p class="text-[10px] text-emerald-700 font-medium">MS Word में भेजने के लिए पहचान दर्ज करें</p>
+                        <h3 class="font-bold text-sm text-slate-900">कंप्यूटर वर्ड सिंक लॉगिन</h3>
+                        <p class="text-[10px] text-indigo-700 font-medium">MS Word में भेजने के लिए पहचान दर्ज करें</p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-station-setup')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
@@ -714,19 +714,19 @@
                 <div class="space-y-2">
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 mb-1">Gmail / स्टेशन ID</label>
-                        <input type="email" id="modal-input-email" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition" placeholder="karan@gmail.com">
+                        <input type="email" id="modal-input-email" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="karan@gmail.com">
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 mb-1">सुरक्षा पिन / पासवर्ड (PIN)</label>
-                        <input type="password" id="modal-input-pin" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition" placeholder="उदा. 1234">
+                        <input type="password" id="modal-input-pin" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="उदा. 1234">
                     </div>
                 </div>
-                <button id="modal-save-and-send-btn" class="pop-btn w-full bg-[#06281e] hover:bg-[#0c4031] text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-950/25 flex items-center justify-center space-x-2 text-xs transition active:scale-95 cursor-pointer">
-                    <i class="fa-solid fa-paper-plane text-emerald-400"></i>
+                <button id="modal-save-and-send-btn" class="pop-btn w-full bg-[#0a1128] hover:bg-[#101f42] text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-950/25 flex items-center justify-center space-x-2 text-xs transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-paper-plane text-amber-300"></i>
                     <span>सेव करें और MS Word में भेजें</span>
                 </button>
                 <div class="pt-1 text-center">
-                    <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold inline-flex items-center space-x-1">
+                    <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-[11px] text-indigo-700 hover:text-indigo-800 font-semibold inline-flex items-center space-x-1">
                         <i class="fa-solid fa-laptop text-xs"></i>
                         <span>कंप्यूटर के लिए Agent (.exe)</span>
                     </a>
@@ -737,16 +737,16 @@
 
     <!-- PC Agent Mobile Info Modal (Friendly guidance when mobile users tap PC Agent) -->
     <div id="modal-pc-agent-info" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-emerald-950/60 backdrop-blur-sm" onclick="closeModal('modal-pc-agent-info')"></div>
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-emerald-100 animate-pop-in">
-            <div class="p-4 border-b border-emerald-100/80 flex justify-between items-center bg-emerald-50/60">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('modal-pc-agent-info')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-slate-200 animate-pop-in">
+            <div class="p-4 border-b border-indigo-100/80 flex justify-between items-center bg-indigo-50/60">
                 <div class="flex items-center space-x-2">
-                    <div class="bg-emerald-100 text-emerald-700 p-2 rounded-xl flex items-center justify-center">
-                        <i class="fa-solid fa-laptop text-base text-emerald-700"></i>
+                    <div class="bg-indigo-100 text-indigo-700 p-2 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-laptop text-base text-indigo-700"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-emerald-950">केवल कंप्यूटर / PC के लिए</h3>
-                        <p class="text-[10px] text-emerald-700 font-medium">Windows MS Word ऑटोमेशन</p>
+                        <h3 class="font-bold text-sm text-slate-900">केवल कंप्यूटर / PC के लिए</h3>
+                        <p class="text-[10px] text-indigo-700 font-medium">Windows MS Word ऑटोमेशन</p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-pc-agent-info')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
@@ -754,12 +754,12 @@
                 </button>
             </div>
             <div class="p-5 space-y-3.5 text-center">
-                <div class="text-3xl text-emerald-600 mb-1">
+                <div class="text-3xl text-indigo-600 mb-1">
                     <i class="fa-solid fa-desktop animate-bounce"></i>
                 </div>
                 <div class="text-xs text-slate-700 leading-relaxed font-medium text-left bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
-                    <p class="text-emerald-900 font-bold flex items-center">
-                        <i class="fa-solid fa-circle-info text-emerald-600 mr-1.5"></i>
+                    <p class="text-indigo-950 font-bold flex items-center">
+                        <i class="fa-solid fa-circle-info text-indigo-600 mr-1.5"></i>
                         मोबाइल में इसे डाउनलोड करने की आवश्यकता नहीं है!
                     </p>
                     <p class="text-[11px] text-slate-600">
@@ -770,7 +770,7 @@
                         मोबाइल पर आपको कोई ऐप नहीं चाहिए — आप सीधे इसी वेबसाइट से फ़ोटो लें और <strong>"MS Word में भेजें"</strong> दबाएँ!
                     </p>
                 </div>
-                <button onclick="closeModal('modal-pc-agent-info')" class="pop-btn w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition">
+                <button onclick="closeModal('modal-pc-agent-info')" class="pop-btn w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition">
                     ठीक है, समझ गया
                 </button>
             </div>
@@ -778,12 +778,12 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toast" class="fixed bottom-6 right-6 bg-[#06281e] text-white text-xs font-semibold py-3 px-5 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition duration-300 z-50 flex items-center space-x-2.5 border border-emerald-900 pointer-events-none">
-        <span id="toast-icon"><i class="fa-solid fa-circle-check text-emerald-400"></i></span>
+    <div id="toast" class="fixed bottom-6 right-6 bg-[#0a1128] text-white text-xs font-semibold py-3 px-5 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition duration-300 z-50 flex items-center space-x-2.5 border border-indigo-900/80 pointer-events-none">
+        <span id="toast-icon"><i class="fa-solid fa-circle-check text-amber-400"></i></span>
         <span id="toast-message"></span>
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260907_v40"></script>
+    <script src="/static/app.js?v=20260907_v41"></script>
 </body>
 </html>
