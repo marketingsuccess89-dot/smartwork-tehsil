@@ -3,7 +3,7 @@ let activeTab = 'image'; // 'image' or 'audio'
 let selectedImageFiles = []; // Array of File objects (supports multi-page deeds)
 let activeThumbnailUrls = []; // Track active Object URLs to revoke and prevent leaks
 let selectedAudioFiles = []; // Array of audio note objects: { id, file, name, durationStr, url }
-const MAX_VOICE_NOTES = 20; // Maximum allowed voice notes (15 to 20 limit)
+const MAX_VOICE_NOTES = 100; // Unlimited voice notes support
 let activeAudioUrls = []; // Track active Audio Object URLs to revoke and prevent memory leaks
 let selectedAudioFile = null; // Backwards compatibility pointer
 let mediaRecorder = null;
@@ -639,7 +639,7 @@ function addAudioFile(file, label = null, durationStr = null) {
         recordStatus.innerText = `भाग ${selectedAudioFiles.length} सुरक्षित हुआ! आप अगला भाग (Part ${selectedAudioFiles.length + 1}) भी जोड़ सकते हैं।`;
     }
 
-    showToast('success', `वॉइस नोट भाग ${selectedAudioFiles.length} जोड़ा गया! (कुल: ${selectedAudioFiles.length}/${MAX_VOICE_NOTES})`);
+    showToast('success', `वॉइस नोट भाग ${selectedAudioFiles.length} जोड़ा गया! (कुल जुड़े: ${selectedAudioFiles.length})`);
 }
 
 function handleAudioFilesSelection(files) {
@@ -647,14 +647,11 @@ function handleAudioFilesSelection(files) {
 
     const remainingSlots = MAX_VOICE_NOTES - selectedAudioFiles.length;
     if (remainingSlots <= 0) {
-        showToast('error', `अधिकतम सीमा पूरी हो चुकी है (${MAX_VOICE_NOTES} वॉइस नोट्स)। नए जोड़ने के लिए पहले कुछ हटाएं।`);
+        showToast('error', `अधिकतम सीमा पूरी हो चुकी है (${MAX_VOICE_NOTES} वॉइस नोट्स)।`);
         return;
     }
 
-    const filesToAdd = files.slice(0, remainingSlots);
-    if (files.length > remainingSlots) {
-        showToast('info', `केवल ${remainingSlots} ऑडियो फ़ाइलें जोड़ी गईं (अधिकतम सीमा: ${MAX_VOICE_NOTES})।`);
-    }
+    const filesToAdd = Array.from(files).slice(0, remainingSlots);
 
     filesToAdd.forEach((f) => {
         const partNum = selectedAudioFiles.length + 1;
@@ -670,12 +667,12 @@ function renderAudioList() {
     if (selectedAudioFiles.length === 0) {
         if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
         if (recordStatus) recordStatus.innerText = 'माइक चालू करने के लिए बटन दबाएं';
-        if (audioCountBadge) audioCountBadge.innerText = `0/${MAX_VOICE_NOTES} वॉइस नोट्स जुड़े`;
+        if (audioCountBadge) audioCountBadge.innerText = `0 वॉइस नोट जुड़े`;
         return;
     }
 
     if (audioPreviewContainer) audioPreviewContainer.classList.remove('hidden');
-    if (audioCountBadge) audioCountBadge.innerText = `${selectedAudioFiles.length}/${MAX_VOICE_NOTES} वॉइस नोट्स जुड़े`;
+    if (audioCountBadge) audioCountBadge.innerText = `${selectedAudioFiles.length} वॉइस नोट जुड़े`;
 
     audioListGrid.innerHTML = '';
 
@@ -740,7 +737,7 @@ function clearAudioSelection() {
     if (audioInput) audioInput.value = '';
     if (audioListGrid) audioListGrid.innerHTML = '';
     if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
-    if (audioCountBadge) audioCountBadge.innerText = `0/${MAX_VOICE_NOTES} वॉइस नोट्स जुड़े`;
+    if (audioCountBadge) audioCountBadge.innerText = `0 वॉइस नोट जुड़े`;
     if (recordStatus) recordStatus.innerText = 'माइक चालू करने के लिए बटन दबाएं';
     if (recordTimer) recordTimer.innerText = '00:00';
     showToast('info', 'सभी वॉइस नोट्स हटा दिए गए।');
@@ -763,49 +760,65 @@ async function startRecording() {
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioChunks = [];
+        let sessionChunks = [];
         
         let options = {};
         let recordedMime = 'audio/webm';
         let ext = 'webm';
         
-        if (MediaRecorder.isTypeSupported('audio/webm')) {
-            options = { mimeType: 'audio/webm' };
-            recordedMime = 'audio/webm';
-            ext = 'webm';
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-            options = { mimeType: 'audio/mp4' };
-            recordedMime = 'audio/mp4';
-            ext = 'm4a';
-        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-            options = { mimeType: 'audio/ogg' };
-            recordedMime = 'audio/ogg';
-            ext = 'ogg';
-        } else {
-            recordedMime = 'audio/wav';
-            ext = 'wav';
+        if (typeof MediaRecorder.isTypeSupported === 'function') {
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                options = { mimeType: 'audio/webm;codecs=opus' };
+                recordedMime = 'audio/webm';
+                ext = 'webm';
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                options = { mimeType: 'audio/webm' };
+                recordedMime = 'audio/webm';
+                ext = 'webm';
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                options = { mimeType: 'audio/mp4' };
+                recordedMime = 'audio/mp4';
+                ext = 'm4a';
+            } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                options = { mimeType: 'audio/ogg;codecs=opus' };
+                recordedMime = 'audio/ogg';
+                ext = 'ogg';
+            }
         }
         
-        mediaRecorder = new MediaRecorder(stream, options);
+        try {
+            mediaRecorder = new MediaRecorder(stream, options);
+        } catch (mErr) {
+            console.warn('MediaRecorder init with options failed, falling back to default:', mErr);
+            mediaRecorder = new MediaRecorder(stream);
+        }
         
         mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                audioChunks.push(event.data);
+            if (event.data && event.data.size > 0) {
+                sessionChunks.push(event.data);
             }
         };
 
         mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: recordedMime });
-            const partNum = selectedAudioFiles.length + 1;
-            const file = new File([audioBlob], `voice_part_${partNum}.${ext}`, { type: recordedMime });
-            const elapsed = Math.max(1, Math.floor((Date.now() - recordStartTime) / 1000));
-            const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
-            const sec = String(elapsed % 60).padStart(2, '0');
-            const durationStr = `${min}:${sec}`;
-            addAudioFile(file, `वॉइस नोट #${partNum}`, durationStr);
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            } catch (e) {}
+
+            const audioBlob = new Blob(sessionChunks, { type: recordedMime });
+            if (audioBlob.size > 0) {
+                const partNum = selectedAudioFiles.length + 1;
+                const file = new File([audioBlob], `voice_part_${partNum}.${ext}`, { type: recordedMime });
+                const elapsed = Math.max(1, Math.floor((Date.now() - recordStartTime) / 1000));
+                const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const sec = String(elapsed % 60).padStart(2, '0');
+                const durationStr = `${min}:${sec}`;
+                addAudioFile(file, `वॉइस नोट #${partNum}`, durationStr);
+            }
         };
 
-        mediaRecorder.start();
+        mediaRecorder.start(500); // 500ms timeslice for steady streaming chunks
         isRecording = true;
         recordStartTime = Date.now();
         if (recordRing) recordRing.classList.remove('hidden');
@@ -813,6 +826,7 @@ async function startRecording() {
         if (recordIcon) recordIcon.className = 'fa-solid fa-stop text-2xl animate-pulse';
         if (recordStatus) recordStatus.innerText = `भाग ${selectedAudioFiles.length + 1} रिकॉर्ड हो रहा है... बोलना जारी रखें`;
         
+        if (recordDurationTimer) clearInterval(recordDurationTimer);
         recordDurationTimer = setInterval(() => {
             const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
             const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
@@ -837,29 +851,22 @@ function stopRecording() {
         console.warn('Error stopping MediaRecorder:', e);
     }
     
-    try {
-        if (mediaRecorder.stream) {
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
-        }
-    } catch (e) {
-        console.warn('Error stopping stream tracks:', e);
-    }
-    
     isRecording = false;
-    clearInterval(recordDurationTimer);
+    if (recordDurationTimer) clearInterval(recordDurationTimer);
     if (recordTimer) recordTimer.innerText = '00:00';
     if (recordRing) recordRing.classList.add('hidden');
     if (recordRing2) recordRing2.classList.add('hidden');
     if (recordIcon) recordIcon.className = 'fa-solid fa-microphone text-2xl';
-    if (recordStatus) recordStatus.innerText = 'रिकॉर्डिंग पूरी हो गई! अब नीचे "दस्तावेज़ तैयार करें" बटन दबाएं।';
+    if (recordStatus) recordStatus.innerText = 'रिकॉर्डिंग पूरी हो गई! आप और वॉइस नोट भी जोड़ सकते हैं या नीचे "दस्तावेज़ तैयार करें" दबाएं।';
 }
 
 // Process Document through FastAPI
 async function processWithAI(mode) {
     const formData = new FormData();
     let url = '';
+    const currentMode = mode || activeTab;
 
-    if (mode === 'image' || (selectedImageFiles && selectedImageFiles.length > 0)) {
+    if (currentMode === 'image') {
         if (!selectedImageFiles || selectedImageFiles.length === 0) {
             showToast('error', 'कृपया पहले फ़ोटो खींचें या 1 या अधिक पेज जोड़ें।');
             return;
@@ -884,7 +891,7 @@ async function processWithAI(mode) {
     if (loadingOverlay) loadingOverlay.classList.remove('hidden');
     if (processBtn && processBtnText) {
         processBtn.setAttribute('disabled', 'true');
-        const countMsg = (mode === 'image' || activeTab === 'image') 
+        const countMsg = (currentMode === 'image') 
             ? `${selectedImageFiles.length} पेज` 
             : `${selectedAudioFiles.length} वॉइस नोट्स`;
         processBtnText.innerHTML = `<span class="flex items-center justify-center"><div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>दस्तावेज़ तैयार हो रहा है (${countMsg})...</span>`;
