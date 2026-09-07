@@ -385,12 +385,17 @@
                 </div>
             </div>
 
-            <!-- Voice Recording Panel with Zoom In-Out Mic Animation -->
+            <!-- Voice Recording Panel with Zoom In-Out Mic Animation & Multi-Note Support -->
             <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-emerald-100/80 p-5 flex-grow flex flex-col hidden">
-                <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wide mb-3 flex items-center">
-                    <i class="fa-solid fa-microphone-lines text-emerald-600 mr-1.5 text-sm"></i>
-                    बोलकर जानकारी लिखवाएं
-                </h3>
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wide flex items-center">
+                        <i class="fa-solid fa-microphone-lines text-emerald-600 mr-1.5 text-sm"></i>
+                        बोलकर जानकारी लिखवाएं
+                    </h3>
+                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        Max 20 वॉइस नोट्स
+                    </span>
+                </div>
 
                 <!-- Mic Container with Pulsing Waves & Zoom In-Out Button -->
                 <div class="border border-emerald-100/60 rounded-2xl p-6 flex flex-col items-center justify-center text-center bg-[#f9fbf9] flex-grow relative overflow-hidden">
@@ -401,27 +406,41 @@
                         <div id="record-ring" class="absolute h-28 w-28 rounded-full bg-emerald-500 opacity-30 pulse-wave hidden"></div>
                         <div id="record-ring-2" class="absolute h-24 w-24 rounded-full bg-teal-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
                         <!-- Mic Button with Zoom In-Out Animation -->
-                        <button id="record-btn" class="animate-zoom-mic h-20 w-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xl shadow-emerald-700/30 flex items-center justify-center transition focus:outline-none relative z-10">
+                        <button id="record-btn" class="animate-zoom-mic h-20 w-20 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xl shadow-emerald-700/30 flex items-center justify-center transition focus:outline-none relative z-10 active:scale-95">
                             <i id="record-icon" class="fa-solid fa-microphone text-2xl"></i>
                         </button>
                     </div>
 
                     <p id="record-status" class="text-xs font-bold text-slate-700 mt-5">माइक चालू करने के लिए बटन दबाएं</p>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Hindi, English &amp; Hinglish are auto-detected</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">अलग-अलग भाग (Part 1, 2, 3...) में रिकॉर्ड करें • 15 से 20 नोट्स तक जोड़ें</p>
+                </div>
+
+                <!-- Multi-Audio Voice Notes List Container -->
+                <div id="audio-preview-container" class="mt-3 hidden border border-emerald-100 rounded-2xl p-3 bg-emerald-50/40 relative animate-pop-in">
+                    <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-emerald-100">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-microphone text-emerald-700 text-xs"></i>
+                            <span id="audio-count-badge" class="font-bold text-xs text-emerald-950 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">0 वॉइस नोट जुड़े</span>
+                        </div>
+                        <button id="remove-audio" type="button" class="text-rose-600 hover:text-rose-800 text-[11px] font-semibold transition flex items-center space-x-1 cursor-pointer">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                            <span>सभी हटाएँ</span>
+                        </button>
+                    </div>
+
+                    <!-- Voice Notes Scrollable List -->
+                    <div id="audio-list-grid" class="space-y-2 max-h-56 overflow-y-auto p-1 pr-1.5">
+                        <!-- Dynamic audio cards -->
+                    </div>
                 </div>
 
                 <!-- Audio File Upload (Alternative) -->
                 <div class="mt-4 border-t border-slate-100 pt-3">
-                    <label for="audio-input" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">या पहले से रिकॉर्ड ऑडियो चुनें:</label>
-                    <input type="file" id="audio-input" accept="audio/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
-                </div>
-
-                <!-- Audio Playback Preview -->
-                <div id="audio-preview-container" class="mt-3 hidden p-2.5 bg-emerald-50/60 rounded-xl flex items-center justify-between border border-emerald-100 animate-pop-in">
-                    <audio id="audio-preview" controls class="h-8 max-w-full"></audio>
-                    <button id="remove-audio" class="text-rose-500 hover:text-rose-700 p-2 transition">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                    </button>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="audio-input" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">या पहले से रिकॉर्ड ऑडियो फ़ाइल जोड़ें:</label>
+                        <span class="text-[10px] text-slate-400 font-medium">मल्टीपल फाइल्स समर्थित</span>
+                    </div>
+                    <input type="file" id="audio-input" accept="audio/*" multiple class="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                 </div>
             </div>
 

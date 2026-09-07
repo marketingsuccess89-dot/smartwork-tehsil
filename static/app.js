@@ -2,7 +2,10 @@
 let activeTab = 'image'; // 'image' or 'audio'
 let selectedImageFiles = []; // Array of File objects (supports multi-page deeds)
 let activeThumbnailUrls = []; // Track active Object URLs to revoke and prevent leaks
-let selectedAudioFile = null;
+let selectedAudioFiles = []; // Array of audio note objects: { id, file, name, durationStr, url }
+const MAX_VOICE_NOTES = 20; // Maximum allowed voice notes (15 to 20 limit)
+let activeAudioUrls = []; // Track active Audio Object URLs to revoke and prevent memory leaks
+let selectedAudioFile = null; // Backwards compatibility pointer
 let mediaRecorder = null;
 let audioChunks = [];
 let recordStartTime = null;
@@ -44,7 +47,8 @@ const recordTimer = document.getElementById('record-timer');
 const recordStatus = document.getElementById('record-status');
 const audioInput = document.getElementById('audio-input');
 const audioPreviewContainer = document.getElementById('audio-preview-container');
-const audioPreview = document.getElementById('audio-preview');
+const audioCountBadge = document.getElementById('audio-count-badge');
+const audioListGrid = document.getElementById('audio-list-grid');
 const removeAudioBtn = document.getElementById('remove-audio');
 
 const mobileSyncBadge = document.getElementById('mobile-sync-badge');
@@ -181,8 +185,8 @@ function setupEventListeners() {
     }
     if (audioInput) {
         audioInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleAudioSelection(e.target.files[0]);
+            if (e.target.files && e.target.files.length > 0) {
+                handleAudioFilesSelection(Array.from(e.target.files));
             }
         });
     }
@@ -278,8 +282,8 @@ function setupEventListeners() {
                 }
                 processWithAI('image');
             } else if (activeTab === 'audio') {
-                if (!selectedAudioFile) {
-                    showToast('error', 'कृपया पहले बोलकर रिकॉर्ड करें या ऑडियो फ़ाइल चुनें।');
+                if (!selectedAudioFiles || selectedAudioFiles.length === 0) {
+                    showToast('error', 'कृपया पहले बोलकर 1 या अधिक वॉइस नोट्स रिकॉर्ड करें या ऑडियो फ़ाइल चुनें।');
                     return;
                 }
                 processWithAI('audio');
@@ -603,32 +607,146 @@ function clearImageSelection() {
     if (imagePreview) imagePreview.src = '#';
 }
 
-// Handle Audio Selection & Preview (User must click 'दस्तावेज़ तैयार करें' to run AI)
-function handleAudioSelection(file) {
-    selectedAudioFile = file;
-    // Clear image selection if audio selected
-    selectedImageFiles = [];
-    clearImageSelection();
+// Handle Audio Selection & Multi-Voice Note Preview
+function addAudioFile(file, label = null, durationStr = null) {
+    if (selectedAudioFiles.length >= MAX_VOICE_NOTES) {
+        showToast('error', `अधिकतम सीमा पहुंच गई (${MAX_VOICE_NOTES} वॉइस नोट्स)। नए जोड़ने के लिए पहले कुछ हटाएं।`);
+        return;
+    }
 
-    if (audioPreview) audioPreview.src = URL.createObjectURL(file);
+    const noteId = Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const url = URL.createObjectURL(file);
+    activeAudioUrls.push(url);
+
+    const partNum = selectedAudioFiles.length + 1;
+    const displayName = label || file.name || `वॉइस नोट #${partNum}`;
+    const formattedDuration = durationStr || (file.size ? `${(file.size / 1024).toFixed(0)} KB` : 'ऑडियो क्लिप');
+
+    const audioItem = {
+        id: noteId,
+        file: file,
+        name: displayName,
+        durationStr: formattedDuration,
+        url: url
+    };
+
+    selectedAudioFiles.push(audioItem);
+    selectedAudioFile = selectedAudioFiles[0].file; // Legacy fallback
+
+    renderAudioList();
+
+    if (recordStatus) {
+        recordStatus.innerText = `भाग ${selectedAudioFiles.length} सुरक्षित हुआ! आप अगला भाग (Part ${selectedAudioFiles.length + 1}) भी जोड़ सकते हैं।`;
+    }
+
+    showToast('success', `वॉइस नोट भाग ${selectedAudioFiles.length} जोड़ा गया! (कुल: ${selectedAudioFiles.length}/${MAX_VOICE_NOTES})`);
+}
+
+function handleAudioFilesSelection(files) {
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = MAX_VOICE_NOTES - selectedAudioFiles.length;
+    if (remainingSlots <= 0) {
+        showToast('error', `अधिकतम सीमा पूरी हो चुकी है (${MAX_VOICE_NOTES} वॉइस नोट्स)। नए जोड़ने के लिए पहले कुछ हटाएं।`);
+        return;
+    }
+
+    const filesToAdd = files.slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+        showToast('info', `केवल ${remainingSlots} ऑडियो फ़ाइलें जोड़ी गईं (अधिकतम सीमा: ${MAX_VOICE_NOTES})।`);
+    }
+
+    filesToAdd.forEach((f) => {
+        const partNum = selectedAudioFiles.length + 1;
+        addAudioFile(f, f.name || `ऑडियो फ़ाइल #${partNum}`, `${(f.size / 1024).toFixed(0)} KB`);
+    });
+
+    if (audioInput) audioInput.value = '';
+}
+
+function renderAudioList() {
+    if (!audioListGrid) return;
+
+    if (selectedAudioFiles.length === 0) {
+        if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
+        if (recordStatus) recordStatus.innerText = 'माइक चालू करने के लिए बटन दबाएं';
+        if (audioCountBadge) audioCountBadge.innerText = `0/${MAX_VOICE_NOTES} वॉइस नोट्स जुड़े`;
+        return;
+    }
+
     if (audioPreviewContainer) audioPreviewContainer.classList.remove('hidden');
-    if (recordStatus) recordStatus.innerText = 'ऑडियो तैयार है! नीचे "दस्तावेज़ तैयार करें" बटन दबाएँ।';
+    if (audioCountBadge) audioCountBadge.innerText = `${selectedAudioFiles.length}/${MAX_VOICE_NOTES} वॉइस नोट्स जुड़े`;
 
-    showToast('success', 'ऑडियो रिकॉर्डिंग तैयार है! अब "दस्तावेज़ तैयार करें" बटन दबाएँ।');
-    // NOTICE: processWithAI is NOT auto-called here.
-    // The user will click `[दस्तावेज़ तैयार करें (Smart Typing)]` when satisfied.
+    audioListGrid.innerHTML = '';
+
+    selectedAudioFiles.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-emerald-100 rounded-xl p-2.5 shadow-2xs flex flex-col space-y-2 transition hover:border-emerald-300 animate-pop-in';
+
+        card.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
+                        <i class="fa-solid fa-microphone text-[9px]"></i>
+                        <span>भाग ${index + 1}</span>
+                    </span>
+                    <span class="text-xs font-semibold text-slate-800 truncate max-w-[150px] sm:max-w-[200px]" title="${item.name}">${item.name}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-[10px] font-mono font-bold text-emerald-900 bg-emerald-100/70 px-2 py-0.5 rounded-md border border-emerald-200/70">
+                        ⏱️ ${item.durationStr}
+                    </span>
+                    <button type="button" class="remove-audio-node-btn text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition cursor-pointer" data-index="${index}" title="इस भाग को हटाएं">
+                        <i class="fa-solid fa-trash-can text-xs pointer-events-none"></i>
+                    </button>
+                </div>
+            </div>
+            <audio controls src="${item.url}" class="h-8 w-full rounded-lg bg-emerald-50/50"></audio>
+        `;
+
+        const delBtn = card.querySelector('.remove-audio-node-btn');
+        if (delBtn) {
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeAudioNode(index);
+            });
+        }
+
+        audioListGrid.appendChild(card);
+    });
+}
+
+function removeAudioNode(index) {
+    if (index >= 0 && index < selectedAudioFiles.length) {
+        const removed = selectedAudioFiles.splice(index, 1)[0];
+        if (removed && removed.url) {
+            URL.revokeObjectURL(removed.url);
+            activeAudioUrls = activeAudioUrls.filter(u => u !== removed.url);
+        }
+        selectedAudioFile = selectedAudioFiles.length > 0 ? selectedAudioFiles[0].file : null;
+        renderAudioList();
+        showToast('info', `भाग हटाया गया। कुल ${selectedAudioFiles.length} वॉइस नोट्स शेष हैं।`);
+    }
 }
 
 function clearAudioSelection() {
+    if (activeAudioUrls && activeAudioUrls.length > 0) {
+        activeAudioUrls.forEach(url => URL.revokeObjectURL(url));
+        activeAudioUrls = [];
+    }
+    selectedAudioFiles = [];
     selectedAudioFile = null;
     audioChunks = [];
     if (audioInput) audioInput.value = '';
-    if (audioPreview) audioPreview.src = '';
+    if (audioListGrid) audioListGrid.innerHTML = '';
     if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
+    if (audioCountBadge) audioCountBadge.innerText = `0/${MAX_VOICE_NOTES} वॉइस नोट्स जुड़े`;
     if (recordStatus) recordStatus.innerText = 'माइक चालू करने के लिए बटन दबाएं';
+    if (recordTimer) recordTimer.innerText = '00:00';
+    showToast('info', 'सभी वॉइस नोट्स हटा दिए गए।');
 }
 
-// Voice Recording Logic with Zoom In-Out Animation
+// Voice Recording Logic with Multi-Part Recording
 async function toggleRecording() {
     if (!isRecording) {
         await startRecording();
@@ -638,6 +756,11 @@ async function toggleRecording() {
 }
 
 async function startRecording() {
+    if (selectedAudioFiles.length >= MAX_VOICE_NOTES) {
+        showToast('error', `अधिकतम सीमा पूरी हो चुकी है (${MAX_VOICE_NOTES} वॉइस नोट्स)। नया भाग रिकॉर्ड करने के लिए पहले कोई हटाएं।`);
+        return;
+    }
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
@@ -673,8 +796,13 @@ async function startRecording() {
 
         mediaRecorder.onstop = () => {
             const audioBlob = new Blob(audioChunks, { type: recordedMime });
-            const file = new File([audioBlob], `dictation_audio.${ext}`, { type: recordedMime });
-            handleAudioSelection(file);
+            const partNum = selectedAudioFiles.length + 1;
+            const file = new File([audioBlob], `voice_part_${partNum}.${ext}`, { type: recordedMime });
+            const elapsed = Math.max(1, Math.floor((Date.now() - recordStartTime) / 1000));
+            const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const sec = String(elapsed % 60).padStart(2, '0');
+            const durationStr = `${min}:${sec}`;
+            addAudioFile(file, `वॉइस नोट #${partNum}`, durationStr);
         };
 
         mediaRecorder.start();
@@ -683,7 +811,7 @@ async function startRecording() {
         if (recordRing) recordRing.classList.remove('hidden');
         if (recordRing2) recordRing2.classList.remove('hidden');
         if (recordIcon) recordIcon.className = 'fa-solid fa-stop text-2xl animate-pulse';
-        if (recordStatus) recordStatus.innerText = 'रिकॉर्डिंग चालू है... बोलना जारी रखें';
+        if (recordStatus) recordStatus.innerText = `भाग ${selectedAudioFiles.length + 1} रिकॉर्ड हो रहा है... बोलना जारी रखें`;
         
         recordDurationTimer = setInterval(() => {
             const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
@@ -741,11 +869,14 @@ async function processWithAI(mode) {
         });
         url = '/api/process-image';
     } else {
-        if (!selectedAudioFile) {
-            showToast('error', 'कृपया पहले बोलकर रिकॉर्ड करें या ऑडियो फ़ाइल चुनें।');
+        if (!selectedAudioFiles || selectedAudioFiles.length === 0) {
+            showToast('error', 'कृपया पहले बोलकर 1 या अधिक वॉइस नोट्स रिकॉर्ड करें या ऑडियो फ़ाइल चुनें।');
             return;
         }
-        formData.append('file', selectedAudioFile);
+        selectedAudioFiles.forEach((item) => {
+            formData.append('files', item.file);
+        });
+        formData.append('file', selectedAudioFiles[0].file); // Backwards compatibility
         url = '/api/process-audio';
     }
 
@@ -753,7 +884,10 @@ async function processWithAI(mode) {
     if (loadingOverlay) loadingOverlay.classList.remove('hidden');
     if (processBtn && processBtnText) {
         processBtn.setAttribute('disabled', 'true');
-        processBtnText.innerHTML = `<span class="flex items-center justify-center"><div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>दस्तावेज़ तैयार हो रहा है...</span>`;
+        const countMsg = (mode === 'image' || activeTab === 'image') 
+            ? `${selectedImageFiles.length} पेज` 
+            : `${selectedAudioFiles.length} वॉइस नोट्स`;
+        processBtnText.innerHTML = `<span class="flex items-center justify-center"><div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>दस्तावेज़ तैयार हो रहा है (${countMsg})...</span>`;
     }
 
     try {

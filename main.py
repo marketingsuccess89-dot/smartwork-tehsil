@@ -19,7 +19,7 @@ from pydantic import BaseModel
 import uvicorn
 import requests
 
-from src.agent_service import extract_text_from_image, extract_text_from_images, transcribe_audio_dictation, get_model_status
+from src.agent_service import extract_text_from_image, extract_text_from_images, transcribe_audio_dictation, transcribe_audio_dictations, get_model_status
 from src.doc_builder import create_docx
 
 def keep_alive_worker():
@@ -365,43 +365,65 @@ async def process_image(
         raise HTTPException(status_code=500, detail=f"Failed to process images: {str(e)}")
 
 @app.post("/api/process-audio")
-async def process_audio(file: UploadFile = File(...), user_id: str = Form(None)):
+async def process_audio(
+    files: list[UploadFile] = File(None),
+    file: UploadFile = File(None),
+    user_id: str = Form(None)
+):
     """
-    Receives dictation audio and transcribes/formats it via Gemini.
+    Receives 1 or multiple dictation audio recordings and transcribes/formats them via Gemini.
+    Supports multi-part voice notes seamlessly in sequence.
     """
-    # Accept standard audio formats, video containers from mobile Chrome, generic octet-stream, or common file extensions
-    is_audio = (
-        (file.content_type and (file.content_type.startswith("audio/") or file.content_type.startswith("video/webm") or file.content_type.startswith("video/mp4") or file.content_type.startswith("video/ogg"))) 
-        or file.content_type == "application/octet-stream"
-        or (file.filename and file.filename.lower().endswith(('.wav', '.webm', '.mp3', '.m4a', '.ogg', '.aac', '.mp4', '.opus', '.flac', '.m4v')))
-    )
-    if not is_audio:
-        raise HTTPException(status_code=400, detail="Uploaded file must be an audio file.")
+    upload_list = []
+    if files:
+        upload_list.extend([f for f in files if f and f.filename])
+    if file and file.filename and file not in upload_list:
+        upload_list.append(file)
         
-    try:
-        contents = await file.read()
+    if not upload_list:
+        raise HTTPException(status_code=400, detail="कम से कम एक ऑडियो फ़ाइल अपलोड करना आवश्यक है।")
+
+    ext_map = {
+        'mp3': 'audio/mp3',
+        'wav': 'audio/wav',
+        'webm': 'audio/webm',
+        'm4a': 'audio/mp4',
+        'mp4': 'audio/mp4',
+        'ogg': 'audio/ogg',
+        'opus': 'audio/opus',
+        'aac': 'audio/aac',
+        'flac': 'audio/flac'
+    }
+
+    audio_items = []
+    for uf in upload_list:
+        is_audio = (
+            (uf.content_type and (uf.content_type.startswith("audio/") or uf.content_type.startswith("video/webm") or uf.content_type.startswith("video/mp4") or uf.content_type.startswith("video/ogg"))) 
+            or uf.content_type == "application/octet-stream"
+            or (uf.filename and uf.filename.lower().endswith(('.wav', '.webm', '.mp3', '.m4a', '.ogg', '.aac', '.mp4', '.opus', '.flac', '.m4v')))
+        )
+        if not is_audio:
+            raise HTTPException(status_code=400, detail=f"फ़ाइल '{uf.filename}' एक मान्य ऑडियो फ़ाइल नहीं है।")
         
-        # Accurately resolve MIME type
-        if file.content_type and (file.content_type.startswith("audio/") or file.content_type.startswith("video/")):
-            mime_type = file.content_type
-        elif file.filename and '.' in file.filename:
-            ext = file.filename.lower().split('.')[-1]
-            ext_map = {
-                'mp3': 'audio/mp3',
-                'wav': 'audio/wav',
-                'webm': 'audio/webm',
-                'm4a': 'audio/mp4',
-                'mp4': 'audio/mp4',
-                'ogg': 'audio/ogg',
-                'opus': 'audio/opus',
-                'aac': 'audio/aac',
-                'flac': 'audio/flac'
-            }
+        contents = await uf.read()
+        if not contents:
+            continue
+
+        if uf.content_type and (uf.content_type.startswith("audio/") or uf.content_type.startswith("video/")):
+            mime_type = uf.content_type
+        elif uf.filename and '.' in uf.filename:
+            ext = uf.filename.lower().split('.')[-1]
             mime_type = ext_map.get(ext, "audio/wav")
         else:
             mime_type = "audio/wav"
 
-        result = await run_in_threadpool(transcribe_audio_dictation, contents, mime_type=mime_type)
+        audio_items.append({"bytes": contents, "mime_type": mime_type, "filename": uf.filename})
+
+    if not audio_items:
+        raise HTTPException(status_code=400, detail="कोई मान्य ऑडियो रिकॉर्डिंग प्राप्त नहीं हुई।")
+
+    try:
+        result = await run_in_threadpool(transcribe_audio_dictations, audio_items)
         return result
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

@@ -260,7 +260,7 @@ def extract_text_from_images(image_bytes_list: list[bytes]) -> TranscriptionResu
        - **TWO PARTIES SIDE-BY-SIDE (दो पक्षों के हस्ताक्षर - Left और Right अलग-अलग रहें, कभी मिक्स न हों)**:
          * If there are two parties signing side-by-side (e.g. In deeds/agreements: Landlord & Tenant, Buyer & Seller, First Party & Second Party, or Witness 1 & Witness 2):
            Format them strictly as a clean 2-column Markdown table so that Left and Right parties remain completely separated with clear space between them and NEVER mix or overlap:
-           | [Left Party / प्रथम पक्ष] | [Right Party / द्वितीय पक्ष] |
+                      | [Left Party / प्रथम पक्ष] | [Right Party / द्वितीय पक्ष] |
            | :--- | ---: |
            | हस्ताक्षर: ____________ | हस्ताक्षर: ____________ |
            | नाम: [नाम] | नाम: [नाम] |
@@ -312,16 +312,33 @@ def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/jpeg") -
     """Backward-compatible wrapper for single image OCR."""
     return extract_text_from_images([image_bytes])
 
-def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav") -> TranscriptionResult:
+def transcribe_audio_dictations(audio_list: list[dict]) -> TranscriptionResult:
     """
-    Sends speech dictation audio to Gemini to transcribe and format into a structured legal document.
+    Sends 1 or multiple speech dictation audio recordings in chronological sequence 
+    to Gemini to transcribe and format into a unified, structured legal document.
+    Each item in audio_list must be a dict with {'bytes': bytes, 'mime_type': str}.
     """
+    if not audio_list:
+        raise ValueError("कम से कम एक ऑडियो रिकॉर्डिंग आवश्यक है।")
+
     client = get_genai_client()
+    num_parts = len(audio_list)
+
+    multi_part_context = ""
+    if num_parts > 1:
+        multi_part_context = f"""
+    CRITICAL: MULTI-PART SEQUENTIAL DICTATION ({num_parts} क्रमिक ऑडियो भाग / वॉइस नोट्स):
+    - You have been provided {num_parts} sequential audio recordings dictated in chronological order (Part 1 to Part {num_parts}).
+    - These audio parts belong to the SAME continuous dictation session or document dictated in segments by the user.
+    - Carefully listen to all {num_parts} parts in order and synthesize them into ONE unified, complete, cohesive, professional document.
+    - Connect thoughts, facts, and clauses smoothly across parts (e.g. Part 1 sets title & recipient, Part 2 dictates facts/clauses, Part 3 dictates prayer & signatures).
+    - DO NOT generate repetitive headers or disjointed notes for each part; combine them into ONE clean, print-ready document.
+    """
     
-    prompt = """
+    prompt = f"""
     You are an expert audio transcription assistant specialized in Indian Legal, Court, Tehsil, and Administrative document dictation (तहसील व न्यायालय विलेख एवं प्रार्थना पत्र).
     Transcribe the spoken audio dictation into a clean, professional, print-ready Markdown document.
-
+{multi_part_context}
     STRICT RULES FOR DESI & REAL HUMAN SPEECH (देसी बोलचाल व मौखिक निर्देशों के नियम):
     1. **Conversational Chitchat & Side Remarks Filtering (आपसी बातचीत व फ़ालतू बातों को 100% हटाएं)**:
        - Elderly advocates, deed writers (कातिब/मुंशी), and rural citizens speak casually to the typist while dictating:
@@ -411,17 +428,22 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
     Ensure your response strictly matches the required JSON schema.
     """
     
+    # Construct contents with all audio parts in order
+    contents = []
+    for idx, item in enumerate(audio_list):
+        if num_parts > 1:
+            contents.append(f"--- Spoken Voice Part {idx + 1} of {num_parts} ---")
+        contents.append(types.Part.from_bytes(data=item["bytes"], mime_type=item.get("mime_type", "audio/wav")))
+    contents.append(prompt)
+
     models = get_prioritized_models()
     last_err = None
     for model_name in models:
         try:
-            print(f"[Gemini Audio] Requesting model: {model_name}...")
+            print(f"[Gemini Audio] Requesting model: {model_name} with {num_parts} audio part(s)...")
             response = client.models.generate_content(
                 model=model_name,
-                contents=[
-                    types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
-                    prompt
-                ],
+                contents=contents,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=TranscriptionResult
@@ -440,3 +462,9 @@ def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav")
             print(f"Model {model_name} failed: {e}. Trying fallback...")
             continue
     raise last_err
+
+def transcribe_audio_dictation(audio_bytes: bytes, mime_type: str = "audio/wav") -> TranscriptionResult:
+    """
+    Sends a single speech dictation audio to Gemini (backward-compatible wrapper).
+    """
+    return transcribe_audio_dictations([{"bytes": audio_bytes, "mime_type": mime_type}])
