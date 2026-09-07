@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Typing | Fast & Accurate AI Document Assistant</title>
+    <title>Smart Typing | Fast & Accurate Document Assistant</title>
     <!-- Google Fonts: Inter & Noto Sans Devanagari -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -118,8 +118,10 @@
             .a4-print-sheet {
                 padding: 18px 14px;
                 font-size: 11.5px;
-                min-height: 320px;
-                line-height: 1.45;
+                min-height: 520px;
+                aspect-ratio: 1 / 1.414;
+                max-width: 100%;
+                line-height: 1.5;
             }
         }
         /* Custom Scrollbars */
@@ -233,30 +235,26 @@
 </head>
 <body class="bg-[#f4f6fb] text-slate-800 min-h-screen flex flex-col antialiased overflow-x-hidden w-full max-w-full">
 
-    <!-- Royal Midnight Luxury Header -->
+    <!-- Royal Midnight Header -->
     <header class="bg-gradient-to-r from-[#0a1128] via-[#101f42] to-[#0a1128] border-b border-indigo-900/60 text-white sticky top-0 z-30 shadow-md w-full">
         <div class="container mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
-            <!-- Left: Brand with Gold & Indigo Accents -->
+            <!-- Left: Brand with Keyboard / Lightning & Indigo Accents -->
             <div class="flex items-center space-x-2">
-                <div class="bg-gradient-to-tr from-amber-400 via-amber-500 to-indigo-600 p-1.5 rounded-lg text-slate-950 shadow-lg shadow-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-crown text-sm text-slate-950"></i>
+                <div class="bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg text-white shadow-lg shadow-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-keyboard text-sm text-white"></i>
                 </div>
                 <div class="flex items-baseline space-x-2">
-                    <span class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-amber-100 to-indigo-200 bg-clip-text text-transparent">Smart Typing</span>
-                    <span class="text-[10px] text-indigo-300/80 hidden sm:inline font-medium">Fast &amp; Accurate Document Intelligence</span>
+                    <span class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-100 to-blue-200 bg-clip-text text-transparent">Smart Typing</span>
+                    <span class="text-[10px] text-indigo-300/80 hidden sm:inline font-medium">Fast &amp; Accurate Document Assistant</span>
                 </div>
             </div>
             
-            <!-- Right: Download PC Agent & History Buttons -->
+            <!-- Right: Download PC Agent Button -->
             <div class="flex items-center space-x-2 flex-shrink-0">
                 <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden md:inline-flex pop-btn bg-indigo-900/80 hover:bg-indigo-800 text-indigo-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-indigo-700/60 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
                     <i class="fa-solid fa-download text-amber-300 text-xs"></i>
                     <span>डाउनलोड PC एजेंट (.exe)</span>
                 </a>
-                <button id="toggle-history" class="pop-btn bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-700/60 transition flex items-center space-x-1.5 shadow-sm">
-                    <i class="fa-solid fa-clock-rotate-left text-indigo-400 text-xs"></i>
-                    <span>इतिहास</span>
-                </button>
             </div>
         </div>
     </header>
@@ -305,25 +303,35 @@
                             </button>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center text-[10px] text-slate-500 pt-0.5">
-                        <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-indigo-700 hover:text-indigo-900 font-bold flex items-center space-x-1" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
-                            <i class="fa-solid fa-laptop text-[11px] text-indigo-600"></i>
+                    <!-- VIP Auto-Word Transfer Prominent Note -->
+                    <div class="flex flex-wrap justify-between items-center text-[10px] text-slate-600 pt-0.5 gap-1 bg-amber-100/60 px-2 py-1 rounded-md border border-amber-200/70">
+                        <span class="text-amber-950 font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-bolt text-amber-600 text-[10px]"></i>
+                            <span>लेटर तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा</span>
+                        </span>
+                        <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-indigo-700 hover:text-indigo-900 font-bold flex items-center space-x-1 ml-auto" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
+                            <i class="fa-solid fa-laptop text-[10px] text-indigo-600"></i>
                             <span>डाउनलोड PC एजेंट (.exe)</span>
                         </a>
-                        <span class="text-amber-800 font-medium hidden sm:inline">Auto MS Word Transfer</span>
                     </div>
                 </div>
 
                 <!-- Connected Active State (Compact 1-row) -->
-                <div id="mobile-active-section" class="hidden flex items-center justify-between bg-amber-100/50 px-2.5 py-1.5 rounded-lg border border-amber-200 text-xs">
-                    <div class="flex items-center space-x-1.5 truncate">
-                        <i class="fa-solid fa-crown text-amber-600 text-xs flex-shrink-0"></i>
-                        <span id="mobile-email-display" class="font-bold text-amber-950 truncate max-w-[170px]">karan@gmail.com</span>
-                        <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-extrabold border border-amber-300">👑 VIP Member</span>
+                <div id="mobile-active-section" class="hidden flex flex-col space-y-1 bg-amber-100/50 p-2 rounded-lg border border-amber-200 text-xs">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-1.5 truncate">
+                            <i class="fa-solid fa-crown text-amber-600 text-xs flex-shrink-0"></i>
+                            <span id="mobile-email-display" class="font-bold text-amber-950 truncate max-w-[170px]">karan@gmail.com</span>
+                            <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-extrabold border border-amber-300">👑 VIP Member</span>
+                        </div>
+                        <button id="mobile-logout-btn" class="text-rose-500 hover:text-rose-700 transition font-semibold text-[11px] ml-2 flex-shrink-0">
+                            Unlink
+                        </button>
                     </div>
-                    <button id="mobile-logout-btn" class="text-rose-500 hover:text-rose-700 transition font-semibold text-[11px] ml-2 flex-shrink-0">
-                        Unlink
-                    </button>
+                    <div class="text-[10px] text-amber-950 font-bold flex items-center gap-1 bg-amber-200/50 px-1.5 py-0.5 rounded">
+                        <i class="fa-solid fa-bolt text-amber-600 text-[10px]"></i>
+                        <span>लेटर तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा</span>
+                    </div>
                 </div>
             </div>
             
@@ -351,12 +359,12 @@
                     <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
                 </div>
 
-                <!-- Drag & Drop Zone with Multi-file support (Gallery & Files) - Sightly increased comfortable height -->
-                <div id="drop-zone" class="border-2 border-dashed border-indigo-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/25 transition-all duration-200 bg-[#fbfcfe] min-h-[135px] sm:min-h-[145px] group">
-                    <div class="bg-indigo-50 text-indigo-600 h-10 w-10 sm:h-11 sm:w-11 rounded-2xl flex items-center justify-center mb-2 shadow-inner group-hover:scale-110 transition-transform duration-200">
-                        <i class="fa-solid fa-cloud-arrow-up text-base sm:text-lg animate-float-fast text-indigo-600"></i>
+                <!-- Drag & Drop Zone with Multi-file support (Gallery & Files) - Comfortable taller height -->
+                <div id="drop-zone" class="border-2 border-dashed border-indigo-200/80 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/25 transition-all duration-200 bg-[#fbfcfe] min-h-[175px] sm:min-h-[185px] group">
+                    <div class="bg-indigo-50 text-indigo-600 h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center mb-2.5 shadow-inner group-hover:scale-110 transition-transform duration-200">
+                        <i class="fa-solid fa-cloud-arrow-up text-lg sm:text-xl animate-float-fast text-indigo-600"></i>
                     </div>
-                    <p class="text-xs font-bold text-slate-700 group-hover:text-indigo-700 transition-colors">फ़ोटो यहाँ ड्रैग करें या गैलरी से 1 या अधिक पेज चुनें</p>
+                    <p class="text-xs sm:text-sm font-bold text-slate-700 group-hover:text-indigo-700 transition-colors">फ़ोटो यहाँ ड्रैग करें या गैलरी से 1 या अधिक पेज चुनें</p>
                     <p class="text-[11px] text-slate-400 mt-1">1, 2 या 3 पेज एक साथ जोड़ सकते हैं</p>
                     <input type="file" id="file-input" accept="image/*" multiple class="hidden">
                 </div>
@@ -395,35 +403,35 @@
             </div>
 
             <!-- Voice Recording Panel with Zoom In-Out Mic Animation - Balanced Height & Clean Title -->
-            <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3.5 sm:p-4 flex-grow flex flex-col hidden">
-                <div class="flex items-center justify-between mb-2.5">
+            <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2.5 sm:p-3 flex flex-col hidden">
+                <div class="flex items-center justify-between mb-1.5">
                     <h3 class="text-xs font-bold text-indigo-950 uppercase tracking-wide flex items-center">
                         <i class="fa-solid fa-microphone-lines text-indigo-600 mr-1.5 text-sm"></i>
                         बोलकर लेटर लिखवाएं
                     </h3>
                 </div>
 
-                <!-- Mic Container with Pulsing Waves & Zoom In-Out Button - Balanced Height -->
-                <div class="border border-indigo-100/70 rounded-2xl p-3.5 sm:p-4 flex flex-col items-center justify-center text-center bg-[#fbfcfe] flex-grow relative overflow-hidden">
-                    <div id="record-timer" class="text-2xl sm:text-3xl font-mono text-indigo-950 font-extrabold mb-2.5 tracking-tight">00:00</div>
+                <!-- Mic Container with Pulsing Waves & Zoom In-Out Button - Compact & Balanced Height -->
+                <div class="border border-indigo-100/70 rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-center text-center bg-[#fbfcfe] relative overflow-hidden min-h-[140px] sm:min-h-[155px]">
+                    <div id="record-timer" class="text-xl sm:text-2xl font-mono text-indigo-950 font-extrabold mb-1.5 tracking-tight">00:00</div>
                     
                     <!-- Pulsing Record Rings Animation -->
-                    <div class="relative flex items-center justify-center h-20 w-20 sm:h-24 sm:w-24">
-                        <div id="record-ring" class="absolute h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-indigo-500 opacity-30 pulse-wave hidden"></div>
-                        <div id="record-ring-2" class="absolute h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-blue-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
+                    <div class="relative flex items-center justify-center h-16 w-16 sm:h-18 sm:w-18">
+                        <div id="record-ring" class="absolute h-16 w-16 sm:h-18 sm:w-18 rounded-full bg-indigo-500 opacity-30 pulse-wave hidden"></div>
+                        <div id="record-ring-2" class="absolute h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-blue-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
                         <!-- Mic Button with Zoom In-Out Animation -->
-                        <button id="record-btn" class="animate-zoom-mic h-16 w-16 sm:h-18 sm:w-18 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white shadow-xl shadow-indigo-700/30 flex items-center justify-center transition focus:outline-none relative z-10 active:scale-95">
-                            <i id="record-icon" class="fa-solid fa-microphone text-xl sm:text-2xl"></i>
+                        <button id="record-btn" class="animate-zoom-mic h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white shadow-xl shadow-indigo-700/30 flex items-center justify-center transition focus:outline-none relative z-10 active:scale-95">
+                            <i id="record-icon" class="fa-solid fa-microphone text-lg sm:text-xl"></i>
                         </button>
                     </div>
 
-                    <p id="record-status" class="text-xs font-bold text-slate-700 mt-3">माइक चालू करने के लिए बटन दबाएं</p>
+                    <p id="record-status" class="text-xs font-bold text-slate-700 mt-2">माइक चालू करने के लिए बटन दबाएं</p>
                     <p class="text-[11px] text-indigo-700/80 font-medium mt-0.5">आप किसी भी तरीके से बोलिए, मैं समझ जाऊंगा।</p>
                 </div>
 
                 <!-- Multi-Audio Voice Notes List Container -->
-                <div id="audio-preview-container" class="mt-2.5 hidden border border-indigo-100 rounded-2xl p-2.5 bg-indigo-50/40 relative animate-pop-in">
-                    <div class="flex justify-between items-center mb-1.5 pb-1 border-b border-indigo-100">
+                <div id="audio-preview-container" class="mt-2 hidden border border-indigo-100 rounded-2xl p-2 bg-indigo-50/40 relative animate-pop-in">
+                    <div class="flex justify-between items-center mb-1 pb-1 border-b border-indigo-100">
                         <div class="flex items-center space-x-2">
                             <i class="fa-solid fa-microphone text-indigo-700 text-xs"></i>
                             <span id="audio-count-badge" class="font-bold text-xs text-indigo-950 bg-indigo-100 px-2.5 py-0.5 rounded-full border border-indigo-200">0 वॉइस नोट जुड़े</span>
@@ -435,13 +443,13 @@
                     </div>
 
                     <!-- Voice Notes Scrollable List -->
-                    <div id="audio-list-grid" class="space-y-2 max-h-40 overflow-y-auto p-1 pr-1.5">
+                    <div id="audio-list-grid" class="space-y-1.5 max-h-36 overflow-y-auto p-1 pr-1.5">
                         <!-- Dynamic audio cards -->
                     </div>
                 </div>
 
                 <!-- Audio File Upload (Alternative) -->
-                <div class="mt-2.5 border-t border-slate-100 pt-2">
+                <div class="mt-2 border-t border-slate-100 pt-1.5">
                     <div class="flex justify-between items-center mb-1">
                         <label for="audio-input" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">या पहले से रिकॉर्ड ऑडियो फ़ाइल जोड़ें:</label>
                         <span class="text-[10px] text-slate-400 font-medium">मल्टीपल समर्थित</span>
@@ -450,17 +458,17 @@
                 </div>
             </div>
 
-            <!-- Action Trigger Button (Name: Not 'Generate', but 'दस्तावेज़ तैयार करें (Start Smart Typing)') -->
+            <!-- Action Trigger Button (Name: 'लेटर तैयार करें (Start Smart Typing)') -->
             <div class="pt-0.5">
                 <button id="process-btn" class="pop-btn w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white font-bold py-3 sm:py-3.5 px-3 sm:px-5 rounded-xl shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 text-center">
                     <i class="fa-solid fa-wand-magic-sparkles text-xs sm:text-sm text-indigo-200 flex-shrink-0"></i>
-                    <span id="process-btn-text" class="tracking-wide text-xs sm:text-sm">दस्तावेज़ तैयार करें (Smart Typing)</span>
+                    <span id="process-btn-text" class="tracking-wide text-xs sm:text-sm">लेटर तैयार करें (Start Smart Typing)</span>
                 </button>
             </div>
 
         </section>
 
-        <!-- Right Column: Enhanced "तैयार दस्तावेज़" Document Canvas (7 cols) -->
+        <!-- Right Column: Enhanced "तैयार लेटर" Document Canvas (7 cols) -->
         <section class="lg:col-span-7 flex flex-col space-y-3 sm:space-y-4">
             
             <!-- Modern Workspace Desk Card: A4 Preview Desk -->
@@ -475,7 +483,7 @@
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
-                                <h2 class="text-xs sm:text-sm font-bold text-slate-900">A4 दस्तावेज़ प्रीव्यू (Preview Mode)</h2>
+                                <h2 class="text-xs sm:text-sm font-bold text-slate-900">A4 लेटर प्रीव्यू (Letter Preview)</h2>
                                 <span class="text-[9px] sm:text-[10px] font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/60 hidden sm:inline-block">
                                      <i class="fa-solid fa-lock mr-1 text-[9px]"></i>Read-Only
                                 </span>
@@ -523,8 +531,8 @@
                     </button>
                 </div>
 
-                <!-- A4 Paper Preview Container (Adaptive Compact Height on Mobile, Generous Frame on Desktop) -->
-                <div class="flex flex-col items-center justify-start rounded-xl relative p-2 sm:p-4 bg-slate-200/80 border border-slate-300/80 touch-pan-y min-h-[300px] sm:min-h-[660px] max-h-[580px] sm:max-h-[820px] overflow-y-auto w-full">
+                <!-- A4 Paper Preview Container (Adaptive Authentic Frame on Mobile & Desktop) -->
+                <div class="flex flex-col items-center justify-start rounded-xl relative p-2 sm:p-4 bg-slate-200/80 border border-slate-300/80 touch-pan-y min-h-[540px] sm:min-h-[660px] max-h-[680px] sm:max-h-[820px] overflow-y-auto w-full">
                     
                     <div id="document-preview" class="a4-print-sheet select-text cursor-default relative">
                         
@@ -535,13 +543,13 @@
                         </div>
 
                         <!-- Placeholder state when document is empty -->
-                        <div id="preview-placeholder" class="h-full min-h-[240px] sm:min-h-[520px] flex flex-col items-center justify-center text-center text-slate-400 select-none p-3 sm:p-4">
+                        <div id="preview-placeholder" class="h-full min-h-[460px] sm:min-h-[520px] flex flex-col items-center justify-center text-center text-slate-400 select-none p-3 sm:p-4">
                             <div class="w-14 h-18 sm:w-16 sm:h-20 rounded-lg border-2 border-dashed border-indigo-300 flex flex-col items-center justify-center mb-2.5 sm:mb-3 bg-indigo-50/50 shadow-inner">
                                 <i class="fa-solid fa-file-invoice text-indigo-600 text-2xl sm:text-3xl"></i>
                             </div>
-                            <h4 class="text-xs sm:text-sm font-bold text-slate-700 mb-1">A4 दस्तावेज़ प्रीव्यू</h4>
+                            <h4 class="text-xs sm:text-sm font-bold text-slate-700 mb-1">A4 लेटर प्रीव्यू</h4>
                             <p class="text-[11px] sm:text-xs text-slate-400 max-w-xs leading-relaxed">
-                                फ़ोटो अपलोड या वॉइस रिकॉर्ड होते ही AI द्वारा तैयार असली A4 दस्तावेज़ यहाँ दिखेगा।
+                                फ़ोटो अपलोड या बोलकर रिकॉर्ड करते ही असली A4 लेटर यहाँ दिखेगा।
                             </p>
                         </div>
 
@@ -556,7 +564,7 @@
                     <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm hidden flex flex-col items-center justify-center rounded-xl z-20 animate-pop-in">
                         <div class="h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
                         <p class="text-sm font-bold text-indigo-950">Smart Typing जारी है...</p>
-                        <p class="text-xs text-indigo-600/80 mt-1">दस्तावेज़ का A4 प्रिंट प्रीव्यू तैयार किया जा रहा है</p>
+                        <p class="text-xs text-indigo-600/80 mt-1">लेटर का A4 प्रिंट प्रीव्यू तैयार किया जा रहा है</p>
                     </div>
                 </div>
 
@@ -601,34 +609,6 @@
 
     </main>
 
-    <!-- Slide-out Sidebar: Processing History -->
-    <div id="history-sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl border-l border-slate-200 transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
-        <div class="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
-            <h3 class="font-bold text-slate-900 text-sm flex items-center">
-                <i class="fa-solid fa-clock-rotate-left text-indigo-600 mr-2 text-xs"></i>
-                इतिहास (History)
-            </h3>
-            <button id="close-history" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-200 transition">
-                <i class="fa-solid fa-xmark text-sm"></i>
-            </button>
-        </div>
-        <div id="history-list" class="flex-grow overflow-y-auto p-4 space-y-2.5">
-            <div id="history-empty" class="text-center py-12 text-slate-400 text-xs">
-                <i class="fa-regular fa-folder-open text-3xl mb-3 text-slate-300 block"></i>
-                कोई पुराना इतिहास नहीं है
-            </div>
-        </div>
-        <div class="p-3.5 border-t border-slate-100">
-            <button id="clear-history" class="pop-btn w-full border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold py-2 px-4 rounded-xl text-xs transition text-center flex items-center justify-center space-x-2">
-                <i class="fa-solid fa-trash-can text-xs"></i>
-                <span>सारे इतिहास डिलीट करें</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Backdrop for history sidebar -->
-    <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-40 hidden transition-opacity"></div>
-
     <!-- WhatsApp Share Modal (Opens immediately upon download or click) -->
     <div id="modal-share" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('modal-share')"></div>
@@ -640,7 +620,7 @@
                         <i class="fa-solid fa-circle-check text-base text-indigo-600"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-slate-900">दस्तावेज़ तैयार है!</h3>
+                        <h3 class="font-bold text-sm text-slate-900">लेटर तैयार है!</h3>
                         <p class="text-[10px] text-indigo-700 font-medium">WhatsApp शेयर एवं डाउनलोड विकल्प</p>
                     </div>
                 </div>
@@ -651,7 +631,7 @@
             <!-- Modal Body -->
             <div class="p-5 space-y-3 text-center">
                 <p class="text-xs text-slate-600 leading-relaxed font-medium">
-                    दस्तावेज़ को WhatsApp पर भेजने या डाउनलोड करने के विकल्प:
+                    लेटर को WhatsApp पर भेजने या डाउनलोड करने के विकल्प:
                 </p>
 
                 <!-- 1. Primary WhatsApp Share Button (sent whatsapp) -->
@@ -749,7 +729,7 @@
                         मोबाइल में इसे डाउनलोड करने की आवश्यकता नहीं है!
                     </p>
                     <p class="text-[11px] text-slate-600">
-                        यह <code>.exe</code> ऐप केवल आपके <strong>Windows कंप्यूटर / लैपटॉप</strong> के लिए है ताकि मोबाइल से भेजा गया दस्तावेज़ सीधे आपके कंप्यूटर के <strong>MS Word</strong> में अपने आप खुल सके।
+                        यह <code>.exe</code> ऐप केवल आपके <strong>Windows कंप्यूटर / लैपटॉप</strong> के लिए है ताकि मोबाइल से भेजा गया लेटर सीधे आपके कंप्यूटर के <strong>MS Word</strong> में अपने आप खुल सके।
                     </p>
                     <p class="text-[11px] text-slate-600">
                         📱 <strong>मोबाइल पर क्या करें?</strong><br>
@@ -770,6 +750,6 @@
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260907_v42"></script>
+    <script src="/static/app.js?v=20260907_v43"></script>
 </body>
 </html>

@@ -81,21 +81,12 @@ const downloadDocxBtn = document.getElementById('download-docx-btn');
 const copyBtn = document.getElementById('copy-btn');
 const clearBtn = document.getElementById('clear-btn');
 
-const toggleHistoryBtn = document.getElementById('toggle-history');
-const closeHistoryBtn = document.getElementById('close-history');
-const historySidebar = document.getElementById('history-sidebar');
-const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-const historyList = document.getElementById('history-list');
-const historyEmpty = document.getElementById('history-empty');
-const clearHistoryBtn = document.getElementById('clear-history');
-
 const toast = document.getElementById('toast');
 const toastIcon = document.getElementById('toast-icon');
 const toastMessage = document.getElementById('toast-message');
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
-    loadHistory();
     setupEventListeners();
     updateCounters();
     
@@ -302,7 +293,7 @@ function setupEventListeners() {
             const text = documentEditor ? documentEditor.value.trim() : '';
             if (!text) {
                 e.preventDefault();
-                showToast('error', 'डाउनलोड करने के लिए पहले दस्तावेज़ तैयार करें।');
+                showToast('error', 'डाउनलोड करने के लिए पहले लेटर तैयार करें।');
                 return;
             }
             if (downloadTextInput) {
@@ -316,19 +307,13 @@ function setupEventListeners() {
         });
     }
 
-    // 8. History Sidebar Controls
-    if (toggleHistoryBtn) toggleHistoryBtn.addEventListener('click', openHistorySidebar);
-    if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', closeHistorySidebar);
-    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeHistorySidebar);
-    if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearAllHistory);
-
-    // 9. WhatsApp & PDF Action Controls
+    // 8. WhatsApp & PDF Action Controls
     const shareWhatsappDirectBtn = document.getElementById('share-whatsapp-direct-btn');
     if (shareWhatsappDirectBtn) {
         shareWhatsappDirectBtn.addEventListener('click', () => {
             const text = documentEditor ? documentEditor.value.trim() : '';
             if (!text) {
-                showToast('error', 'कृपया पहले दस्तावेज़ तैयार करें।');
+                showToast('error', 'कृपया पहले लेटर तैयार करें।');
                 return;
             }
             openModal('modal-share');
@@ -577,7 +562,7 @@ async function handleImageSelection(filesInput) {
         if (dropZone) dropZone.classList.add('hidden');
         if (imagePreviewContainer) imagePreviewContainer.classList.remove('hidden');
         renderImageThumbnails();
-        showToast('success', `${selectedImageFiles.length} पेज तैयार! अब "दस्तावेज़ तैयार करें" बटन दबाएँ।`);
+        showToast('success', `${selectedImageFiles.length} पेज तैयार! अब "लेटर तैयार करें" बटन दबाएँ।`);
     }
 
     // Reset file inputs so the same photo/file can be re-selected if necessary
@@ -587,7 +572,7 @@ async function handleImageSelection(filesInput) {
     if (fileInputAdd) fileInputAdd.value = '';
 
     // NOTICE: processWithAI is NOT auto-called here.
-    // The user will click `[दस्तावेज़ तैयार करें (Smart Typing)]` when satisfied with their images.
+    // The user will click `[लेटर तैयार करें (Smart Typing)]` when satisfied with their images.
 }
 
 function clearImageSelection() {
@@ -857,7 +842,7 @@ function stopRecording() {
     if (recordRing) recordRing.classList.add('hidden');
     if (recordRing2) recordRing2.classList.add('hidden');
     if (recordIcon) recordIcon.className = 'fa-solid fa-microphone text-2xl';
-    if (recordStatus) recordStatus.innerText = 'रिकॉर्डिंग पूरी हो गई! आप और वॉइस नोट भी जोड़ सकते हैं या नीचे "दस्तावेज़ तैयार करें" दबाएं।';
+    if (recordStatus) recordStatus.innerText = 'रिकॉर्डिंग पूरी हो गई! आप और वॉइस नोट भी जोड़ सकते हैं या नीचे "लेटर तैयार करें" दबाएं।';
 }
 
 // Process Document through FastAPI
@@ -894,7 +879,7 @@ async function processWithAI(mode) {
         const countMsg = (currentMode === 'image') 
             ? `${selectedImageFiles.length} पेज` 
             : `${selectedAudioFiles.length} वॉइस नोट्स`;
-        processBtnText.innerHTML = `<span class="flex items-center justify-center"><div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>दस्तावेज़ तैयार हो रहा है (${countMsg})...</span>`;
+        processBtnText.innerHTML = `<span class="flex items-center justify-center"><div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>लेटर तैयार हो रहा है (${countMsg})...</span>`;
     }
 
     try {
@@ -933,18 +918,16 @@ async function processWithAI(mode) {
             downloadDocxBtn.removeAttribute('disabled');
         }
         
-        // Save to History
-        saveToHistory(data);
-        showToast('success', 'Smart Typing द्वारा दस्तावेज़ तैयार कर लिया गया! समीक्षा करें और "MS Word में भेजें" दबाएं।');
+        showToast('success', 'Smart Typing द्वारा लेटर तैयार कर लिया गया! समीक्षा करें और "MS Word में भेजें" दबाएं।');
 
     } catch (err) {
         console.error(err);
-        showToast('error', err.message || 'दस्तावेज़ प्रोसेस करने में असमर्थ।');
+        showToast('error', err.message || 'लेटर प्रोसेस करने में असमर्थ।');
     } finally {
         if (loadingOverlay) loadingOverlay.classList.add('hidden');
         if (processBtn && processBtnText) {
             processBtn.removeAttribute('disabled');
-            processBtnText.innerHTML = `दस्तावेज़ तैयार करें (Smart Typing)`;
+            processBtnText.innerHTML = `लेटर तैयार करें (Start Smart Typing)`;
         }
     }
 }
@@ -958,7 +941,7 @@ function downloadWordDocument() {
         return;
     }
 
-    const fileName = `Smart_Typing_Document_${Date.now()}.docx`;
+    const fileName = `Smart_Typing_Letter_${Date.now()}.docx`;
 
     // 1. Direct Form Download: Native browser stream download (100% reliable across mobile & PC)
     triggerDirectFormDownload(text, fileName);
@@ -1052,7 +1035,7 @@ async function shareOnWhatsApp() {
         const docxDownloadLink = docId ? `${window.location.origin}/d/${docId}` : window.location.href;
         const viewPrintLink = docId ? `${window.location.origin}/v/${docId}` : window.location.href;
 
-        const whatsappMessage = `📄 *तहसील विलेख / कानूनी दस्तावेज़ (Smart Typing)*\n\nनमस्ते, आपके लिए तैयार किया गया दस्तावेज़ निम्नलिखित लिंक से प्राप्त करें:\n\n📥 *MS Word (.DOCX) फ़ाइल डाउनलोड लिंक:*\n👉 ${docxDownloadLink}\n\n👁️ *मोबाइल पर A4 देखें व PDF सेव करें:*\n👉 ${viewPrintLink}\n\n_(यह लिंक 48 घंटे के लिए सक्रिय है)_`;
+        const whatsappMessage = `📄 *तहसील विलेख / कानूनी लेटर (Smart Typing)*\n\nनमस्ते, आपके लिए तैयार किया गया लेटर निम्नलिखित लिंक से प्राप्त करें:\n\n📥 *MS Word (.DOCX) फ़ाइल डाउनलोड लिंक:*\n👉 ${docxDownloadLink}\n\n👁️ *मोबाइल पर A4 देखें व PDF सेव करें:*\n👉 ${viewPrintLink}\n\n_(यह लिंक 48 घंटे के लिए सक्रिय है)_`;
 
         // Close modal if open
         closeModal('modal-share');
@@ -1076,7 +1059,7 @@ async function shareOnWhatsApp() {
 function triggerNativePrint() {
     const text = documentEditor ? documentEditor.value.trim() : '';
     if (!text) {
-        showToast('error', 'प्रिंट करने के लिए कोई दस्तावेज़ नहीं है।');
+        showToast('error', 'प्रिंट करने के लिए कोई लेटर नहीं है।');
         return;
     }
 
@@ -1484,87 +1467,6 @@ function showToast(type, message) {
     }, 4000);
 }
 
-// History Management
-function saveToHistory(data) {
-    let history = JSON.parse(localStorage.getItem('smart_typing_history') || '[]');
-    const newItem = {
-        id: Date.now(),
-        date: new Date().toLocaleString('hi-IN'),
-        transcribed_text: data.transcribed_text
-    };
-    history.unshift(newItem);
-    if (history.length > 20) history.pop();
-    localStorage.setItem('smart_typing_history', JSON.stringify(history));
-    loadHistory();
-}
-
-function loadHistory() {
-    if (!historyList || !historyEmpty) return;
-    let history = JSON.parse(localStorage.getItem('smart_typing_history') || '[]');
-    historyList.innerHTML = '';
-    
-    if (history.length === 0) {
-        historyEmpty.classList.remove('hidden');
-        return;
-    }
-    
-    historyEmpty.classList.add('hidden');
-    
-    history.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'p-3 border border-emerald-100/80 rounded-xl hover:bg-emerald-50/50 cursor-pointer transition flex flex-col justify-between bg-white text-left shadow-sm';
-        const textSnippet = item.transcribed_text.substring(0, 50) + (item.transcribed_text.length > 50 ? '...' : '');
-        
-        const topRow = document.createElement('div');
-        topRow.className = 'flex justify-between items-center mb-1';
-        const dateSpan = document.createElement('span');
-        dateSpan.className = 'text-[10px] text-slate-400 font-semibold font-mono';
-        dateSpan.textContent = item.date;
-        topRow.appendChild(dateSpan);
-
-        const snippetPara = document.createElement('p');
-        snippetPara.className = 'text-xs font-semibold text-emerald-950 leading-snug';
-        snippetPara.textContent = textSnippet;
-
-        div.appendChild(topRow);
-        div.appendChild(snippetPara);
-        
-        div.addEventListener('click', () => {
-            if (documentEditor) {
-                documentEditor.value = item.transcribed_text;
-                updateCounters();
-            }
-            if (documentPreview) {
-                paginateDocument(item.transcribed_text);
-                renderCurrentPage();
-            }
-            if (downloadDocxBtn) downloadDocxBtn.removeAttribute('disabled');
-            closeHistorySidebar();
-            showToast('success', 'इतिहास से दस्तावेज़ रीलोड किया गया!');
-        });
-        
-        historyList.appendChild(div);
-    });
-}
-
-function clearAllHistory() {
-    if (confirm('क्या आप सच में संपूर्ण इतिहास हटाना चाहते हैं?')) {
-        localStorage.removeItem('smart_typing_history');
-        loadHistory();
-        showToast('success', 'इतिहास सफलतापूर्वक साफ़ किया गया।');
-    }
-}
-
-function openHistorySidebar() {
-    if (historySidebar) historySidebar.classList.remove('translate-x-full');
-    if (sidebarBackdrop) sidebarBackdrop.classList.remove('hidden');
-}
-
-function closeHistorySidebar() {
-    if (historySidebar) historySidebar.classList.add('translate-x-full');
-    if (sidebarBackdrop) sidebarBackdrop.classList.add('hidden');
-}
-
 // Desktop Sync Handlers
 function linkMobileEmail(email, pin) {
     mobileUserEmail = email;
@@ -1612,7 +1514,7 @@ async function handleSendToWord() {
 
     const text = documentEditor ? documentEditor.value.trim() : '';
     if (!text) {
-        showToast('error', 'भेजने के लिए पहले दस्तावेज़ तैयार करें।');
+        showToast('error', 'भेजने के लिए पहले लेटर तैयार करें।');
         return;
     }
 
@@ -1645,7 +1547,7 @@ async function handleSendToWord() {
 
         const data = await res.json();
         if (res.ok && data.success) {
-            showToast('success', data.message || 'दस्तावेज़ भेजा गया! कंप्यूटर के MS Word में खुल रहा है...');
+            showToast('success', data.message || 'लेटर भेजा गया! कंप्यूटर के MS Word में खुल रहा है...');
         } else {
             showToast('error', data.message || 'भेजने में विफल।');
             if (res.status === 401 || res.status === 404) {

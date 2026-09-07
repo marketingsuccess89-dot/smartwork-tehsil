@@ -926,12 +926,12 @@ async def view_shared_doc(doc_id: str):
         }}
         </style>
     <script>
-        // Completely clears page title during print so browser NEVER prints "तहसील विलेख दस्तावेज़" or URL
+        // Completely clears page title during print so browser NEVER prints title or URL
         window.addEventListener('beforeprint', function() {{
             document.title = '';
         }});
         window.addEventListener('afterprint', function() {{
-            document.title = 'तहसील विलेख दस्तावेज़';
+            document.title = 'Smart Typing लेटर';
         }});
         function toggleStampSpace() {{
             const box = document.getElementById('stamp-spacer-box');
@@ -953,7 +953,7 @@ async def view_shared_doc(doc_id: str):
     <header class="no-print sticky top-0 z-30 w-full bg-[#06281e] text-white py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
         <div class="flex items-center space-x-2 font-bold text-xs sm:text-sm">
             <span class="bg-emerald-600 p-1.5 rounded-lg"><i class="fa-solid fa-file-contract"></i></span>
-            <span>तहसील विलेख दस्तावेज़</span>
+            <span>Smart Typing लेटर</span>
         </div>
         <div class="flex items-center space-x-2">
             <button onclick="toggleStampSpace()" id="stamp-toggle-btn" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-200 font-semibold py-2 px-3 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-sm cursor-pointer">
