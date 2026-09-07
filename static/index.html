@@ -235,22 +235,21 @@
 </head>
 <body class="bg-[#f4f6fb] text-slate-800 min-h-screen flex flex-col antialiased overflow-x-hidden w-full max-w-full">
 
-    <!-- Royal Midnight Header -->
-    <header class="bg-gradient-to-r from-[#0a1128] via-[#101f42] to-[#0a1128] border-b border-indigo-900/60 text-white sticky top-0 z-30 shadow-md w-full">
+    <!-- Top Modern Header -->
+    <header class="bg-gradient-to-r from-[#0b132b] via-[#1c2541] to-[#0b132b] border-b border-indigo-500/30 text-white sticky top-0 z-30 shadow-md w-full">
         <div class="container mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
-            <!-- Left: Brand with Keyboard / Lightning & Indigo Accents -->
-            <div class="flex items-center space-x-2">
-                <div class="bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg text-white shadow-lg shadow-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-keyboard text-sm text-white"></i>
+            <!-- Left: Brand / Main Header: Photo upload करके या बोलकर, Letter लिखवाएं -->
+            <div class="flex items-center space-x-2 min-w-0">
+                <div class="bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg text-white shadow-md shadow-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-file-pen text-sm text-white"></i>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-100 to-blue-200 bg-clip-text text-transparent">Smart Typing</span>
-                    <span class="text-[10px] text-indigo-300/80 hidden sm:inline font-medium">Fast &amp; Accurate Document Assistant</span>
-                </div>
+                <h1 class="text-xs sm:text-sm md:text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-100 to-amber-200 bg-clip-text text-transparent truncate sm:whitespace-normal">
+                    Photo upload करके या बोलकर, Letter लिखवाएं
+                </h1>
             </div>
             
             <!-- Right: Download PC Agent Button -->
-            <div class="flex items-center space-x-2 flex-shrink-0">
+            <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
                 <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden md:inline-flex pop-btn bg-indigo-900/80 hover:bg-indigo-800 text-indigo-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-indigo-700/60 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
                     <i class="fa-solid fa-download text-amber-300 text-xs"></i>
                     <span>डाउनलोड PC एजेंट (.exe)</span>
@@ -287,7 +286,19 @@
                     </span>
                 </div>
 
-                <!-- Login Form (Compact 1-row layout) -->
+                <!-- TOP PROMINENT NOTICE: Letter तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा (Top of VIP Box) -->
+                <div class="mb-2 bg-gradient-to-r from-amber-100/90 via-amber-50 to-amber-100/80 px-2.5 py-1.5 rounded-xl border border-amber-300/90 flex items-center justify-between gap-1 shadow-2xs">
+                    <span class="text-[11px] sm:text-xs text-amber-950 font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt-lightning text-amber-600 text-xs flex-shrink-0"></i>
+                        <span>Letter तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा</span>
+                    </span>
+                    <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-indigo-700 hover:text-indigo-900 font-bold text-[10px] flex items-center space-x-1 flex-shrink-0 ml-1" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
+                        <i class="fa-solid fa-laptop text-[10px] text-indigo-600"></i>
+                        <span class="hidden sm:inline">PC एजेंट</span>
+                    </a>
+                </div>
+
+                <!-- Login Form (Placed below the top notice line) -->
                 <div id="mobile-login-section" class="space-y-1.5">
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
                         <div class="sm:col-span-6">
@@ -303,35 +314,18 @@
                             </button>
                         </div>
                     </div>
-                    <!-- VIP Auto-Word Transfer Prominent Note -->
-                    <div class="flex flex-wrap justify-between items-center text-[10px] text-slate-600 pt-0.5 gap-1 bg-amber-100/60 px-2 py-1 rounded-md border border-amber-200/70">
-                        <span class="text-amber-950 font-bold flex items-center gap-1">
-                            <i class="fa-solid fa-bolt text-amber-600 text-[10px]"></i>
-                            <span>लेटर तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा</span>
-                        </span>
-                        <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-indigo-700 hover:text-indigo-900 font-bold flex items-center space-x-1 ml-auto" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
-                            <i class="fa-solid fa-laptop text-[10px] text-indigo-600"></i>
-                            <span>डाउनलोड PC एजेंट (.exe)</span>
-                        </a>
-                    </div>
                 </div>
 
-                <!-- Connected Active State (Compact 1-row) -->
-                <div id="mobile-active-section" class="hidden flex flex-col space-y-1 bg-amber-100/50 p-2 rounded-lg border border-amber-200 text-xs">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-1.5 truncate">
-                            <i class="fa-solid fa-crown text-amber-600 text-xs flex-shrink-0"></i>
-                            <span id="mobile-email-display" class="font-bold text-amber-950 truncate max-w-[170px]">karan@gmail.com</span>
-                            <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-extrabold border border-amber-300">👑 VIP Member</span>
-                        </div>
-                        <button id="mobile-logout-btn" class="text-rose-500 hover:text-rose-700 transition font-semibold text-[11px] ml-2 flex-shrink-0">
-                            Unlink
-                        </button>
+                <!-- Connected Active State (Placed below the top notice line) -->
+                <div id="mobile-active-section" class="hidden flex items-center justify-between bg-amber-100/60 p-2 rounded-xl border border-amber-200 text-xs">
+                    <div class="flex items-center space-x-1.5 truncate">
+                        <i class="fa-solid fa-crown text-amber-600 text-xs flex-shrink-0"></i>
+                        <span id="mobile-email-display" class="font-bold text-amber-950 truncate max-w-[170px]">karan@gmail.com</span>
+                        <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-extrabold border border-amber-300">👑 VIP Member</span>
                     </div>
-                    <div class="text-[10px] text-amber-950 font-bold flex items-center gap-1 bg-amber-200/50 px-1.5 py-0.5 rounded">
-                        <i class="fa-solid fa-bolt text-amber-600 text-[10px]"></i>
-                        <span>लेटर तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा</span>
-                    </div>
+                    <button id="mobile-logout-btn" class="text-rose-500 hover:text-rose-700 transition font-semibold text-[11px] ml-2 flex-shrink-0">
+                        Unlink
+                    </button>
                 </div>
             </div>
             
@@ -750,6 +744,6 @@
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260907_v43"></script>
+    <script src="/static/app.js?v=20260907_v44"></script>
 </body>
 </html>
