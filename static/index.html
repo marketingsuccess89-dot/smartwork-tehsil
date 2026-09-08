@@ -12,6 +12,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client & Razorpay Checkout -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -236,24 +239,49 @@
 <body class="bg-[#f4f6fb] text-slate-800 min-h-screen flex flex-col antialiased overflow-x-hidden w-full max-w-full">
 
     <!-- Top Modern Header -->
-    <header class="bg-gradient-to-r from-[#0b132b] via-[#1c2541] to-[#0b132b] border-b border-indigo-500/30 text-white sticky top-0 z-30 shadow-md w-full">
-        <div class="container mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center">
-            <!-- Left: Brand / Main Header: Photo upload करके या बोलकर, Letter लिखवाएं -->
-            <div class="flex items-center space-x-2 min-w-0">
-                <div class="bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg text-white shadow-md shadow-indigo-500/20 flex items-center justify-center flex-shrink-0">
+    <header class="bg-gradient-to-r from-[#070d1e] via-[#131d38] to-[#070d1e] border-b border-indigo-500/30 text-white sticky top-0 z-30 shadow-md w-full">
+        <div class="container mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap justify-between items-center gap-2">
+            <!-- Left: Brand Logo & Title -->
+            <div class="flex items-center space-x-2 flex-shrink-0">
+                <div class="bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg text-white shadow-md shadow-indigo-500/20 flex items-center justify-center">
                     <i class="fa-solid fa-file-pen text-sm text-white"></i>
                 </div>
-                <h1 class="text-xs sm:text-sm md:text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-100 to-amber-200 bg-clip-text text-transparent truncate sm:whitespace-normal">
+                <span class="font-extrabold text-xs sm:text-sm tracking-wide text-indigo-100 hidden md:inline">Smart Typing</span>
+            </div>
+
+            <!-- Center: PROMINENT HERO MESSAGE (Centered & Enlarged) -->
+            <div class="flex-1 min-w-[200px] text-center px-1">
+                <h1 class="text-xs sm:text-base md:text-lg font-black tracking-tight bg-gradient-to-r from-amber-200 via-white to-amber-300 bg-clip-text text-transparent drop-shadow-sm">
                     Photo upload करके या बोलकर, Letter लिखवाएं
                 </h1>
             </div>
             
-            <!-- Right: Download PC Agent Button -->
-            <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
-                <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden md:inline-flex pop-btn bg-indigo-900/80 hover:bg-indigo-800 text-indigo-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-indigo-700/60 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
+            <!-- Right: PC Agent Download + Auth / Profile Status -->
+            <div class="flex items-center space-x-2 flex-shrink-0">
+                <!-- PC Agent Download Button -->
+                <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden lg:inline-flex pop-btn bg-indigo-900/80 hover:bg-indigo-800 text-indigo-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-indigo-700/60 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
                     <i class="fa-solid fa-download text-amber-300 text-xs"></i>
-                    <span>डाउनलोड PC एजेंट (.exe)</span>
+                    <span>PC एजेंट (.exe)</span>
                 </a>
+
+                <!-- Auth / Login State Container -->
+                <div id="header-auth-container" class="flex items-center">
+                    <!-- 1. Logged Out Button -->
+                    <button id="header-login-btn" class="pop-btn bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold py-1.5 px-3 rounded-xl transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
+                        <i class="fa-brands fa-google text-red-500 text-xs"></i>
+                        <span>लॉगिन</span>
+                    </button>
+
+                    <!-- 2. Logged In User Profile Badge -->
+                    <div id="header-user-badge" class="hidden flex items-center space-x-2 bg-indigo-950/80 hover:bg-indigo-900/90 px-2.5 py-1 rounded-xl border border-indigo-700/60 text-xs transition cursor-pointer">
+                        <img id="header-user-avatar" class="w-5 h-5 rounded-full bg-indigo-800" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="User">
+                        <span id="header-user-name" class="font-bold text-slate-100 max-w-[90px] sm:max-w-[120px] truncate">User</span>
+                        <span id="header-user-plan" class="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded shadow-2xs">FREE</span>
+                        <button id="header-logout-btn" title="लॉगआउट करें" class="text-indigo-300 hover:text-rose-400 ml-1 p-0.5">
+                            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -737,6 +765,181 @@
         </div>
     </div>
 
+    <!-- 1. Google 1-Click Authentication Modal -->
+    <div id="modal-auth" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeModal('modal-auth')"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-slate-200 animate-pop-in text-center">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-indigo-50/80 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-indigo-600 text-white p-1.5 rounded-xl flex items-center justify-center shadow-xs">
+                        <i class="fa-solid fa-file-signature text-xs"></i>
+                    </div>
+                    <span class="font-extrabold text-xs text-indigo-950">Smart Typing लॉगिन</span>
+                </div>
+                <button onclick="closeModal('modal-auth')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 space-y-4">
+                <div class="w-16 h-16 bg-gradient-to-tr from-indigo-100 to-blue-50 rounded-2xl flex items-center justify-center mx-auto border border-indigo-200 shadow-inner">
+                    <i class="fa-brands fa-google text-3xl text-rose-500"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-base text-slate-900">1-क्लिक Google लॉगिन</h3>
+                    <p id="auth-modal-reason" class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        दस्तावेज़ को कॉपी, शेयर या डाउनलोड करने के लिए कृपया अपने Google अकाउंट से लॉगिन करें।
+                    </p>
+                </div>
+
+                <!-- 1-Click Google Button -->
+                <button id="google-login-trigger-btn" class="pop-btn w-full bg-white hover:bg-slate-50 text-slate-800 font-bold py-3.5 px-4 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 shadow-md flex items-center justify-center space-x-3 transition cursor-pointer">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span class="text-xs sm:text-sm">Google के साथ जारी रखें</span>
+                </button>
+
+                <p class="text-[10px] text-slate-400">
+                    <i class="fa-solid fa-lock text-[9px] mr-1"></i>
+                    100% सुरक्षित • केवल एक बार लॉगिन करना होगा
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Post-Signup Clean Onboarding Modal (Name, Phone without OTP, Location) -->
+    <div id="modal-onboarding" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-indigo-100 animate-pop-in">
+            <!-- Header -->
+            <div class="p-4 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-indigo-50 flex items-center space-x-2.5">
+                <div class="bg-gradient-to-tr from-indigo-600 to-blue-600 text-white p-2 rounded-xl flex items-center justify-center shadow-xs">
+                    <i class="fa-solid fa-user-plus text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-sm text-indigo-950">प्रोफ़ाइल पूरी करें</h3>
+                    <p class="text-[10px] text-indigo-600 font-medium">केवल 10 सेकंड में विवरण दर्ज करें</p>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="onboarding-form" class="p-5 space-y-3.5">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <i class="fa-regular fa-user text-indigo-600 mr-1"></i> आपका पूरा नाम
+                    </label>
+                    <input type="text" id="onboarding-name" required class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="उदा. करन सिंह">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <i class="fa-solid fa-phone text-indigo-600 mr-1"></i> मोबाइल नंबर (बिना OTP)
+                    </label>
+                    <input type="tel" id="onboarding-mobile" required pattern="[0-9]{10}" maxlength="10" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="उदा. 9876543210">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <i class="fa-solid fa-location-dot text-indigo-600 mr-1"></i> तहसील / जिला / स्थान
+                    </label>
+                    <input type="text" id="onboarding-location" required class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="उदा. सदर तहसील, जयपुर">
+                </div>
+
+                <button type="submit" id="onboarding-submit-btn" class="pop-btn w-full bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center space-x-2 text-xs transition active:scale-95 cursor-pointer mt-2">
+                    <span>सबमिट करें और आगे बढ़ें</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. MS Word Direct Sync VIP Pro Membership Paywall Modal -->
+    <div id="modal-pro-paywall" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm" onclick="closeModal('modal-pro-paywall')"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full relative z-10 overflow-hidden border border-amber-300 animate-pop-in">
+            <!-- VIP Header Banner -->
+            <div class="bg-gradient-to-r from-[#0a1128] via-[#1c2541] to-[#0a1128] text-white p-4 border-b border-amber-400/30 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 p-1.5 rounded-xl font-black text-xs shadow-md">
+                        <i class="fa-solid fa-crown text-amber-950"></i>
+                    </span>
+                    <div>
+                        <h3 class="font-extrabold text-sm text-amber-200">MS Word Direct Sync — PRO फीचर</h3>
+                        <p class="text-[10px] text-slate-300">मोबाइल से सीधे कंप्यूटर MS Word में फ़ाइल भेजें</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-pro-paywall')" class="text-slate-400 hover:text-white p-1.5 rounded-lg transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- How It Works Visual Demo Box -->
+            <div class="p-5 space-y-4">
+                <div class="bg-gradient-to-r from-amber-50 via-white to-amber-50 p-3.5 rounded-2xl border border-amber-200 space-y-2">
+                    <div class="flex items-center space-x-2 text-amber-950 font-bold text-xs">
+                        <i class="fa-solid fa-bolt text-amber-600"></i>
+                        <span>यह फीचर कैसे काम करता है?</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">
+                        जैसे ही आप <strong>"MS Word में भेजें"</strong> दबाते हैं, आपका लेटर बिना डाउनलोड किए <strong>सीधे आपके कंप्यूटर के Microsoft Word में 1 सेकंड में ओपन हो जाता है</strong>।
+                    </p>
+                    <div class="flex items-center justify-between text-[10px] text-indigo-700 font-semibold pt-1 border-t border-amber-200/60">
+                        <span>📱 मोबाइल पर फोटो लें</span>
+                        <i class="fa-solid fa-arrow-right text-amber-500"></i>
+                        <span>💻 PC Word में ऑटो-ओपन</span>
+                    </div>
+                </div>
+
+                <!-- Membership Plans Selection (₹49, ₹99, ₹999) -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-2">अपनी सुविधानुसार प्रो प्लान चुनें:</label>
+                    <div class="grid grid-cols-3 gap-2 select-none">
+                        <!-- Weekly Plan (₹49) -->
+                        <div onclick="selectPlan('weekly')" id="plan-card-weekly" class="plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 bg-slate-50 cursor-pointer text-center transition">
+                            <span class="text-[9px] font-bold text-slate-500 block">वीकली</span>
+                            <div class="text-sm sm:text-base font-black text-slate-900 mt-0.5">₹49</div>
+                            <span class="text-[8px] text-slate-400 block">7 दिन</span>
+                        </div>
+
+                        <!-- Monthly Plan (₹99 - Most Popular) -->
+                        <div onclick="selectPlan('monthly')" id="plan-card-monthly" class="plan-card p-2.5 rounded-2xl border-2 border-amber-500 bg-amber-50/50 cursor-pointer text-center transition relative shadow-sm">
+                            <span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[8px] px-1.5 py-0.2 rounded-full whitespace-nowrap shadow-2xs">
+                                लोकप्रिय ⭐
+                            </span>
+                            <span class="text-[9px] font-bold text-amber-950 block mt-0.5">मंथली</span>
+                            <div class="text-sm sm:text-base font-black text-amber-950 mt-0.5">₹99</div>
+                            <span class="text-[8px] text-amber-700 block">30 दिन</span>
+                        </div>
+
+                        <!-- Yearly Plan (₹999 - Best Value) -->
+                        <div onclick="selectPlan('yearly')" id="plan-card-yearly" class="plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 bg-slate-50 cursor-pointer text-center transition">
+                            <span class="text-[9px] font-bold text-slate-500 block">इयरली</span>
+                            <div class="text-sm sm:text-base font-black text-slate-900 mt-0.5">₹999</div>
+                            <span class="text-[8px] text-emerald-600 font-bold block">12 महीने</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upgrade Action Button -->
+                <button id="pay-upgrade-btn" class="pop-btn w-full bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black py-3.5 px-4 rounded-2xl shadow-xl shadow-amber-500/25 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-crown text-slate-950"></i>
+                    <span id="pay-btn-label">₹99 का मंथली प्रो प्लान अनलॉक करें</span>
+                </button>
+
+                <p class="text-[10px] text-center text-slate-400">
+                    <i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i>
+                    UPI, PhonePe, Google Pay & Cards समर्थित • इंस्टेंट एक्टिवेशन
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="toast" class="fixed bottom-6 right-6 bg-[#0a1128] text-white text-xs font-semibold py-3 px-5 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition duration-300 z-50 flex items-center space-x-2.5 border border-indigo-900/80 pointer-events-none">
         <span id="toast-icon"><i class="fa-solid fa-circle-check text-amber-400"></i></span>
@@ -744,6 +947,6 @@
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260907_v44"></script>
+    <script src="/static/app.js?v=20260908_v50"></script>
 </body>
 </html>

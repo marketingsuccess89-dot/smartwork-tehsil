@@ -81,6 +81,36 @@ const downloadDocxBtn = document.getElementById('download-docx-btn');
 const copyBtn = document.getElementById('copy-btn');
 const clearBtn = document.getElementById('clear-btn');
 
+// Header Auth & Profile Elements
+const headerLoginBtn = document.getElementById('header-login-btn');
+const headerUserBadge = document.getElementById('header-user-badge');
+const headerUserAvatar = document.getElementById('header-user-avatar');
+const headerUserName = document.getElementById('header-user-name');
+const headerUserPlan = document.getElementById('header-user-plan');
+const headerLogoutBtn = document.getElementById('header-logout-btn');
+
+// Modals: 1-Click Auth, Onboarding & Pro Paywall
+const modalAuth = document.getElementById('modal-auth');
+const authModalReason = document.getElementById('auth-modal-reason');
+const googleLoginTriggerBtn = document.getElementById('google-login-trigger-btn');
+
+const modalOnboarding = document.getElementById('modal-onboarding');
+const onboardingForm = document.getElementById('onboarding-form');
+const onboardingNameInput = document.getElementById('onboarding-name');
+const onboardingMobileInput = document.getElementById('onboarding-mobile');
+const onboardingLocationInput = document.getElementById('onboarding-location');
+
+const modalProPaywall = document.getElementById('modal-pro-paywall');
+const payUpgradeBtn = document.getElementById('pay-upgrade-btn');
+const payBtnLabel = document.getElementById('pay-btn-label');
+
+// Auth & Subscription State
+let supabaseClient = null;
+let currentUser = null; // { id, email, full_name, mobile, location, plan: 'free'|'pro', is_pro: bool }
+let pendingAuthAction = null;
+let selectedProPlan = 'monthly'; // 'weekly', 'monthly', 'yearly'
+let razorpayKeyId = '';
+
 const toast = document.getElementById('toast');
 const toastIcon = document.getElementById('toast-icon');
 const toastMessage = document.getElementById('toast-message');
@@ -89,6 +119,7 @@ const toastMessage = document.getElementById('toast-message');
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     updateCounters();
+    initAuthAndConfig();
     
     // Load previously linked sync email and PIN
     const savedMobileEmail = localStorage.getItem('tehsil_mobile_email');
@@ -282,10 +313,38 @@ function setupEventListeners() {
         });
     }
 
-    if (copyBtn) copyBtn.addEventListener('click', copyToClipboard);
+    // 6. Header Auth & Modal Event Listeners
+    if (headerLoginBtn) {
+        headerLoginBtn.addEventListener('click', () => {
+            if (authModalReason) authModalReason.innerText = 'Smart Typing में अपने दस्तावेज़ और प्रोफ़ाइल सुरक्षित रखने के लिए लॉगिन करें।';
+            openModal('modal-auth');
+        });
+    }
+    if (headerLogoutBtn) {
+        headerLogoutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleLogout();
+        });
+    }
+    if (googleLoginTriggerBtn) {
+        googleLoginTriggerBtn.addEventListener('click', signInWithGoogle);
+    }
+    if (onboardingForm) {
+        onboardingForm.addEventListener('submit', handleOnboardingSubmit);
+    }
+    if (payUpgradeBtn) {
+        payUpgradeBtn.addEventListener('click', handleProPayment);
+    }
+
+    // 7. Editor Actions & Live Counters (Guarded by 1-Click Auth)
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            requireAuth(() => copyToClipboard(), 'दस्तावेज़ कॉपी करने के लिए कृपया 1-क्लिक Google लॉगिन करें।');
+        });
+    }
     if (clearBtn) clearBtn.addEventListener('click', clearEditor);
 
-    // 7. Native Download Form Handler (100% Mobile & PC Native Stream)
+    // 8. Native Download Form Handler (Guarded by 1-Click Auth)
     const downloadForm = document.getElementById('download-form');
     const downloadTextInput = document.getElementById('download-text-input');
     if (downloadForm) {
@@ -296,18 +355,26 @@ function setupEventListeners() {
                 showToast('error', 'डाउनलोड करने के लिए पहले लेटर तैयार करें।');
                 return;
             }
+            if (!currentUser || !currentUser.mobile) {
+                e.preventDefault();
+                requireAuth(() => {
+                    if (downloadTextInput) downloadTextInput.value = text;
+                    if (downloadForm.requestSubmit) downloadForm.requestSubmit();
+                    else downloadForm.submit();
+                }, 'Word (.DOCX) फ़ाइल डाउनलोड करने के लिए कृपया 1-क्लिक Google लॉगिन करें।');
+                return;
+            }
             if (downloadTextInput) {
                 downloadTextInput.value = text;
             }
             showToast('success', 'Word फ़ाइल डाउनलोड शुरू हो गई!');
-            // Open WhatsApp Share Modal
             setTimeout(() => {
                 openModal('modal-share');
             }, 600);
         });
     }
 
-    // 8. WhatsApp & PDF Action Controls
+    // 9. WhatsApp & PDF Action Controls (Guarded by 1-Click Auth)
     const shareWhatsappDirectBtn = document.getElementById('share-whatsapp-direct-btn');
     if (shareWhatsappDirectBtn) {
         shareWhatsappDirectBtn.addEventListener('click', () => {
@@ -316,35 +383,42 @@ function setupEventListeners() {
                 showToast('error', 'कृपया पहले लेटर तैयार करें।');
                 return;
             }
-            openModal('modal-share');
+            requireAuth(() => {
+                openModal('modal-share');
+            }, 'WhatsApp पर भेजने के लिए कृपया 1-क्लिक Google लॉगिन करें।');
         });
     }
 
-
     const whatsappLinkModalBtn = document.getElementById('whatsapp-link-modal-btn');
     if (whatsappLinkModalBtn) {
-        whatsappLinkModalBtn.addEventListener('click', shareOnWhatsApp);
+        whatsappLinkModalBtn.addEventListener('click', () => {
+            requireAuth(() => shareOnWhatsApp(), 'WhatsApp पर भेजने के लिए कृपया 1-क्लिक Google लॉगिन करें।');
+        });
     }
 
     const downloadDocxModalBtn = document.getElementById('download-docx-modal-btn');
     if (downloadDocxModalBtn) {
         downloadDocxModalBtn.addEventListener('click', () => {
-            if (downloadForm) downloadForm.requestSubmit ? downloadForm.requestSubmit() : downloadForm.submit();
+            requireAuth(() => {
+                if (downloadForm) downloadForm.requestSubmit ? downloadForm.requestSubmit() : downloadForm.submit();
+            }, 'Word फ़ाइल डाउनलोड करने के लिए कृपया 1-क्लिक Google लॉगिन करें।');
         });
     }
 
     const whatsappCopyBtn = document.getElementById('whatsapp-copy-btn');
     if (whatsappCopyBtn) {
         whatsappCopyBtn.addEventListener('click', () => {
-            copyToClipboard();
-            showToast('success', 'टेक्स्ट कॉपी हो गया! अब WhatsApp में पेस्ट करें।');
+            requireAuth(() => {
+                copyToClipboard();
+                showToast('success', 'टेक्स्ट कॉपी हो गया! अब WhatsApp में पेस्ट करें।');
+            }, 'टेक्स्ट कॉपी करने के लिए कृपया 1-क्लिक Google लॉगिन करें।');
         });
     }
 
-    // 10. Direct Send to MS Word Button Handler
+    // 10. Direct Send to MS Word Button Handler (VIP PRO Paywall Guarded)
     const sendToWordBtn = document.getElementById('send-to-word-btn');
     if (sendToWordBtn) {
-        sendToWordBtn.addEventListener('click', handleSendToWord);
+        sendToWordBtn.addEventListener('click', handleSendToWordClick);
     }
 
     // 11. Modal Station Setup & Send Button Handler
@@ -2178,3 +2252,423 @@ ${fullHtml}
 </body>
 </html>`;
 }
+
+// ==========================================
+// SUPABASE AUTH, ONBOARDING & PRO PAYWALL
+// ==========================================
+
+async function initAuthAndConfig() {
+    try {
+        const res = await fetch('/api/config/auth');
+        const config = await res.json();
+        razorpayKeyId = config.razorpay_key_id || '';
+
+        if (window.supabase && config.supabase_url && config.supabase_anon_key) {
+            supabaseClient = window.supabase.createClient(config.supabase_url, config.supabase_anon_key);
+            console.log('[Auth] Supabase Client initialized.');
+            
+            // Check active session
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user) {
+                await handleUserSession(session.user);
+            }
+
+            // Listen for auth state changes
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (session && session.user) {
+                    await handleUserSession(session.user);
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    localStorage.removeItem('smartwork_user');
+                    updateAuthUI();
+                }
+            });
+        } else {
+            // Restore cached local user if available
+            const saved = localStorage.getItem('smartwork_user');
+            if (saved) {
+                try {
+                    currentUser = JSON.parse(saved);
+                    updateAuthUI();
+                } catch(e) {}
+            }
+        }
+    } catch (e) {
+        console.warn('[Auth] Auth config initialization notice:', e);
+        const saved = localStorage.getItem('smartwork_user');
+        if (saved) {
+            try {
+                currentUser = JSON.parse(saved);
+                updateAuthUI();
+            } catch(err) {}
+        }
+    }
+}
+
+async function handleUserSession(user) {
+    const userId = user.id;
+    const email = user.email || '';
+    const fullName = user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0];
+    const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+
+    // Fetch profile from backend
+    try {
+        const res = await fetch(`/api/user/profile/${userId}`);
+        const data = await res.json();
+        if (data && data.success && data.profile) {
+            currentUser = {
+                id: userId,
+                email: email,
+                full_name: data.profile.full_name || fullName,
+                mobile: data.profile.mobile || '',
+                location: data.profile.location || '',
+                plan: data.profile.plan || 'free',
+                is_pro: Boolean(data.profile.is_pro),
+                avatar_url: avatarUrl
+            };
+        } else {
+            currentUser = {
+                id: userId,
+                email: email,
+                full_name: fullName,
+                mobile: '',
+                location: '',
+                plan: 'free',
+                is_pro: false,
+                avatar_url: avatarUrl
+            };
+        }
+    } catch(e) {
+        currentUser = {
+            id: userId,
+            email: email,
+            full_name: fullName,
+            mobile: '',
+            location: '',
+            plan: 'free',
+            is_pro: false,
+            avatar_url: avatarUrl
+        };
+    }
+
+    localStorage.setItem('smartwork_user', JSON.stringify(currentUser));
+    updateAuthUI();
+    closeModal('modal-auth');
+
+    // Check if onboarding profile is incomplete
+    if (!currentUser.mobile || !currentUser.location) {
+        if (onboardingNameInput) onboardingNameInput.value = currentUser.full_name || '';
+        openModal('modal-onboarding');
+    } else if (pendingAuthAction) {
+        const action = pendingAuthAction;
+        pendingAuthAction = null;
+        action();
+    }
+}
+
+function updateAuthUI() {
+    if (currentUser) {
+        if (headerLoginBtn) headerLoginBtn.classList.add('hidden');
+        if (headerUserBadge) {
+            headerUserBadge.classList.remove('hidden');
+            if (headerUserName) headerUserName.innerText = currentUser.full_name || currentUser.email.split('@')[0];
+            if (headerUserAvatar && currentUser.avatar_url) headerUserAvatar.src = currentUser.avatar_url;
+            if (headerUserPlan) {
+                if (currentUser.is_pro || currentUser.plan === 'pro') {
+                    headerUserPlan.innerText = '👑 PRO';
+                    headerUserPlan.className = 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded shadow-2xs';
+                } else {
+                    headerUserPlan.innerText = 'FREE';
+                    headerUserPlan.className = 'bg-slate-700 text-slate-200 font-bold text-[9px] px-1.5 py-0.5 rounded';
+                }
+            }
+        }
+    } else {
+        if (headerLoginBtn) headerLoginBtn.classList.remove('hidden');
+        if (headerUserBadge) headerUserBadge.classList.add('hidden');
+    }
+}
+
+function requireAuth(actionCallback, reasonText = 'इस सुविधा का उपयोग करने के लिए कृपया लॉगिन करें।') {
+    if (currentUser) {
+        // If profile details (mobile/location) missing, prompt onboarding first
+        if (!currentUser.mobile || !currentUser.location) {
+            pendingAuthAction = actionCallback;
+            if (onboardingNameInput) onboardingNameInput.value = currentUser.full_name || '';
+            openModal('modal-onboarding');
+            return;
+        }
+        actionCallback();
+    } else {
+        pendingAuthAction = actionCallback;
+        if (authModalReason) authModalReason.innerText = reasonText;
+        openModal('modal-auth');
+    }
+}
+
+async function signInWithGoogle() {
+    if (supabaseClient) {
+        try {
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) {
+                console.error('[Auth] OAuth error:', error);
+                showToast('error', 'Google लॉगिन विफल रहा: ' + error.message);
+            }
+            return;
+        } catch (e) {
+            console.error('[Auth] Login exception:', e);
+        }
+    }
+
+    // Seamless 1-Click Simulated Mode for Local / Offline Development
+    const mockEmail = prompt('Google Login (Test Mode) - कृपया अपना ईमेल दर्ज करें:', 'karan@gmail.com');
+    if (mockEmail && mockEmail.includes('@')) {
+        const mockUser = {
+            id: 'usr_' + Math.random().toString(36).substr(2, 9),
+            email: mockEmail.trim().toLowerCase(),
+            full_name: mockEmail.split('@')[0],
+            mobile: '',
+            location: '',
+            plan: 'free',
+            is_pro: false
+        };
+        currentUser = mockUser;
+        localStorage.setItem('smartwork_user', JSON.stringify(currentUser));
+        updateAuthUI();
+        closeModal('modal-auth');
+        showToast('success', 'सफलतापूर्वक लॉगिन हो गया!');
+
+        if (onboardingNameInput) onboardingNameInput.value = currentUser.full_name;
+        openModal('modal-onboarding');
+    }
+}
+
+async function handleOnboardingSubmit(e) {
+    if (e) e.preventDefault();
+    const name = onboardingNameInput ? onboardingNameInput.value.trim() : '';
+    const mobile = onboardingMobileInput ? onboardingMobileInput.value.trim() : '';
+    const location = onboardingLocationInput ? onboardingLocationInput.value.trim() : '';
+
+    if (!name) {
+        showToast('error', 'कृपया अपना नाम दर्ज करें।');
+        return;
+    }
+    if (!mobile || mobile.length !== 10 || !/^\d+$/.test(mobile)) {
+        showToast('error', 'कृपया 10-अंकों का वैध मोबाइल नंबर दर्ज करें।');
+        return;
+    }
+    if (!location) {
+        showToast('error', 'कृपया अपना स्थान या तहसील दर्ज करें।');
+        return;
+    }
+
+    if (!currentUser) {
+        currentUser = {
+            id: 'usr_' + Math.random().toString(36).substr(2, 9),
+            email: 'user@gmail.com',
+            full_name: name,
+            mobile: mobile,
+            location: location,
+            plan: 'free',
+            is_pro: false
+        };
+    } else {
+        currentUser.full_name = name;
+        currentUser.mobile = mobile;
+        currentUser.location = location;
+    }
+
+    // Save to Backend / Supabase
+    try {
+        await fetch('/api/user/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: currentUser.id,
+                email: currentUser.email,
+                full_name: name,
+                mobile: mobile,
+                location: location
+            })
+        });
+    } catch (e) {
+        console.warn('[Onboarding] Error saving profile to backend:', e);
+    }
+
+    localStorage.setItem('smartwork_user', JSON.stringify(currentUser));
+    updateAuthUI();
+    closeModal('modal-onboarding');
+    showToast('success', 'प्रोफ़ाइल सफलतापूर्वक सेव हो गई!');
+
+    if (pendingAuthAction) {
+        const act = pendingAuthAction;
+        pendingAuthAction = null;
+        act();
+    }
+}
+
+async function handleLogout() {
+    if (supabaseClient) {
+        try {
+            await supabaseClient.auth.signOut();
+        } catch(e) {}
+    }
+    currentUser = null;
+    localStorage.removeItem('smartwork_user');
+    updateAuthUI();
+    showToast('success', 'आप सफलतापूर्वक लॉगआउट हो गए हैं।');
+}
+
+// MS Word Direct Sync Pro Paywall Handler
+function handleSendToWordClick() {
+    const text = documentEditor ? documentEditor.value.trim() : '';
+    if (!text) {
+        showToast('error', 'कृपया पहले लेटर तैयार करें।');
+        return;
+    }
+
+    requireAuth(() => {
+        // If user is already Pro, execute Word Sync
+        if (currentUser && (currentUser.is_pro || currentUser.plan === 'pro')) {
+            handleSendToWord();
+        } else {
+            // Show Pro Membership Paywall Modal
+            openModal('modal-pro-paywall');
+        }
+    }, 'MS Word में सीधे भेजने के लिए कृपया लॉगिन करें।');
+}
+
+function selectPlan(planType) {
+    selectedProPlan = planType;
+    const cards = {
+        'weekly': document.getElementById('plan-card-weekly'),
+        'monthly': document.getElementById('plan-card-monthly'),
+        'yearly': document.getElementById('plan-card-yearly')
+    };
+
+    Object.keys(cards).forEach(k => {
+        const c = cards[k];
+        if (c) {
+            if (k === planType) {
+                c.className = 'plan-card p-2.5 rounded-2xl border-2 border-amber-500 bg-amber-50/70 cursor-pointer text-center transition relative shadow-sm scale-[1.02]';
+            } else {
+                c.className = 'plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 bg-slate-50 cursor-pointer text-center transition';
+            }
+        }
+    });
+
+    if (payBtnLabel) {
+        if (planType === 'weekly') payBtnLabel.innerText = '₹49 का वीकली प्रो प्लान अनलॉक करें';
+        else if (planType === 'yearly') payBtnLabel.innerText = '₹999 का इयरली प्रो प्लान अनलॉक करें';
+        else payBtnLabel.innerText = '₹99 का मंथली प्रो प्लान अनलॉक करें';
+    }
+}
+
+async function handleProPayment() {
+    if (!currentUser) {
+        requireAuth(() => handleProPayment(), 'प्रो प्लान लेने के लिए पहले लॉगिन करें।');
+        return;
+    }
+
+    showToast('success', 'भुगतान विकल्प तैयार किया जा रहा है...');
+    try {
+        const res = await fetch('/api/payment/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                plan: selectedProPlan,
+                user_id: currentUser.id,
+                email: currentUser.email || ''
+            })
+        });
+        const orderData = await res.json();
+        if (!orderData || !orderData.success) {
+            showToast('error', 'ऑर्डर बनाने में समस्या आई। कृपया पुनः प्रयास करें।');
+            return;
+        }
+
+        // Razorpay Options
+        if (window.Razorpay && razorpayKeyId && !orderData.mock) {
+            const options = {
+                key: orderData.key_id,
+                amount: orderData.amount,
+                currency: orderData.currency || 'INR',
+                name: 'Smart Typing VIP Pro',
+                description: `MS Word Sync - ${selectedProPlan.toUpperCase()} Plan`,
+                order_id: orderData.order_id,
+                handler: async function (response) {
+                    const verifyRes = await fetch('/api/payment/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            plan: selectedProPlan,
+                            user_id: currentUser.id,
+                            email: currentUser.email
+                        })
+                    });
+                    const verifyData = await verifyRes.json();
+                    if (verifyData && verifyData.success) {
+                        currentUser.is_pro = true;
+                        currentUser.plan = 'pro';
+                        localStorage.setItem('smartwork_user', JSON.stringify(currentUser));
+                        updateAuthUI();
+                        closeModal('modal-pro-paywall');
+                        showToast('success', '👑 बधाई हो! आपकी VIP PRO मेम्बरशिप सक्रिय हो गई है।');
+                        setTimeout(() => {
+                            handleSendToWord();
+                        }, 500);
+                    } else {
+                        showToast('error', 'भुगतान सत्यापन विफल रहा।');
+                    }
+                },
+                prefill: {
+                    name: currentUser.full_name || '',
+                    email: currentUser.email || '',
+                    contact: currentUser.mobile || ''
+                },
+                theme: {
+                    color: '#d97706'
+                }
+            };
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } else {
+            // Seamless simulated payment in demo / test mode
+            setTimeout(async () => {
+                const verifyRes = await fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        razorpay_order_id: orderData.order_id,
+                        razorpay_payment_id: 'pay_mock_' + Date.now(),
+                        razorpay_signature: 'sig_mock',
+                        plan: selectedProPlan,
+                        user_id: currentUser.id,
+                        email: currentUser.email
+                    })
+                });
+                currentUser.is_pro = true;
+                currentUser.plan = 'pro';
+                localStorage.setItem('smartwork_user', JSON.stringify(currentUser));
+                updateAuthUI();
+                closeModal('modal-pro-paywall');
+                showToast('success', '👑 बधाई हो! आपकी VIP PRO मेम्बरशिप सक्रिय हो गई है।');
+                setTimeout(() => {
+                    handleSendToWord();
+                }, 500);
+            }, 800);
+        }
+    } catch (e) {
+        console.error('[Payment] Error:', e);
+        showToast('error', 'भुगतान प्रक्रिया में त्रुटि: ' + e.message);
+    }
+}
+

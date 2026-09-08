@@ -21,6 +21,14 @@ import requests
 
 from src.agent_service import extract_text_from_image, extract_text_from_images, transcribe_audio_dictation, transcribe_audio_dictations, get_model_status
 from src.doc_builder import create_docx
+from src.supabase_service import (
+    SUPABASE_URL, SUPABASE_ANON_KEY,
+    get_user_profile, upsert_user_profile, verify_user_is_pro, upgrade_user_to_pro
+)
+from src.storage_service import upload_docx_to_r2, get_docx_from_r2
+from src.payment_service import (
+    RAZORPAY_KEY_ID, create_payment_order, verify_payment_signature
+)
 
 def keep_alive_worker():
     """
@@ -78,6 +86,28 @@ class SendToWordRequest(BaseModel):
     stamp_paper: bool = False
     station_id: str
     pin: str = ""
+    user_id: str = ""
+    email: str = ""
+
+class ProfileRequest(BaseModel):
+    user_id: str
+    email: str
+    full_name: str = ""
+    mobile: str = ""
+    location: str = ""
+
+class CreateOrderRequest(BaseModel):
+    plan: str
+    user_id: str
+    email: str = ""
+
+class VerifyPaymentRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    plan: str
+    user_id: str
+    email: str = ""
 
 # Active WebSocket Sessions for Desktop/MS Word Sync
 # Key: user_id (e.g. Gmail), Value: list of {"ws": WebSocket, "pin": str}
@@ -243,6 +273,16 @@ async def send_to_word(req: SendToWordRequest):
             "message": "कंप्यूटर पर Desktop Agent कनेक्ट नहीं है! कृपया पहले कंप्यूटर पर ऐप चालू करें।"
         })
 
+    # Verify PRO Membership for MS Word Direct Sync
+    is_pro = verify_user_is_pro(req.user_id, req.email or clean_station_id)
+    if not is_pro:
+        return JSONResponse(status_code=403, content={
+            "success": False,
+            "connected": len(sessions) > 0,
+            "pro_required": True,
+            "message": "MS Word Direct Sync केवल PRO मेंबर्स के लिए उपलब्ध है। कृपया प्रो प्लान चुनें।"
+        })
+
     # Verify PIN if configured on any active Desktop Agent session
     configured_pins = [s.get("pin", "") for s in sessions if s.get("pin")]
     if configured_pins and clean_pin not in configured_pins:
@@ -317,6 +357,74 @@ async def download_desktop_agent():
     # High-speed direct CDN download from official GitHub Release (100% .exe)
     release_url = "https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe"
     return RedirectResponse(url=release_url, status_code=302)
+
+# --- Cloud Auth, Profile, and Subscription Endpoints ---
+@app.get("/api/config/auth")
+async def get_auth_config():
+    """Provides public configuration keys for Supabase Client and Razorpay checkout."""
+    return {
+        "supabase_url": SUPABASE_URL,
+        "supabase_anon_key": SUPABASE_ANON_KEY,
+        "razorpay_key_id": RAZORPAY_KEY_ID
+    }
+
+@app.post("/api/user/profile")
+async def save_user_profile(req: ProfileRequest):
+    """Saves post-signup onboarding data (Name, Mobile, Location) to Supabase profiles."""
+    try:
+        profile = upsert_user_profile(
+            user_id=req.user_id,
+            email=req.email,
+            full_name=req.full_name,
+            mobile=req.mobile,
+            location=req.location
+        )
+        return {"success": True, "profile": profile}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.get("/api/user/profile/{user_id}")
+async def fetch_user_profile(user_id: str):
+    """Retrieves user profile and current Pro membership status."""
+    profile = get_user_profile(user_id)
+    if profile:
+        is_pro = verify_user_is_pro(user_id)
+        profile["is_pro"] = is_pro
+        return {"success": True, "profile": profile}
+    return {"success": False, "message": "Profile not found"}
+
+@app.post("/api/payment/create-order")
+async def create_order(req: CreateOrderRequest):
+    """Generates a Razorpay Order for ₹49 (Weekly), ₹99 (Monthly), or ₹999 (Yearly)."""
+    try:
+        order = create_payment_order(plan_type=req.plan, user_id=req.user_id, email=req.email)
+        return order
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/payment/verify")
+async def verify_payment(req: VerifyPaymentRequest):
+    """Verifies Razorpay payment signature and upgrades user to PRO in Supabase."""
+    is_valid = verify_payment_signature(
+        razorpay_order_id=req.razorpay_order_id,
+        razorpay_payment_id=req.razorpay_payment_id,
+        razorpay_signature=req.razorpay_signature
+    )
+    if not is_valid:
+        return JSONResponse(status_code=400, content={"success": False, "message": "अमान्य भुगतान हस्ताक्षर (Invalid Signature)!"})
+
+    # Upgrade to Pro
+    success = upgrade_user_to_pro(
+        user_id=req.user_id,
+        plan_type=req.plan,
+        order_id=req.razorpay_order_id,
+        payment_id=req.razorpay_payment_id
+    )
+    return {
+        "success": success,
+        "message": "बधाई हो! आपकी VIP PRO मेम्बरशिप सक्रिय हो गई है।"
+    }
+
 
 @app.post("/api/process-image")
 async def process_image(
