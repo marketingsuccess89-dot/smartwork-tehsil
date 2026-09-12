@@ -37,7 +37,7 @@ def keep_alive_worker():
     to prevent container idling, ensuring 24/7 uptime.
     """
     time.sleep(30)  # Initial boot buffer
-    app_url = os.getenv("APP_EXTERNAL_URL", os.getenv("RENDER_EXTERNAL_URL", "https://smartwork89-smart-typing.hf.space")).rstrip("/")
+    app_url = os.getenv("APP_EXTERNAL_URL", os.getenv("RENDER_EXTERNAL_URL", "https://smartwork-typing.onrender.com")).rstrip("/")
     ping_url = f"{app_url}/api/health"
     print(f"[KeepAlive] 24/7 Watchdog daemon started. Target: {ping_url}")
     while True:
