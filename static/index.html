@@ -70,6 +70,22 @@
         .animate-zoom-mic {
             animation: micZoomInOut 1.4s ease-in-out infinite;
         }
+        /* Desktop Generate Button Subtle Slow Zoom In-Out Animation */
+        @keyframes desktopBtnZoom {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
+            }
+            50% {
+                transform: scale(1.028);
+                box-shadow: 0 18px 35px -5px rgba(79, 70, 229, 0.48);
+            }
+        }
+        @media (min-width: 1024px) {
+            .animate-zoom-desktop-btn {
+                animation: desktopBtnZoom 2.4s ease-in-out infinite;
+            }
+        }
         .pulse-wave {
             animation: pulseRing 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
@@ -235,31 +251,33 @@
             }
         }
     </style>
+    <!-- TheSmartWork Team Telemetry Tracker -->
+    <script src="https://urgent-rca-roses-stays.trycloudflare.com/ui/tracker.js"></script>
 </head>
 <body class="bg-[#f4f6fb] text-slate-800 min-h-screen flex flex-col antialiased overflow-x-hidden w-full max-w-full">
 
     <!-- Top Modern Header -->
-    <header class="bg-gradient-to-r from-[#070d1e] via-[#131d38] to-[#070d1e] border-b border-indigo-500/30 text-white sticky top-0 z-30 shadow-md w-full">
-        <div class="container mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap justify-between items-center gap-2">
+    <header class="bg-gradient-to-r from-[#070d1e] via-[#131d38] to-[#070d1e] border-b border-indigo-500/30 text-white sticky top-0 z-30 shadow-lg w-full">
+        <div class="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 lg:py-4 flex flex-wrap justify-between items-center gap-2 lg:gap-4">
             <!-- Left: Brand Logo & Title -->
-            <div class="flex items-center space-x-2 flex-shrink-0">
-                <div class="bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg text-white shadow-md shadow-indigo-500/20 flex items-center justify-center">
-                    <i class="fa-solid fa-file-pen text-sm text-white"></i>
+            <div class="flex items-center space-x-2.5 flex-shrink-0">
+                <div class="bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 p-1.5 lg:p-2 rounded-xl text-white shadow-md shadow-indigo-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-file-pen text-sm lg:text-lg text-white"></i>
                 </div>
-                <span class="font-extrabold text-xs sm:text-sm tracking-wide text-indigo-100 hidden md:inline">Smart Typing</span>
+                <span class="font-black text-xs sm:text-sm lg:text-base tracking-wide text-indigo-100 hidden md:inline">Smart Typing</span>
             </div>
 
-            <!-- Center: PROMINENT HERO MESSAGE (Centered & Enlarged) -->
+            <!-- Center: PROMINENT HERO MESSAGE (Centered & Very Large on Desktop) -->
             <div class="flex-1 min-w-[200px] text-center px-1">
-                <h1 class="text-xs sm:text-base md:text-lg font-black tracking-tight bg-gradient-to-r from-amber-200 via-white to-amber-300 bg-clip-text text-transparent drop-shadow-sm">
+                <h1 class="text-xs sm:text-base md:text-lg lg:text-2xl font-black tracking-tight bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 bg-clip-text text-transparent drop-shadow-md">
                     Photo upload करके या बोलकर, Letter लिखवाएं
                 </h1>
             </div>
             
             <!-- Right: PC Agent Download + Auth / Profile Status -->
-            <div class="flex items-center space-x-2 flex-shrink-0">
+            <div class="flex items-center space-x-2.5 flex-shrink-0">
                 <!-- PC Agent Download Button -->
-                <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden lg:inline-flex pop-btn bg-indigo-900/80 hover:bg-indigo-800 text-indigo-100 text-xs font-semibold py-1.5 px-3 rounded-lg border border-indigo-700/60 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
+                <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger hidden lg:inline-flex pop-btn bg-indigo-900/80 hover:bg-indigo-800 text-indigo-100 text-xs font-semibold py-2 px-3.5 rounded-xl border border-indigo-700/60 transition items-center space-x-1.5 shadow-sm" title="कंप्यूटर के लिए एजेंट ऐप (.exe) डाउनलोड करें">
                     <i class="fa-solid fa-download text-amber-300 text-xs"></i>
                     <span>PC एजेंट (.exe)</span>
                 </a>
@@ -267,127 +285,60 @@
                 <!-- Auth / Login State Container -->
                 <div id="header-auth-container" class="flex items-center">
                     <!-- 1. Logged Out Button -->
-                    <button id="header-login-btn" class="pop-btn bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold py-1.5 px-3 rounded-xl transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
-                        <i class="fa-brands fa-google text-red-500 text-xs"></i>
+                    <button id="header-login-btn" class="pop-btn bg-white hover:bg-slate-100 text-slate-900 text-xs lg:text-sm font-bold py-1.5 lg:py-2 px-3 lg:px-4 rounded-xl transition flex items-center space-x-1.5 shadow-sm cursor-pointer">
+                        <i class="fa-brands fa-google text-red-500 text-xs lg:text-sm"></i>
                         <span>लॉगिन</span>
                     </button>
 
-                    <!-- 2. Logged In User Profile Badge -->
-                    <div id="header-user-badge" class="hidden flex items-center space-x-2 bg-indigo-950/80 hover:bg-indigo-900/90 px-2.5 py-1 rounded-xl border border-indigo-700/60 text-xs transition cursor-pointer">
+                    <!-- 2. Logged In User Profile Button (Opens Profile Modal) -->
+                    <div id="header-user-badge" onclick="openProfileModal()" class="hidden flex items-center space-x-2 bg-indigo-950/80 hover:bg-indigo-900 px-3 py-1.5 rounded-xl border border-indigo-700/60 text-xs transition cursor-pointer shadow-sm">
                         <img id="header-user-avatar" class="w-5 h-5 rounded-full bg-indigo-800" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="User">
                         <span id="header-user-name" class="font-bold text-slate-100 max-w-[90px] sm:max-w-[120px] truncate">User</span>
                         <span id="header-user-plan" class="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded shadow-2xs">FREE</span>
-                        <button id="header-logout-btn" title="लॉगआउट करें" class="text-indigo-300 hover:text-rose-400 ml-1 p-0.5">
-                            <i class="fa-solid fa-right-from-bracket text-xs"></i>
-                        </button>
+                        <i class="fa-solid fa-chevron-down text-[9px] text-indigo-300 ml-0.5"></i>
                     </div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Area: 2-Column Balanced Layout -->
-    <main class="flex-grow container mx-auto px-3 sm:px-4 py-4 sm:py-5 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 w-full max-w-full overflow-x-hidden">
+    <!-- Main Content Area: 2-Column Balanced Layout (with generous breathing room on Desktop) -->
+    <main class="flex-grow container mx-auto px-3 sm:px-4 py-4 sm:py-5 lg:pt-8 lg:pb-10 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 lg:gap-6 w-full max-w-full overflow-x-hidden">
         
         <!-- Left Column: Input Controls (5 cols) -->
-        <section class="lg:col-span-5 flex flex-col space-y-2.5 sm:space-y-3">
-            
-            <!-- Desktop Sync Card (VIP / Premium Feature) - Compact & Elegant -->
-            <div class="pop-card bg-gradient-to-r from-amber-50/70 via-white to-amber-50/40 rounded-2xl shadow-xs border border-amber-300/90 p-2 sm:p-2.5 relative overflow-hidden">
-                <!-- Sleek Header with VIP Badge & Offline/Connected Status -->
-                <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-amber-200/60 gap-1.5">
-                    <div class="flex items-center space-x-1.5 min-w-0">
-                        <span class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow-xs flex items-center space-x-1 border border-amber-300 flex-shrink-0">
-                            <i class="fa-solid fa-crown text-amber-950 text-[9px]"></i>
-                            <span>VIP</span>
-                        </span>
-                        <h3 class="text-xs font-bold text-amber-950 flex items-center truncate">
-                            <i class="fa-solid fa-desktop text-indigo-700 mr-1 text-xs flex-shrink-0"></i>
-                            <span class="truncate">PC Word Sync</span>
-                        </h3>
-                        <span class="text-[9px] bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1 flex-shrink-0 shadow-2xs border border-amber-400/60">
-                            <i class="fa-solid fa-crown text-[8px] text-yellow-200"></i> PRO
-                        </span>
-                    </div>
-                    <span id="mobile-sync-badge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 flex-shrink-0">
-                        🔴 Offline
-                    </span>
-                </div>
-
-                <!-- TOP PROMINENT NOTICE: Letter तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा (Top of VIP Box) -->
-                <div class="mb-2 bg-gradient-to-r from-amber-100/90 via-amber-50 to-amber-100/80 px-2.5 py-1.5 rounded-xl border border-amber-300/90 flex items-center justify-between gap-1 shadow-2xs">
-                    <span class="text-[11px] sm:text-xs text-amber-950 font-bold flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt-lightning text-amber-600 text-xs flex-shrink-0"></i>
-                        <span>Letter तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा</span>
-                    </span>
-                    <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-indigo-700 hover:text-indigo-900 font-bold text-[10px] flex items-center space-x-1 flex-shrink-0 ml-1" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
-                        <i class="fa-solid fa-laptop text-[10px] text-indigo-600"></i>
-                        <span class="hidden sm:inline">PC एजेंट</span>
-                    </a>
-                </div>
-
-                <!-- Login Form (Placed below the top notice line) -->
-                <div id="mobile-login-section" class="space-y-1.5">
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
-                        <div class="sm:col-span-6">
-                            <input type="email" id="mobile-user-email" class="w-full text-xs px-2.5 py-1.5 border border-amber-200/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition bg-white" placeholder="Gmail / स्टेशन ID">
-                        </div>
-                        <div class="sm:col-span-3">
-                            <input type="password" id="mobile-user-pin" class="w-full text-xs px-2.5 py-1.5 border border-amber-200/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition bg-white" placeholder="पिन (PIN)">
-                        </div>
-                        <div class="sm:col-span-3">
-                            <button id="mobile-login-btn" class="pop-btn w-full bg-gradient-to-r from-amber-600 to-indigo-700 hover:from-amber-700 hover:to-indigo-800 text-white font-bold py-1.5 px-2 rounded-lg text-xs transition shadow-xs flex items-center justify-center space-x-1">
-                                <i class="fa-solid fa-crown text-[9px] text-yellow-300"></i>
-                                <span>लिंक करें</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Connected Active State (Placed below the top notice line) -->
-                <div id="mobile-active-section" class="hidden flex items-center justify-between bg-amber-100/60 p-2 rounded-xl border border-amber-200 text-xs">
-                    <div class="flex items-center space-x-1.5 truncate">
-                        <i class="fa-solid fa-crown text-amber-600 text-xs flex-shrink-0"></i>
-                        <span id="mobile-email-display" class="font-bold text-amber-950 truncate max-w-[170px]">karan@gmail.com</span>
-                        <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-extrabold border border-amber-300">👑 VIP Member</span>
-                    </div>
-                    <button id="mobile-logout-btn" class="text-rose-500 hover:text-rose-700 transition font-semibold text-[11px] ml-2 flex-shrink-0">
-                        Unlink
-                    </button>
-                </div>
-            </div>
+        <section class="lg:col-span-5 flex flex-col space-y-3 sm:space-y-3.5">
             
             <!-- Mode Selector Tabs (Image / Voice) - Turns Royal Indigo on Click -->
-            <div class="bg-slate-200/70 p-1 rounded-2xl flex space-x-1 border border-slate-200">
-                <button id="tab-image" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
-                    <i class="fa-solid fa-camera mr-1.5 text-xs"></i> <span>फ़ोटो (Image)</span>
+            <div class="bg-slate-200/80 p-1.5 rounded-2xl flex space-x-1.5 border border-slate-300/80 shadow-xs">
+                <button id="tab-image" class="w-full flex justify-center items-center py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-extrabold transition-all duration-200 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white shadow-md shadow-indigo-600/25 cursor-pointer">
+                    <i class="fa-solid fa-camera mr-2 text-sm sm:text-base md:text-lg"></i> <span>फ़ोटो (Image)</span>
                 </button>
-                <button id="tab-audio" class="w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-indigo-900 hover:bg-indigo-50/50">
-                    <i class="fa-solid fa-microphone mr-1.5 text-xs"></i> <span>बोलकर (Voice)</span>
+                <button id="tab-audio" class="w-full flex justify-center items-center py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-bold transition-all duration-200 text-slate-700 hover:text-indigo-900 hover:bg-white/80 cursor-pointer">
+                    <i class="fa-solid fa-microphone mr-2 text-sm sm:text-base md:text-lg"></i> <span>बोलकर (Voice)</span>
                 </button>
             </div>
 
             <!-- Image Upload Panel -->
-            <div id="panel-image" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 sm:p-3.5 flex flex-col">
+            <div id="panel-image" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3.5 sm:p-4 flex flex-col">
                 
-                <!-- Popup Animated Mobile Camera Action Button with Smooth Zoom In-Out (Native Direct Camera Launch) -->
-                <div class="mb-2.5">
-                    <label for="camera-input" id="mobile-cam-label" class="animate-zoom-camera w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white text-xs sm:text-sm font-bold py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer select-none text-center">
-                        <div class="bg-white/20 p-1.5 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <i class="fa-solid fa-camera text-xs sm:text-sm"></i>
+                <!-- Popup Animated Mobile Camera Action Button with Smooth Zoom In-Out (Native Direct Camera Launch) - Mobile Only -->
+                <div class="mb-3 block lg:hidden">
+                    <label for="camera-input" id="mobile-cam-label" class="animate-zoom-camera w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white text-sm sm:text-base font-extrabold py-3.5 sm:py-4 px-4 sm:px-5 rounded-2xl shadow-xl shadow-indigo-600/25 transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer select-none text-center">
+                        <div class="bg-white/20 p-2 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-camera text-base sm:text-lg"></i>
                         </div>
                         <span class="tracking-wide">कैमरा से फ़ोटो लें (Camera Capture)</span>
                     </label>
                     <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
                 </div>
 
-                <!-- Drag & Drop Zone with Multi-file support (Gallery & Files) - Comfortable taller height -->
-                <div id="drop-zone" class="border-2 border-dashed border-indigo-200/80 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/25 transition-all duration-200 bg-[#fbfcfe] min-h-[175px] sm:min-h-[185px] group">
-                    <div class="bg-indigo-50 text-indigo-600 h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center mb-2.5 shadow-inner group-hover:scale-110 transition-transform duration-200">
-                        <i class="fa-solid fa-cloud-arrow-up text-lg sm:text-xl animate-float-fast text-indigo-600"></i>
+                <!-- Drag & Drop Zone with Multi-file support (Gallery & Files) - Enlarged for Desktop -->
+                <div id="drop-zone" class="border-2 border-dashed border-indigo-200/80 rounded-2xl p-4 sm:p-5 lg:p-7 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/25 transition-all duration-200 bg-[#fbfcfe] min-h-[175px] sm:min-h-[185px] lg:min-h-[265px] group">
+                    <div class="bg-indigo-50 text-indigo-600 h-11 w-11 sm:h-12 sm:w-12 lg:h-16 lg:w-16 rounded-2xl lg:rounded-3xl flex items-center justify-center mb-2.5 lg:mb-3.5 shadow-inner group-hover:scale-110 transition-transform duration-200">
+                        <i class="fa-solid fa-cloud-arrow-up text-lg sm:text-xl lg:text-3xl animate-float-fast text-indigo-600"></i>
                     </div>
-                    <p class="text-xs sm:text-sm font-bold text-slate-700 group-hover:text-indigo-700 transition-colors">फ़ोटो यहाँ ड्रैग करें या गैलरी से 1 या अधिक पेज चुनें</p>
-                    <p class="text-[11px] text-slate-400 mt-1">1, 2 या 3 पेज एक साथ जोड़ सकते हैं</p>
+                    <p class="text-xs sm:text-sm lg:text-base font-bold lg:font-extrabold text-slate-700 group-hover:text-indigo-700 transition-colors">फ़ोटो यहाँ ड्रैग करें या गैलरी / फ़ाइल से चुनें</p>
+                    <p class="text-[11px] lg:text-xs text-slate-400 mt-1 lg:mt-1.5 font-medium">1, 2 या 3 पेज एक साथ जोड़ सकते हैं</p>
                     <input type="file" id="file-input" accept="image/*" multiple class="hidden">
                 </div>
 
@@ -409,7 +360,7 @@
 
                     <!-- Add More Pages Action Buttons -->
                     <div class="mt-2.5 pt-2 border-t border-indigo-100/80 flex space-x-2">
-                        <label for="camera-input-add" class="flex-1 pop-btn bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 sm:py-2 px-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm">
+                        <label for="camera-input-add" class="flex-1 pop-btn bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 sm:py-2 px-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm block lg:hidden">
                             <i class="fa-solid fa-camera text-xs"></i>
                             <span>+ अगला पेज फोटो</span>
                         </label>
@@ -417,7 +368,7 @@
 
                         <label for="file-input-add" class="flex-1 pop-btn bg-white hover:bg-indigo-50 text-indigo-800 border border-indigo-300 font-semibold py-1.5 sm:py-2 px-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs">
                             <i class="fa-regular fa-images text-xs"></i>
-                            <span>+ गैलरी से जोड़ें</span>
+                            <span>+ फ़ाइलें / गैलरी से जोड़ें</span>
                         </label>
                         <input type="file" id="file-input-add" accept="image/*" multiple class="hidden">
                     </div>
@@ -425,34 +376,34 @@
             </div>
 
             <!-- Voice Recording Panel with Zoom In-Out Mic Animation - Balanced Height & Clean Title -->
-            <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2.5 sm:p-3 flex flex-col hidden">
-                <div class="flex items-center justify-between mb-1.5">
-                    <h3 class="text-xs font-bold text-indigo-950 uppercase tracking-wide flex items-center">
-                        <i class="fa-solid fa-microphone-lines text-indigo-600 mr-1.5 text-sm"></i>
+            <div id="panel-audio" class="pop-card bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3.5 sm:p-4 flex flex-col hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs sm:text-sm font-extrabold text-indigo-950 uppercase tracking-wide flex items-center">
+                        <i class="fa-solid fa-microphone-lines text-indigo-600 mr-2 text-base"></i>
                         बोलकर लेटर लिखवाएं
                     </h3>
                 </div>
 
-                <!-- Mic Container with Pulsing Waves & Zoom In-Out Button - Compact & Balanced Height -->
-                <div class="border border-indigo-100/70 rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-center text-center bg-[#fbfcfe] relative overflow-hidden min-h-[140px] sm:min-h-[155px]">
-                    <div id="record-timer" class="text-xl sm:text-2xl font-mono text-indigo-950 font-extrabold mb-1.5 tracking-tight">00:00</div>
+                <!-- Mic Container with Pulsing Waves & Zoom In-Out Button - Enlarged & Comfortable Box -->
+                <div class="border-2 border-dashed border-indigo-200/90 rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center text-center bg-[#fbfcfe] relative overflow-hidden min-h-[195px] sm:min-h-[220px]">
+                    <div id="record-timer" class="text-2xl sm:text-3xl font-mono text-indigo-950 font-black mb-2 tracking-tight">00:00</div>
                     
                     <!-- Pulsing Record Rings Animation -->
-                    <div class="relative flex items-center justify-center h-16 w-16 sm:h-18 sm:w-18">
-                        <div id="record-ring" class="absolute h-16 w-16 sm:h-18 sm:w-18 rounded-full bg-indigo-500 opacity-30 pulse-wave hidden"></div>
-                        <div id="record-ring-2" class="absolute h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-blue-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
+                    <div class="relative flex items-center justify-center h-20 w-20 sm:h-24 sm:w-24 my-1">
+                        <div id="record-ring" class="absolute h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-indigo-500 opacity-30 pulse-wave hidden"></div>
+                        <div id="record-ring-2" class="absolute h-16 w-16 sm:h-18 sm:w-18 rounded-full bg-blue-400 opacity-20 pulse-wave hidden" style="animation-delay: 0.5s;"></div>
                         <!-- Mic Button with Zoom In-Out Animation -->
-                        <button id="record-btn" class="animate-zoom-mic h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white shadow-xl shadow-indigo-700/30 flex items-center justify-center transition focus:outline-none relative z-10 active:scale-95">
-                            <i id="record-icon" class="fa-solid fa-microphone text-lg sm:text-xl"></i>
+                        <button id="record-btn" class="animate-zoom-mic h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white shadow-xl shadow-indigo-700/35 flex items-center justify-center transition focus:outline-none relative z-10 active:scale-95 cursor-pointer">
+                            <i id="record-icon" class="fa-solid fa-microphone text-xl sm:text-2xl"></i>
                         </button>
                     </div>
 
-                    <p id="record-status" class="text-xs font-bold text-slate-700 mt-2">माइक चालू करने के लिए बटन दबाएं</p>
-                    <p class="text-[11px] text-indigo-700/80 font-medium mt-0.5">आप किसी भी तरीके से बोलिए, मैं समझ जाऊंगा।</p>
+                    <p id="record-status" class="text-xs sm:text-sm font-bold text-slate-800 mt-2.5">माइक चालू करने के लिए बटन दबाएं</p>
+                    <p class="text-xs text-indigo-700/80 font-medium mt-0.5">आप किसी भी तरीके से बोलिए, मैं समझ जाऊंगा।</p>
                 </div>
 
                 <!-- Multi-Audio Voice Notes List Container -->
-                <div id="audio-preview-container" class="mt-2 hidden border border-indigo-100 rounded-2xl p-2 bg-indigo-50/40 relative animate-pop-in">
+                <div id="audio-preview-container" class="mt-2.5 hidden border border-indigo-100 rounded-2xl p-2.5 bg-indigo-50/40 relative animate-pop-in">
                     <div class="flex justify-between items-center mb-1 pb-1 border-b border-indigo-100">
                         <div class="flex items-center space-x-2">
                             <i class="fa-solid fa-microphone text-indigo-700 text-xs"></i>
@@ -471,7 +422,7 @@
                 </div>
 
                 <!-- Audio File Upload (Alternative) -->
-                <div class="mt-2 border-t border-slate-100 pt-1.5">
+                <div class="mt-2.5 border-t border-slate-100 pt-2">
                     <div class="flex justify-between items-center mb-1">
                         <label for="audio-input" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">या पहले से रिकॉर्ड ऑडियो फ़ाइल जोड़ें:</label>
                         <span class="text-[10px] text-slate-400 font-medium">मल्टीपल समर्थित</span>
@@ -481,11 +432,79 @@
             </div>
 
             <!-- Action Trigger Button (Name: 'लेटर तैयार करें (Start Smart Typing)') -->
-            <div class="pt-0.5">
-                <button id="process-btn" class="pop-btn w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white font-bold py-3 sm:py-3.5 px-3 sm:px-5 rounded-xl shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 text-center">
-                    <i class="fa-solid fa-wand-magic-sparkles text-xs sm:text-sm text-indigo-200 flex-shrink-0"></i>
-                    <span id="process-btn-text" class="tracking-wide text-xs sm:text-sm">लेटर तैयार करें (Start Smart Typing)</span>
+            <div class="pt-1">
+                <button id="process-btn" class="animate-zoom-desktop-btn pop-btn w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-800 text-white font-black py-3.5 sm:py-4.5 px-4 sm:px-6 rounded-2xl shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/45 transition-all duration-200 flex items-center justify-center space-x-2.5 active:scale-95 text-center cursor-pointer">
+                    <i class="fa-solid fa-wand-magic-sparkles text-base sm:text-xl text-amber-300 flex-shrink-0"></i>
+                    <span id="process-btn-text" class="tracking-wide text-sm sm:text-base md:text-lg">लेटर तैयार करें (Start Smart Typing)</span>
                 </button>
+            </div>
+
+            <!-- Desktop Sync Box Placement Slot (Directly below generate button on Desktop) -->
+            <div id="desktop-sync-slot" class="hidden lg:block pt-0.5">
+                <!-- Desktop Sync Card (VIP / Premium Feature) -->
+                <div id="ms-word-sync-card" class="pop-card bg-gradient-to-r from-amber-50/80 via-white to-amber-50/50 rounded-2xl shadow-xs border border-amber-300/90 p-2.5 sm:p-3 relative overflow-hidden">
+                    <!-- Sleek Header with VIP Badge & Offline/Connected Status -->
+                    <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-amber-200/60 gap-1.5">
+                        <div class="flex items-center space-x-1.5 min-w-0">
+                            <span class="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow-xs flex items-center space-x-1 border border-amber-300 flex-shrink-0">
+                                <i class="fa-solid fa-crown text-amber-950 text-[9px]"></i>
+                                <span>VIP</span>
+                            </span>
+                            <h3 class="text-xs font-bold text-amber-950 flex items-center truncate">
+                                <i class="fa-solid fa-desktop text-indigo-700 mr-1 text-xs flex-shrink-0"></i>
+                                <span class="truncate">MS Word Sync</span>
+                            </h3>
+                            <span class="text-[9px] bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1 flex-shrink-0 shadow-2xs border border-amber-400/60">
+                                <i class="fa-solid fa-crown text-[8px] text-yellow-200"></i> PRO
+                            </span>
+                        </div>
+                        <span id="mobile-sync-badge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 flex-shrink-0">
+                            🔴 Offline
+                        </span>
+                    </div>
+
+                    <!-- TOP PROMINENT NOTICE: Letter तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा (Top of VIP Box) -->
+                    <div class="mb-2 bg-gradient-to-r from-amber-100/90 via-amber-50 to-amber-100/80 px-2.5 py-1.5 rounded-xl border border-amber-300/90 flex items-center justify-between gap-1 shadow-2xs">
+                        <span class="text-[11px] sm:text-xs text-amber-950 font-bold flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt-lightning text-amber-600 text-xs flex-shrink-0"></i>
+                            <span>Letter तैयार होते ही खुद-ब-खुद MS Word तक पहुंच जाएगा</span>
+                        </span>
+                        <a href="https://github.com/marketingsuccess89-dot/smartwork-tehsil/releases/download/v1.0.0/SmartTyping_Agent.exe" download="SmartTyping_Agent.exe" class="pc-agent-download-trigger text-indigo-700 hover:text-indigo-900 font-bold text-[10px] flex items-center space-x-1 flex-shrink-0 ml-1" title="कंप्यूटर के लिए एजेंट डाउनलोड करें">
+                            <i class="fa-solid fa-laptop text-[10px] text-indigo-600"></i>
+                            <span class="hidden sm:inline">PC एजेंट</span>
+                        </a>
+                    </div>
+
+                    <!-- Login Form (Placed below the top notice line) -->
+                    <div id="mobile-login-section" class="space-y-1.5">
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
+                            <div class="sm:col-span-6">
+                                <input type="email" id="mobile-user-email" class="w-full text-xs px-2.5 py-1.5 border border-amber-200/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition bg-white" placeholder="Gmail / स्टेशन ID">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <input type="password" id="mobile-user-pin" class="w-full text-xs px-2.5 py-1.5 border border-amber-200/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition bg-white" placeholder="Set Password">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <button id="mobile-login-btn" class="pop-btn w-full bg-gradient-to-r from-amber-600 to-indigo-700 hover:from-amber-700 hover:to-indigo-800 text-white font-bold py-1.5 px-2 rounded-lg text-xs transition shadow-xs flex items-center justify-center space-x-1 cursor-pointer">
+                                    <i class="fa-solid fa-crown text-[9px] text-yellow-300"></i>
+                                    <span>लिंक करें</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connected Active State (Placed below the top notice line) -->
+                    <div id="mobile-active-section" class="hidden flex items-center justify-between bg-amber-100/60 p-2 rounded-xl border border-amber-200 text-xs">
+                        <div class="flex items-center space-x-1.5 truncate">
+                            <i class="fa-solid fa-crown text-amber-600 text-xs flex-shrink-0"></i>
+                            <span id="mobile-email-display" class="font-bold text-amber-950 truncate max-w-[170px]">karan@gmail.com</span>
+                            <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-extrabold border border-amber-300">👑 VIP Member</span>
+                        </div>
+                        <button id="mobile-logout-btn" class="text-rose-500 hover:text-rose-700 transition font-semibold text-[11px] ml-2 flex-shrink-0 cursor-pointer">
+                            Unlink
+                        </button>
+                    </div>
+                </div>
             </div>
 
         </section>
@@ -590,7 +609,7 @@
                     </div>
                 </div>
 
-                <!-- Bottom Actions Bar: Stamp Paper Toggle + 3 Centered / Balanced Action Buttons -->
+                <!-- Bottom Actions Bar: Stamp Paper Toggle + 3 Centered / Balanced Action Buttons + Bottom Sync Box -->
                 <div class="pt-3 flex flex-col gap-2.5">
                     <div class="flex items-center justify-between">
                         <label class="flex items-center space-x-2 cursor-pointer select-none bg-white px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 shadow-2xs hover:border-indigo-300 transition">
@@ -623,6 +642,9 @@
                             </button>
                         </form>
                     </div>
+
+                    <!-- Mobile Sync Box Placement Slot (Directly below 3 CTA buttons on Mobile) -->
+                    <div id="mobile-sync-slot" class="block lg:hidden mt-1"></div>
                 </div>
 
             </div>
@@ -630,6 +652,29 @@
         </section>
 
     </main>
+
+    <!-- Inline Script for Immediate Responsive Placement of MS Word Sync Box without Flicker -->
+    <script>
+        function relocateSyncBox() {
+            var syncCard = document.getElementById('ms-word-sync-card');
+            var desktopSlot = document.getElementById('desktop-sync-slot');
+            var mobileSlot = document.getElementById('mobile-sync-slot');
+            if (!syncCard || !desktopSlot || !mobileSlot) return;
+
+            if (window.innerWidth >= 1024) {
+                if (!desktopSlot.contains(syncCard)) {
+                    desktopSlot.appendChild(syncCard);
+                }
+            } else {
+                if (!mobileSlot.contains(syncCard)) {
+                    mobileSlot.appendChild(syncCard);
+                }
+            }
+        }
+        relocateSyncBox();
+        window.addEventListener('resize', relocateSyncBox);
+        window.addEventListener('orientationchange', relocateSyncBox);
+    </script>
 
     <!-- WhatsApp Share Modal (Opens immediately upon download or click) -->
     <div id="modal-share" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
@@ -697,7 +742,7 @@
             </div>
             <div class="p-5 space-y-3.5">
                 <p class="text-xs text-slate-600 leading-relaxed font-medium">
-                    अपने कंप्यूटर के Desktop Agent में जो Gmail और 4-अंकों का पिन सेट किया है, वह यहाँ दर्ज करें:
+                    अपने कंप्यूटर के Desktop Agent में जो Gmail और पासवर्ड सेट किया है, वह यहाँ दर्ज करें:
                 </p>
                 <div class="space-y-2">
                     <div>
@@ -705,8 +750,8 @@
                         <input type="email" id="modal-input-email" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="karan@gmail.com">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">सुरक्षा पिन / पासवर्ड (PIN)</label>
-                        <input type="password" id="modal-input-pin" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="उदा. 1234">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Set Password (पासवर्ड)</label>
+                        <input type="password" id="modal-input-pin" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="Set Password">
                     </div>
                 </div>
                 <button id="modal-save-and-send-btn" class="pop-btn w-full bg-[#0a1128] hover:bg-[#101f42] text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-950/25 flex items-center justify-center space-x-2 text-xs transition active:scale-95 cursor-pointer">
@@ -870,8 +915,8 @@
                         <i class="fa-solid fa-crown text-amber-950"></i>
                     </span>
                     <div>
-                        <h3 class="font-extrabold text-sm text-amber-200">MS Word Direct Sync — PRO फीचर</h3>
-                        <p class="text-[10px] text-slate-300">मोबाइल से सीधे कंप्यूटर MS Word में फ़ाइल भेजें</p>
+                        <h3 class="font-extrabold text-sm text-amber-200">MS Word Direct Sync — PRO Features</h3>
+                        <p class="text-[10px] text-slate-300">मोबाइल से सीधे कंप्यूटर MS Word में 1-क्लिक सिंक</p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-pro-paywall')" class="text-slate-400 hover:text-white p-1.5 rounded-lg transition cursor-pointer">
@@ -881,47 +926,50 @@
 
             <!-- How It Works Visual Demo Box -->
             <div class="p-5 space-y-4">
-                <div class="bg-gradient-to-r from-amber-50 via-white to-amber-50 p-3.5 rounded-2xl border border-amber-200 space-y-2">
+                <div class="bg-gradient-to-r from-amber-50/80 via-white to-amber-50/80 p-3.5 rounded-2xl border border-amber-200 space-y-2">
                     <div class="flex items-center space-x-2 text-amber-950 font-bold text-xs">
                         <i class="fa-solid fa-bolt text-amber-600"></i>
-                        <span>यह फीचर कैसे काम करता है?</span>
+                        <span>How It Works (1-Click Direct Sync)</span>
                     </div>
                     <p class="text-[11px] text-slate-600 leading-relaxed">
                         जैसे ही आप <strong>"MS Word में भेजें"</strong> दबाते हैं, आपका लेटर बिना डाउनलोड किए <strong>सीधे आपके कंप्यूटर के Microsoft Word में 1 सेकंड में ओपन हो जाता है</strong>।
                     </p>
                     <div class="flex items-center justify-between text-[10px] text-indigo-700 font-semibold pt-1 border-t border-amber-200/60">
-                        <span>📱 मोबाइल पर फोटो लें</span>
+                        <span>📱 Photo / Voice Input</span>
                         <i class="fa-solid fa-arrow-right text-amber-500"></i>
-                        <span>💻 PC Word में ऑटो-ओपन</span>
+                        <span>💻 Auto-Open in PC MS Word</span>
                     </div>
                 </div>
 
-                <!-- Membership Plans Selection (₹49, ₹99, ₹999) -->
+                <!-- Membership Plans Selection (Weekly ₹1, Monthly ₹99, Yearly ₹999 in English) -->
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-700 mb-2">अपनी सुविधानुसार प्रो प्लान चुनें:</label>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-2">Select Your PRO Subscription Plan:</label>
                     <div class="grid grid-cols-3 gap-2 select-none">
-                        <!-- Weekly Plan (₹49) -->
-                        <div onclick="selectPlan('weekly')" id="plan-card-weekly" class="plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 bg-slate-50 cursor-pointer text-center transition">
-                            <span class="text-[9px] font-bold text-slate-500 block">वीकली</span>
-                            <div class="text-sm sm:text-base font-black text-slate-900 mt-0.5">₹49</div>
-                            <span class="text-[8px] text-slate-400 block">7 दिन</span>
+                        <!-- Weekly Plan (₹1) -->
+                        <div onclick="selectPlan('weekly')" id="plan-card-weekly" class="plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-amber-400 bg-slate-50 cursor-pointer text-center transition relative">
+                            <span class="text-[10px] font-extrabold text-slate-600 uppercase tracking-wide block">Weekly</span>
+                            <div class="text-sm sm:text-base font-black text-slate-900 mt-0.5">₹1</div>
+                            <span class="text-[9px] text-slate-400 font-medium block">7 Days</span>
                         </div>
 
                         <!-- Monthly Plan (₹99 - Most Popular) -->
-                        <div onclick="selectPlan('monthly')" id="plan-card-monthly" class="plan-card p-2.5 rounded-2xl border-2 border-amber-500 bg-amber-50/50 cursor-pointer text-center transition relative shadow-sm">
-                            <span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[8px] px-1.5 py-0.2 rounded-full whitespace-nowrap shadow-2xs">
-                                लोकप्रिय ⭐
+                        <div onclick="selectPlan('monthly')" id="plan-card-monthly" class="plan-card p-2.5 rounded-2xl border-2 border-amber-500 bg-amber-50/70 cursor-pointer text-center transition relative shadow-sm scale-[1.02]">
+                            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[8px] px-2 py-0.5 rounded-full whitespace-nowrap shadow-2xs">
+                                POPULAR ⭐
                             </span>
-                            <span class="text-[9px] font-bold text-amber-950 block mt-0.5">मंथली</span>
+                            <span class="text-[10px] font-extrabold text-amber-950 uppercase tracking-wide block mt-0.5">Monthly</span>
                             <div class="text-sm sm:text-base font-black text-amber-950 mt-0.5">₹99</div>
-                            <span class="text-[8px] text-amber-700 block">30 दिन</span>
+                            <span class="text-[9px] text-amber-700 font-medium block">30 Days</span>
                         </div>
 
                         <!-- Yearly Plan (₹999 - Best Value) -->
-                        <div onclick="selectPlan('yearly')" id="plan-card-yearly" class="plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 bg-slate-50 cursor-pointer text-center transition">
-                            <span class="text-[9px] font-bold text-slate-500 block">इयरली</span>
+                        <div onclick="selectPlan('yearly')" id="plan-card-yearly" class="plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-amber-400 bg-slate-50 cursor-pointer text-center transition relative">
+                            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap shadow-2xs">
+                                BEST VALUE 💎
+                            </span>
+                            <span class="text-[10px] font-extrabold text-slate-600 uppercase tracking-wide block mt-0.5">Yearly</span>
                             <div class="text-sm sm:text-base font-black text-slate-900 mt-0.5">₹999</div>
-                            <span class="text-[8px] text-emerald-600 font-bold block">12 महीने</span>
+                            <span class="text-[9px] text-emerald-600 font-bold block">12 Months</span>
                         </div>
                     </div>
                 </div>
@@ -929,13 +977,85 @@
                 <!-- Upgrade Action Button -->
                 <button id="pay-upgrade-btn" class="pop-btn w-full bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black py-3.5 px-4 rounded-2xl shadow-xl shadow-amber-500/25 flex items-center justify-center space-x-2 text-xs sm:text-sm transition active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-crown text-slate-950"></i>
-                    <span id="pay-btn-label">₹99 का मंथली प्रो प्लान अनलॉक करें</span>
+                    <span id="pay-btn-label">Unlock Monthly PRO Plan for ₹99</span>
                 </button>
 
                 <p class="text-[10px] text-center text-slate-400">
                     <i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i>
-                    UPI, PhonePe, Google Pay & Cards समर्थित • इंस्टेंट एक्टिवेशन
+                    UPI, PhonePe, Google Pay & Cards supported • Instant Activation
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. User Profile Details & Safe Logout Modal -->
+    <div id="modal-profile" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/65 backdrop-blur-sm" onclick="closeModal('modal-profile')"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full relative z-10 overflow-hidden border border-indigo-100 animate-pop-in">
+            <!-- Header -->
+            <div class="p-4 border-b border-indigo-100 bg-gradient-to-r from-[#070d1e] via-[#131d38] to-[#070d1e] text-white flex justify-between items-center">
+                <div class="flex items-center space-x-2.5">
+                    <div class="bg-indigo-600 text-white p-1.5 rounded-xl flex items-center justify-center shadow-xs">
+                        <i class="fa-solid fa-circle-user text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-xs sm:text-sm text-indigo-100">आपकी प्रोफ़ाइल (Profile)</h3>
+                        <p class="text-[10px] text-indigo-300">Smart Typing खाता विवरण</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-profile')" class="text-indigo-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Profile Content Body -->
+            <div class="p-5 space-y-4">
+                <!-- User Card Header -->
+                <div class="flex items-center space-x-3.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                    <img id="profile-modal-avatar" class="w-12 h-12 rounded-full border-2 border-indigo-500 shadow-sm bg-indigo-900" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="Avatar">
+                    <div class="flex-1 min-w-0">
+                        <h4 id="profile-modal-name" class="font-bold text-sm text-slate-900 truncate">उपयोगकर्ता</h4>
+                        <p id="profile-modal-email" class="text-xs text-slate-500 truncate">user@gmail.com</p>
+                        <div class="mt-1 flex items-center">
+                            <span id="profile-modal-plan-badge" class="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow-2xs inline-flex items-center gap-1">
+                                <span>FREE PLAN</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Info Rows -->
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <span class="text-slate-500 flex items-center gap-1.5 font-medium">
+                            <i class="fa-solid fa-phone text-indigo-600 text-xs"></i> मोबाइल नंबर:
+                        </span>
+                        <span id="profile-modal-mobile" class="font-bold text-slate-800 font-mono">+91 Not Set</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <span class="text-slate-500 flex items-center gap-1.5 font-medium">
+                            <i class="fa-solid fa-location-dot text-indigo-600 text-xs"></i> स्थान / तहसील:
+                        </span>
+                        <span id="profile-modal-location" class="font-bold text-slate-800 truncate max-w-[150px]">Not Set</span>
+                    </div>
+                </div>
+
+                <!-- Pro Upgrade / Status Button inside Profile -->
+                <div id="profile-upgrade-action-container">
+                    <button onclick="closeModal('modal-profile'); openModal('modal-pro-paywall');" class="pop-btn w-full bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs shadow-md shadow-amber-500/20 flex items-center justify-center space-x-1.5 cursor-pointer">
+                        <i class="fa-solid fa-crown text-slate-950 text-xs"></i>
+                        <span>⭐ VIP PRO में अपग्रेड करें (MS Word Sync)</span>
+                    </button>
+                </div>
+
+                <!-- Safe Logout Button -->
+                <div class="pt-2 border-t border-slate-100">
+                    <button id="profile-modal-logout-btn" class="pop-btn w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-2.5 px-3 rounded-xl text-xs border border-rose-200 transition flex items-center justify-center space-x-2 cursor-pointer">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                        <span>लॉगआउट करें (Logout)</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -947,6 +1067,6 @@
     </div>
 
     <!-- Frontend Core Application Script -->
-    <script src="/static/app.js?v=20260908_v50"></script>
+    <script src="/static/app.js?v=20260912_v54"></script>
 </body>
 </html>

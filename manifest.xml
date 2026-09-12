@@ -18,7 +18,7 @@
   </Hosts>
   
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://thesmartwork.onrender.com/static/taskpane.html" />
+    <SourceLocation DefaultValue="https://smartwork89-smart-typing.hf.space/static/taskpane.html" />
   </DefaultSettings>
   
   <Permissions>ReadWriteDocument</Permissions>
@@ -37,7 +37,7 @@
           <GetStarted>
             <Title DefaultValue="Smart Typing" />
             <Description DefaultValue="Click the button to open the Smart Typing Sidebar." />
-            <LearnMore Url="https://thesmartwork.onrender.com" />
+            <LearnMore Url="https://smartwork89-smart-typing.hf.space" />
           </GetStarted>
           
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
@@ -74,12 +74,12 @@
     
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon16" DefaultValue="https://thesmartwork.onrender.com/static/icon16.png" />
-        <bt:Image id="Icon32" DefaultValue="https://thesmartwork.onrender.com/static/icon32.png" />
-        <bt:Image id="Icon80" DefaultValue="https://thesmartwork.onrender.com/static/icon80.png" />
+        <bt:Image id="Icon16" DefaultValue="https://smartwork89-smart-typing.hf.space/static/icon16.png" />
+        <bt:Image id="Icon32" DefaultValue="https://smartwork89-smart-typing.hf.space/static/icon32.png" />
+        <bt:Image id="Icon80" DefaultValue="https://smartwork89-smart-typing.hf.space/static/icon80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://thesmartwork.onrender.com/static/taskpane.html" />
+        <bt:Url id="Taskpane.Url" DefaultValue="https://smartwork89-smart-typing.hf.space/static/taskpane.html" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Smart Typing" />

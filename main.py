@@ -29,19 +29,20 @@ from src.storage_service import upload_docx_to_r2, get_docx_from_r2
 from src.payment_service import (
     RAZORPAY_KEY_ID, create_payment_order, verify_payment_signature
 )
+from src.webhook_service import send_crm_webhook, CRM_WEBHOOK_URL
 
 def keep_alive_worker():
     """
-    Background daemon that pings Render's public URL every 9 minutes (540s)
-    to reset Render's 15-minute free-tier sleep timer, ensuring 24/7 uptime.
+    Background daemon that pings public URL every 9 minutes (540s)
+    to prevent container idling, ensuring 24/7 uptime.
     """
     time.sleep(30)  # Initial boot buffer
-    app_url = os.getenv("RENDER_EXTERNAL_URL", "https://thesmartwork.onrender.com").rstrip("/")
+    app_url = os.getenv("APP_EXTERNAL_URL", os.getenv("RENDER_EXTERNAL_URL", "https://smartwork89-smart-typing.hf.space")).rstrip("/")
     ping_url = f"{app_url}/api/health"
     print(f"[KeepAlive] 24/7 Watchdog daemon started. Target: {ping_url}")
     while True:
         try:
-            time.sleep(540)  # Ping every 9 minutes (well before 15-min sleep cutoff)
+            time.sleep(540)  # Ping every 9 minutes
             res = requests.get(ping_url, timeout=25)
             print(f"[KeepAlive] Ping to {ping_url} -> Status {res.status_code}")
         except Exception as e:
@@ -51,13 +52,12 @@ def keep_alive_worker():
 async def lifespan(app: FastAPI):
     # Startup tasks
     cleanup_expired_docs()
-    if os.getenv("RENDER") or os.getenv("RENDER_EXTERNAL_URL"):
-        t = threading.Thread(target=keep_alive_worker, daemon=True)
-        t.start()
-        print("[KeepAlive] 24/7 Render Keep-Alive background thread active.")
+    t = threading.Thread(target=keep_alive_worker, daemon=True)
+    t.start()
+    print("[KeepAlive] 24/7 Keep-Alive background thread active.")
     yield
 
-app = FastAPI(title="Tehsil AI Document Operator MVP", lifespan=lifespan)
+app = FastAPI(title="Smart Typing - Tehsil AI Document Operator", lifespan=lifespan)
 
 # Enable CORS for development
 app.add_middleware(
@@ -273,23 +273,13 @@ async def send_to_word(req: SendToWordRequest):
             "message": "कंप्यूटर पर Desktop Agent कनेक्ट नहीं है! कृपया पहले कंप्यूटर पर ऐप चालू करें।"
         })
 
-    # Verify PRO Membership for MS Word Direct Sync
-    is_pro = verify_user_is_pro(req.user_id, req.email or clean_station_id)
-    if not is_pro:
-        return JSONResponse(status_code=403, content={
-            "success": False,
-            "connected": len(sessions) > 0,
-            "pro_required": True,
-            "message": "MS Word Direct Sync केवल PRO मेंबर्स के लिए उपलब्ध है। कृपया प्रो प्लान चुनें।"
-        })
-
-    # Verify PIN if configured on any active Desktop Agent session
+    # Verify PIN / Password if configured on any active Desktop Agent session
     configured_pins = [s.get("pin", "") for s in sessions if s.get("pin")]
     if configured_pins and clean_pin not in configured_pins:
         return JSONResponse(status_code=401, content={
             "success": False,
             "connected": True,
-            "message": "सुरक्षा पिन / पासवर्ड गलत है! कृपया सही पिन दर्ज करें।"
+            "message": "सुरक्षा पासवर्ड गलत है! कृपया सही पासवर्ड दर्ज करें।"
         })
 
     # Evict expired documents (> 48 hours) from memory and disk to prevent memory/disk leaks
@@ -370,7 +360,7 @@ async def get_auth_config():
 
 @app.post("/api/user/profile")
 async def save_user_profile(req: ProfileRequest):
-    """Saves post-signup onboarding data (Name, Mobile, Location) to Supabase profiles."""
+    """Saves post-signup onboarding data (Name, Mobile, Location) to Supabase profiles and fires CRM webhook."""
     try:
         profile = upsert_user_profile(
             user_id=req.user_id,
@@ -379,6 +369,19 @@ async def save_user_profile(req: ProfileRequest):
             mobile=req.mobile,
             location=req.location
         )
+        
+        # Real-time Lead Dispatch to CRM Webhook
+        send_crm_webhook("customer.onboarded", {
+            "user_id": req.user_id,
+            "full_name": req.full_name,
+            "email": req.email,
+            "mobile": req.mobile,
+            "location": req.location,
+            "plan": "free",
+            "is_pro": False,
+            "status": "active_lead"
+        })
+        
         return {"success": True, "profile": profile}
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
@@ -395,7 +398,7 @@ async def fetch_user_profile(user_id: str):
 
 @app.post("/api/payment/create-order")
 async def create_order(req: CreateOrderRequest):
-    """Generates a Razorpay Order for ₹49 (Weekly), ₹99 (Monthly), or ₹999 (Yearly)."""
+    """Generates a Razorpay Order for ₹1 (Weekly), ₹99 (Monthly), or ₹999 (Yearly)."""
     try:
         order = create_payment_order(plan_type=req.plan, user_id=req.user_id, email=req.email)
         return order
@@ -404,7 +407,7 @@ async def create_order(req: CreateOrderRequest):
 
 @app.post("/api/payment/verify")
 async def verify_payment(req: VerifyPaymentRequest):
-    """Verifies Razorpay payment signature and upgrades user to PRO in Supabase."""
+    """Verifies Razorpay payment signature, upgrades user to PRO, and notifies CRM."""
     is_valid = verify_payment_signature(
         razorpay_order_id=req.razorpay_order_id,
         razorpay_payment_id=req.razorpay_payment_id,
@@ -420,9 +423,54 @@ async def verify_payment(req: VerifyPaymentRequest):
         order_id=req.razorpay_order_id,
         payment_id=req.razorpay_payment_id
     )
+    
+    # Real-time Paid Conversion Dispatch to CRM Webhook
+    send_crm_webhook("payment.success", {
+        "user_id": req.user_id,
+        "email": req.email,
+        "plan": req.plan,
+        "order_id": req.razorpay_order_id,
+        "payment_id": req.razorpay_payment_id,
+        "is_pro": True,
+        "status": "paid_customer"
+    })
+    
     return {
         "success": success,
         "message": "बधाई हो! आपकी VIP PRO मेम्बरशिप सक्रिय हो गई है।"
+    }
+
+# --- CRM Webhook Tracking Endpoints ---
+class CrmTrackEventRequest(BaseModel):
+    event: str = "customer.activity"
+    data: dict = {}
+    webhook_url: str = ""
+
+@app.post("/api/crm/test-webhook")
+async def test_crm_webhook(req: CrmTrackEventRequest):
+    """Dispatches an instant test ping to verify CRM webhook connectivity."""
+    target_url = req.webhook_url or CRM_WEBHOOK_URL or os.getenv("CRM_WEBHOOK_URL", "")
+    if not target_url:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "message": "CRM_WEBHOOK_URL is not configured. Pass 'webhook_url' in JSON body or set CRM_WEBHOOK_URL in environment."
+        })
+    
+    send_crm_webhook(req.event or "crm.test_ping", {
+        "message": "Test webhook from SmartWork CRM Tracker! Connection successful.",
+        "sample_customer": {
+            "name": "Karan Singh",
+            "email": "karan@example.com",
+            "mobile": "9876543210",
+            "location": "Sadar Tehsil, Jaipur",
+            "plan": "VIP PRO"
+        },
+        "extra_data": req.data
+    }, webhook_url=target_url)
+    
+    return {
+        "success": True,
+        "message": f"Webhook test event successfully dispatched to {target_url}."
     }
 
 

@@ -130,7 +130,7 @@ def ensure_autostart_registry():
         print(f"[AUTOSTART ERROR] Registry registration failed: {e}")
         return False
 
-DEFAULT_SERVER = "thesmartwork.onrender.com"
+DEFAULT_SERVER = "smartwork89-smart-typing.hf.space"
 DEFAULT_WS_SCHEME = "wss"
 DEFAULT_HTTP_SCHEME = "https"
 

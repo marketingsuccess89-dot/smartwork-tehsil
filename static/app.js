@@ -119,6 +119,7 @@ const toastMessage = document.getElementById('toast-message');
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     updateCounters();
+    restoreDraftFromStorage();
     initAuthAndConfig();
     
     // Load previously linked sync email and PIN
@@ -223,7 +224,7 @@ function setupEventListeners() {
                 return;
             }
             if (!pin) {
-                showToast('error', 'कृपया 4-अंकों का सुरक्षा पिन दर्ज करें।');
+                showToast('error', 'कृपया पासवर्ड (Password) दर्ज करें।');
                 return;
             }
             localStorage.setItem('tehsil_mobile_email', email);
@@ -236,9 +237,12 @@ function setupEventListeners() {
         mobileLogoutBtn.addEventListener('click', unlinkMobileEmail);
     }
 
-    // 6. Editor Actions & Live Counters
+    // 6. Editor Actions & Live Counters (With Auto-Draft Persistence)
     if (documentEditor) {
-        documentEditor.addEventListener('input', updateCounters);
+        documentEditor.addEventListener('input', () => {
+            updateCounters();
+            saveDraftToStorage();
+        });
     }
 
     if (prevPageBtn) {
@@ -318,6 +322,16 @@ function setupEventListeners() {
         headerLoginBtn.addEventListener('click', () => {
             if (authModalReason) authModalReason.innerText = 'Smart Typing में अपने दस्तावेज़ और प्रोफ़ाइल सुरक्षित रखने के लिए लॉगिन करें।';
             openModal('modal-auth');
+        });
+    }
+    if (headerUserBadge) {
+        headerUserBadge.addEventListener('click', openProfileModal);
+    }
+    const profileModalLogoutBtn = document.getElementById('profile-modal-logout-btn');
+    if (profileModalLogoutBtn) {
+        profileModalLogoutBtn.addEventListener('click', () => {
+            closeModal('modal-profile');
+            handleLogout();
         });
     }
     if (headerLogoutBtn) {
@@ -435,7 +449,7 @@ function setupEventListeners() {
                 return;
             }
             if (!pin) {
-                showToast('error', 'कृपया सुरक्षा पिन दर्ज करें।');
+                showToast('error', 'कृपया पासवर्ड (Password) दर्ज करें।');
                 return;
             }
 
@@ -535,13 +549,13 @@ async function compressImageClientSide(file, maxDimension = 1280, quality = 0.75
 function switchTab(tab) {
     activeTab = tab;
     if (tab === 'image') {
-        tabImageBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/20";
-        tabAudioBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-indigo-900 hover:bg-indigo-50/50";
+        tabImageBtn.className = "w-full flex justify-center items-center py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-extrabold transition-all duration-200 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white shadow-md shadow-indigo-600/25 cursor-pointer";
+        tabAudioBtn.className = "w-full flex justify-center items-center py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-bold transition-all duration-200 text-slate-700 hover:text-indigo-900 hover:bg-white/80 cursor-pointer";
         panelImage.classList.remove('hidden');
         panelAudio.classList.add('hidden');
     } else {
-        tabAudioBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/20";
-        tabImageBtn.className = "w-full flex justify-center items-center py-2 sm:py-2.5 px-2 sm:px-4 rounded-xl text-[11px] sm:text-xs font-semibold transition-all duration-200 text-slate-600 hover:text-indigo-900 hover:bg-indigo-50/50";
+        tabAudioBtn.className = "w-full flex justify-center items-center py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-extrabold transition-all duration-200 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white shadow-md shadow-indigo-600/25 cursor-pointer";
+        tabImageBtn.className = "w-full flex justify-center items-center py-3 sm:py-3.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-bold transition-all duration-200 text-slate-700 hover:text-indigo-900 hover:bg-white/80 cursor-pointer";
         panelAudio.classList.remove('hidden');
         panelImage.classList.add('hidden');
     }
@@ -804,6 +818,12 @@ function clearAudioSelection() {
 
 // Voice Recording Logic with Multi-Part Recording
 async function toggleRecording() {
+    if (window.trackTheSmartWork) {
+        window.trackTheSmartWork('mic_clicked', {
+            action: isRecording ? 'stop_recording' : 'start_recording',
+            current_voice_notes: selectedAudioFiles.length
+        });
+    }
     if (!isRecording) {
         await startRecording();
     } else {
@@ -968,7 +988,7 @@ async function processWithAI(mode) {
         }
 
         const data = await response.json();
-        
+
         // Auto-enable 3.0 inch stamp paper margin if Stamp Paper was detected in photo
         if (data.stamp_paper_detected && stampPaperToggle) {
             stampPaperToggle.checked = true;
@@ -983,6 +1003,7 @@ async function processWithAI(mode) {
         if (documentEditor) {
             documentEditor.value = data.transcribed_text;
             updateCounters();
+            saveDraftToStorage();
         }
         if (documentPreview) {
             paginateDocument(data.transcribed_text);
@@ -1030,6 +1051,7 @@ function downloadWordDocument() {
 function triggerDirectFormDownload(text, fileName) {
     try {
         const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
+
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/api/download-docx';
@@ -1138,6 +1160,7 @@ function triggerNativePrint() {
     }
 
     const isStamp = Boolean(stampPaperToggle && stampPaperToggle.checked);
+
     const unwrappedText = unwrapParagraphs(text);
 
     let printMount = document.getElementById('print-mount-point');
@@ -1512,6 +1535,8 @@ function clearEditor() {
             documentEditor.value = '';
             updateCounters();
         }
+        localStorage.removeItem('smartwork_pending_draft');
+        localStorage.removeItem('smartwork_pending_stamp');
         documentPages = [];
         currentPageIndex = 0;
         renderCurrentPage();
@@ -2389,6 +2414,76 @@ function updateAuthUI() {
     }
 }
 
+// Draft Persistence Across Sessions and Google OAuth Logins
+function saveDraftToStorage() {
+    if (documentEditor && documentEditor.value) {
+        localStorage.setItem('smartwork_pending_draft', documentEditor.value);
+        if (stampPaperToggle) {
+            localStorage.setItem('smartwork_pending_stamp', stampPaperToggle.checked ? 'true' : 'false');
+        }
+    }
+}
+
+function restoreDraftFromStorage() {
+    const savedDraft = localStorage.getItem('smartwork_pending_draft');
+    const savedStamp = localStorage.getItem('smartwork_pending_stamp');
+    if (savedDraft && savedDraft.trim().length > 0) {
+        if (stampPaperToggle && savedStamp === 'true') {
+            stampPaperToggle.checked = true;
+            if (downloadStampInput) downloadStampInput.value = 'true';
+        }
+        if (documentEditor) {
+            documentEditor.value = savedDraft;
+            updateCounters();
+        }
+        if (documentPreview) {
+            paginateDocument(savedDraft);
+            renderCurrentPage();
+        }
+        if (downloadDocxBtn) {
+            downloadDocxBtn.removeAttribute('disabled');
+        }
+        console.log('[Draft] Restored previous letter draft successfully.');
+    }
+}
+
+function openProfileModal() {
+    if (!currentUser) {
+        openModal('modal-auth');
+        return;
+    }
+    const avatarEl = document.getElementById('profile-modal-avatar');
+    const nameEl = document.getElementById('profile-modal-name');
+    const emailEl = document.getElementById('profile-modal-email');
+    const mobileEl = document.getElementById('profile-modal-mobile');
+    const locationEl = document.getElementById('profile-modal-location');
+    const planBadgeEl = document.getElementById('profile-modal-plan-badge');
+    const upgradeActionEl = document.getElementById('profile-upgrade-action-container');
+
+    if (avatarEl && currentUser.avatar_url) avatarEl.src = currentUser.avatar_url;
+    if (nameEl) nameEl.innerText = currentUser.full_name || currentUser.email.split('@')[0];
+    if (emailEl) emailEl.innerText = currentUser.email || '';
+    if (mobileEl) mobileEl.innerText = currentUser.mobile ? `+91 ${currentUser.mobile}` : 'Not set';
+    if (locationEl) locationEl.innerText = currentUser.location || 'Not set';
+
+    if (currentUser.is_pro || currentUser.plan === 'pro') {
+        if (planBadgeEl) {
+            planBadgeEl.className = 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-xs inline-flex items-center gap-1';
+            planBadgeEl.innerHTML = '<i class="fa-solid fa-crown text-amber-950 text-[10px]"></i><span>👑 VIP PRO MEMBER</span>';
+        }
+        if (upgradeActionEl) upgradeActionEl.classList.add('hidden');
+    } else {
+        if (planBadgeEl) {
+            planBadgeEl.className = 'bg-slate-700 text-slate-200 font-bold text-[9px] px-2 py-0.5 rounded-full shadow-2xs inline-flex items-center gap-1';
+            planBadgeEl.innerHTML = '<span>FREE PLAN</span>';
+        }
+        if (upgradeActionEl) upgradeActionEl.classList.remove('hidden');
+    }
+
+    openModal('modal-profile');
+}
+window.openProfileModal = openProfileModal;
+
 function requireAuth(actionCallback, reasonText = 'इस सुविधा का उपयोग करने के लिए कृपया लॉगिन करें।') {
     if (currentUser) {
         // If profile details (mobile/location) missing, prompt onboarding first
@@ -2407,6 +2502,7 @@ function requireAuth(actionCallback, reasonText = 'इस सुविधा क
 }
 
 async function signInWithGoogle() {
+    saveDraftToStorage(); // Ensure letter draft is safely preserved in localStorage before OAuth navigation
     if (supabaseClient) {
         try {
             const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -2505,6 +2601,15 @@ async function handleOnboardingSubmit(e) {
     closeModal('modal-onboarding');
     showToast('success', 'प्रोफ़ाइल सफलतापूर्वक सेव हो गई!');
 
+    if (window.trackTheSmartWork) {
+        window.trackTheSmartWork('lead_captured', {
+            name: name,
+            mobile: mobile,
+            location: location,
+            email: currentUser.email
+        });
+    }
+
     if (pendingAuthAction) {
         const act = pendingAuthAction;
         pendingAuthAction = null;
@@ -2521,10 +2626,11 @@ async function handleLogout() {
     currentUser = null;
     localStorage.removeItem('smartwork_user');
     updateAuthUI();
+    closeModal('modal-profile');
     showToast('success', 'आप सफलतापूर्वक लॉगआउट हो गए हैं।');
 }
 
-// MS Word Direct Sync Pro Paywall Handler
+// MS Word Direct Sync Handler (Now 100% FREE for all users)
 function handleSendToWordClick() {
     const text = documentEditor ? documentEditor.value.trim() : '';
     if (!text) {
@@ -2532,14 +2638,14 @@ function handleSendToWordClick() {
         return;
     }
 
+    if (window.trackTheSmartWork) {
+        window.trackTheSmartWork('ms_word_sync_clicked', {
+            is_pro: true
+        });
+    }
+
     requireAuth(() => {
-        // If user is already Pro, execute Word Sync
-        if (currentUser && (currentUser.is_pro || currentUser.plan === 'pro')) {
-            handleSendToWord();
-        } else {
-            // Show Pro Membership Paywall Modal
-            openModal('modal-pro-paywall');
-        }
+        handleSendToWord();
     }, 'MS Word में सीधे भेजने के लिए कृपया लॉगिन करें।');
 }
 
@@ -2557,15 +2663,15 @@ function selectPlan(planType) {
             if (k === planType) {
                 c.className = 'plan-card p-2.5 rounded-2xl border-2 border-amber-500 bg-amber-50/70 cursor-pointer text-center transition relative shadow-sm scale-[1.02]';
             } else {
-                c.className = 'plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 bg-slate-50 cursor-pointer text-center transition';
+                c.className = 'plan-card p-2.5 rounded-2xl border-2 border-slate-200 hover:border-amber-400 bg-slate-50 cursor-pointer text-center transition relative';
             }
         }
     });
 
     if (payBtnLabel) {
-        if (planType === 'weekly') payBtnLabel.innerText = '₹49 का वीकली प्रो प्लान अनलॉक करें';
-        else if (planType === 'yearly') payBtnLabel.innerText = '₹999 का इयरली प्रो प्लान अनलॉक करें';
-        else payBtnLabel.innerText = '₹99 का मंथली प्रो प्लान अनलॉक करें';
+        if (planType === 'weekly') payBtnLabel.innerText = 'Unlock Weekly PRO Plan for ₹1';
+        else if (planType === 'yearly') payBtnLabel.innerText = 'Unlock Yearly PRO Plan for ₹999';
+        else payBtnLabel.innerText = 'Unlock Monthly PRO Plan for ₹99';
     }
 }
 
@@ -2622,6 +2728,14 @@ async function handleProPayment() {
                         updateAuthUI();
                         closeModal('modal-pro-paywall');
                         showToast('success', '👑 बधाई हो! आपकी VIP PRO मेम्बरशिप सक्रिय हो गई है।');
+                        if (window.trackTheSmartWork) {
+                            window.trackTheSmartWork('payment_completed', {
+                                plan: selectedProPlan,
+                                order_id: response.razorpay_order_id,
+                                payment_id: response.razorpay_payment_id,
+                                amount: selectedProPlan === 'weekly' ? 1 : (selectedProPlan === 'yearly' ? 999 : 99)
+                            });
+                        }
                         setTimeout(() => {
                             handleSendToWord();
                         }, 500);

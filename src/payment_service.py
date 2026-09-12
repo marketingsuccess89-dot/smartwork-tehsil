@@ -7,7 +7,7 @@ RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "").strip()
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "").strip()
 
 PLAN_AMOUNTS = {
-    "weekly": 49,
+    "weekly": 1,
     "monthly": 99,
     "yearly": 999
 }
